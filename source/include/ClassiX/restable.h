@@ -1,9 +1,9 @@
 #/*
-	include/ClassiX/strtable.h
+	include/ClassiX/restable.h
 */
 
-#ifndef _IO_H_
-#define _IO_H_
+#ifndef _RESTABLE_H_
+#define _RESTABLE_H_
 
 #ifdef __cplusplus
 	extern "C" {

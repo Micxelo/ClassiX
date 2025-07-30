@@ -2,8 +2,8 @@
 	include/stddef.h
 */
 
-#ifndef STDDEF_H
-#define STDDEF_H
+#ifndef _STDDEF_H_
+#define _STDDEF_H_
 
 #ifdef __cplusplus
 	extern "C" {

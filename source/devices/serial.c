@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 #include <stdarg.h>
+#include <stdio.h>
 
 #define COM1_BASE							0x3f8
 

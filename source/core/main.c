@@ -7,6 +7,7 @@
 #include <ClassiX/io.h>
 #include <ClassiX/graphic.h>
 #include <ClassiX/debug.h>
+#include <ClassiX/rtc.h>
 #include <ClassiX/int.h>
 
 void main(uint32_t mb_magic, multiboot_info_t *mbi)

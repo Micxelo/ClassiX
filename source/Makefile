@@ -5,7 +5,7 @@
 CC       = "gcc"
 AS       = "nasm"
 CFLAGS   = "-O2 -m32 -std=gnu99 -Wall -Wextra -ffreestanding -fno-pic \
-		    -fno-stack-protector -fleading-underscore -nostartfiles -nostdinc"
+            -fno-stack-protector -fleading-underscore -nostartfiles -nostdinc"
 ASFLAGS  = "-f elf32"
 LD       = ld
 LDSCRIPT = linker.ld
@@ -16,7 +16,8 @@ DEPS     = core/boot.obj core/main.obj core/memory.obj \
            core/int/dsctable.obj core/int/inthandler.obj core/int/pic.obj \
            devices/keyboard.obj devices/serial.obj \
            libc/string.obj libc/stdio.obj \
-		   ui/graphic.obj
+           ui/graphic.obj \
+           utilities/rtc.obj
 TARGETS  = ClassiX.sys
 
 .PHONY : default
@@ -26,6 +27,7 @@ default :
 	$(MAKE) -C devices
 	$(MAKE) -C libc
 	$(MAKE) -C ui
+	$(MAKE) -C utilities
 	$(MAKE) $(TARGETS)
 
 $(TARGETS) : $(DEPS)
@@ -33,9 +35,10 @@ $(TARGETS) : $(DEPS)
 
 PHONY : mrproper
 mrproper:
-	$(MAKE) -C core 		mrproper
-	$(MAKE) -C core/int 	mrproper
-	$(MAKE) -C devices 		mrproper
-	$(MAKE) -C libc 		mrproper
-	$(MAKE) -C ui 			mrproper
+	$(MAKE) -C core         mrproper
+	$(MAKE) -C core/int     mrproper
+	$(MAKE) -C devices      mrproper
+	$(MAKE) -C libc         mrproper
+	$(MAKE) -C ui           mrproper
+	$(MAKE) -C utilities    mrproper
 	rm -f $(TARGETS)

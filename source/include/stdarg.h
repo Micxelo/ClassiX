@@ -2,8 +2,8 @@
 	include/stdarg.h
 */
 
-#ifndef STDARG_H
-#define STDARG_H
+#ifndef _STDARG_H_
+#define _STDARG_H_
 
 #ifdef __cplusplus
 	extern "C" {

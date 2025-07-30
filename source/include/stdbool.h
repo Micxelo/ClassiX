@@ -2,8 +2,8 @@
 	include/stdbool.h
 */
 
-#ifndef STDBOOL_H
-#define STDBOOL_H
+#ifndef _STDBOOL_H_
+#define _STDBOOL_H_
 
 #ifdef __cplusplus
 	extern "C" {
