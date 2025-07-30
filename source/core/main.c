@@ -2,13 +2,13 @@
 	core/main.c
 */
 
-#include <ClassiX/typedef.h>
-#include <ClassiX/multiboot.h>
-#include <ClassiX/io.h>
-#include <ClassiX/graphic.h>
+#include <ClassiX/cpu.h>
 #include <ClassiX/debug.h>
-#include <ClassiX/rtc.h>
+#include <ClassiX/graphic.h>
 #include <ClassiX/int.h>
+#include <ClassiX/multiboot.h>
+#include <ClassiX/rtc.h>
+#include <ClassiX/typedef.h>
 
 void main(uint32_t mb_magic, multiboot_info_t *mbi)
 {

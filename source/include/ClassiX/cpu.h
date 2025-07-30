@@ -1,0 +1,32 @@
+/*
+	include/ClassiX/cpu.h
+*/
+
+#ifndef _CPU_H_
+#define _CPU_H_
+
+#ifdef __cplusplus
+	extern "C" {
+#endif
+
+#include <ClassiX/typedef.h>
+
+typedef struct {
+	uint32_t level;
+	size_t size;
+	size_t line_size;
+} cache_info_t;
+
+bool cpuid_check();
+void cpuid_vendor(char *buf);
+void cpuid_brand(char *brand);
+uint32_t get_apic_id();
+int32_t get_cache_count();
+int32_t get_cache_info(int32_t index, cache_info_t *buf);
+
+
+#ifdef __cplusplus
+	}
+#endif
+
+#endif

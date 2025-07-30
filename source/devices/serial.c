@@ -2,11 +2,11 @@
 	devices/serial.c
 */
 
-#include <ClassiX/serial.h>
 #include <ClassiX/io.h>
+#include <ClassiX/serial.h>
 
-#include <stdint.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdio.h>
 
 #define COM1_BASE							0x3f8

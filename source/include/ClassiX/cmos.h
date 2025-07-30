@@ -9,8 +9,8 @@
 	extern "C" {
 #endif
 
-#include <ClassiX/typedef.h>
 #include <ClassiX/io.h>
+#include <ClassiX/typedef.h>
 
 #define CMOS_INDEX								0x70
 #define CMOS_DATA								0x71

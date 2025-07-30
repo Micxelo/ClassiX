@@ -9,17 +9,17 @@
 	extern "C" {
 #endif
 
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #ifndef NULL
 	#define NULL					((void *) 0)
 #endif
 
-typedef void * HANDLE;
+typedef void * handle;
 
-typedef uint32_t COLOR;
+typedef uint32_t color_t;
 
 #ifdef __cplusplus
 	}

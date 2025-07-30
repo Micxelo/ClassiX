@@ -14,7 +14,7 @@ MAKE     = make CC=$(CC) CFLAGS=$(CFLAGS) AS=$(AS) ASFLAGS=$(ASFLAGS)
 
 DEPS     = core/boot.obj core/main.obj core/memory.obj \
            core/int/dsctable.obj core/int/inthandler.obj core/int/pic.obj \
-           devices/keyboard.obj devices/serial.obj \
+           devices/cpu.obj devices/keyboard.obj devices/serial.obj \
            libc/string.obj libc/stdio.obj \
            ui/graphic.obj \
            utilities/rtc.obj

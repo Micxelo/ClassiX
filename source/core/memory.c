@@ -2,8 +2,8 @@
 	core/memory.c
 */
 
-#include <ClassiX/typedef.h>
 #include <ClassiX/memory.h>
+#include <ClassiX/typedef.h>
 
 #define BLOCK_FREE							0
 #define BLOCK_USED							1
@@ -13,7 +13,7 @@ struct block_header {
 	uint32_t magic;
 	size_t size;		/* 包括头尾 */
 	uint8_t state;
-	HANDLE task;
+	handle task;
 } __attribute__((aligned(16)));
 typedef struct block_header block_header_t;
 
@@ -58,7 +58,7 @@ void memory_init(void *base, size_t size)
 	freeblock_head = freeblock;
 }
 
-void *kmalloc(size_t size, HANDLE task)
+void *kmalloc(size_t size, handle task)
 {
 	if (size == 0) return NULL;
 

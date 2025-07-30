@@ -5,9 +5,9 @@
 #include <ClassiX/graphic.h>
 #include <ClassiX/io.h>
 
-#include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 
 #define CGA_SIZE						(CGA_COLUMNS * CGA_ROWS)
 #define CGA_ENTRY(c, color)				((uint16_t) (c) | (uint16_t) (color) << 8)

@@ -9,8 +9,7 @@
 	extern "C" {
 #endif
 
-#define MSG_ERR_REQUIRE_MULTIBOOT	
-#include <stdint.h>
+#define MSG_ERR_REQUIRE_MULTIBOOT
 
 #ifdef __cplusplus
 	}

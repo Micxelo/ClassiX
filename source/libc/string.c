@@ -2,8 +2,8 @@
 	libc/string.c
 */
 
-#include <string.h>
 #include <stddef.h>
+#include <string.h>
 
 inline char *strcpy(char *dest, const char *src)
 {

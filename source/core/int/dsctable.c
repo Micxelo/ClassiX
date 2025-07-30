@@ -2,8 +2,8 @@
 	core/int/dsctable.c
 */
 
-#include <ClassiX/typedef.h>
 #include <ClassiX/int.h>
+#include <ClassiX/typedef.h>
 
 #define ADDR_IDT							0x0026f800
 #define LIMIT_IDT							0x000007ff

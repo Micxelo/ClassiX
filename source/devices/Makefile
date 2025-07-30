@@ -8,7 +8,7 @@ AS      =
 CFLAGS  =
 ASFLAGS =
 
-TARGETS = keyboard.obj serial.obj
+TARGETS = cpu.obj keyboard.obj serial.obj
 
 .PHONY : default
 default :

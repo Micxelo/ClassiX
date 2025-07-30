@@ -9,8 +9,8 @@
 	extern "C" {
 #endif
 
-#include <ClassiX/typedef.h>
 #include <ClassiX/serial.h>
+#include <ClassiX/typedef.h>
 
 #define DEBUG
 

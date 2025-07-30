@@ -10,6 +10,7 @@
 #endif
 
 #include <ClassiX/typedef.h>
+
 #include <stdarg.h>
 
 void uart_init(void);

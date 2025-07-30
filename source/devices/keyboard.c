@@ -2,10 +2,10 @@
 	devices/keyboard.c
 */
 
-#include <ClassiX/typedef.h>
-#include <ClassiX/io.h>
-#include <ClassiX/int.h>
 #include <ClassiX/keyboard.h>
+#include <ClassiX/int.h>
+#include <ClassiX/io.h>
+#include <ClassiX/typedef.h>
 
 void inthandler_21(uint32_t *esp)
 {

@@ -2,9 +2,9 @@
 	utilities/rtc.c
 */
 
-#include <ClassiX/typedef.h>
 #include <ClassiX/cmos.h>
 #include <ClassiX/rtc.h>
+#include <ClassiX/typedef.h>
 
 #define BCD_HEX(n)							((n >> 4) * 10) + (n & 0x0f)
 #define HEX_BCD(n)  						((n / 10) << 4) + (n % 10)
