@@ -20,6 +20,10 @@ enum UART_REGISTERS {
 	DLH = 1		/* 除数锁存高字节 (DLAB = 1) */
 };
 
+/*
+	@brief 初始化串口 (COM1)。
+	@note 配置为 115200 bps, 8 数据位, 无校验, 1 停止位。
+*/
 void uart_init(void)
 {
 	out8(COM1_BASE + 1, 0x00);	/* 禁用串口中断 */
@@ -37,7 +41,10 @@ void uart_init(void)
 	out8(COM1_BASE + 4, 0x08); // MCR 寄存器
 }
 
-// 发送单个字符 (轮询方式)
+/*
+	@brief 发送单个字符到串口（轮询方式）。
+	@param c 待发送的字符
+*/
 void uart_putchar(char c)
 {
 	/* 等待发送缓冲区为空 (检查 LSR 第 5 位) */
@@ -50,13 +57,21 @@ void uart_putchar(char c)
 	}
 }
 
-// 发送字符串
+/*
+	@brief 发送字符串到串口。
+	@param str 待发送的字符串
+*/
 void uart_puts(const char *str)
 {
 	while (*str)
 		uart_putchar(*str++);
 }
 
+/*
+	@brief 格式化输出到串口。
+	@param format 格式字符串
+	@return 输出的字符数
+*/
 int uart_printf(const char *format, ...)
 {
 	const size_t max_length = 1024;

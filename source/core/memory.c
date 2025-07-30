@@ -35,6 +35,11 @@ static void *memory_pool_start;
 static size_t memory_pool_size;
 static void *memory_pool_end;
 
+/*
+	@brief 初始化内存池。
+	@param base 内存池起始地址
+	@param size 内存池大小
+*/
 void memory_init(void *base, size_t size)
 {
 	memory_pool_start = base;
@@ -58,6 +63,12 @@ void memory_init(void *base, size_t size)
 	freeblock_head = freeblock;
 }
 
+/*
+	@brief 分配内存。
+	@param size 需要分配的字节数
+	@param task 任务句柄
+	@return 分配的内存指针，失败返回 NULL
+*/
 void *kmalloc(size_t size, handle task)
 {
 	if (size == 0) return NULL;
@@ -118,6 +129,10 @@ void *kmalloc(size_t size, handle task)
 	return NULL;
 }
 
+/*
+	@brief 释放内存。
+	@param ptr 待释放的内存指针
+*/
 void kfree(void *ptr)
 {
 	if (ptr == NULL) return;
@@ -174,11 +189,19 @@ void kfree(void *ptr)
 	return;	
 }
 
+/*
+	@brief 获取总内存大小。
+	@return 总内存大小（字节）
+*/
 size_t get_total_memory(void)
 {
 	return memory_pool_size;
 }
 
+/*
+	@brief 获取空闲内存大小。
+	@return 空闲内存大小（字节）
+*/
 size_t get_free_memory(void)
 {
 	size_t total_free = 0;

@@ -5,6 +5,10 @@
 #include <ClassiX/int.h>
 #include <ClassiX/io.h>
 
+/*
+	@brief 初始化 PIC (可编程中断控制器)。
+	@note 配置 PIC0 和 PIC1，禁止所有中断。
+*/
 void init_pic(void)
 {
 	out8(PIC0_IMR,  0xff  ); /* 禁止所有中断 */

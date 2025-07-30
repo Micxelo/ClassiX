@@ -8,7 +8,10 @@
 
 #include <string.h>
 
-// 检测CPU是否支持CPUID指令
+/*
+	@brief 检查 CPU 是否支持 CPUID 指令。
+	@return true - 支持 CPUID
+*/
 bool cpuid_check()
 {
 	uint32_t eflags_orig, eflags_mod;
@@ -42,6 +45,10 @@ bool cpuid_check()
 	return (eflags_orig ^ eflags_mod) & 0x200000;
 }
 
+/*
+	@brief 获取 CPU 制造商 ID。
+	@param buf 存储制造商 ID 的缓冲区，长度至少为 13 字节
+*/
 void cpuid_vendor(char *buf)
 {
 	uint32_t ebx, ecx, edx;
@@ -52,6 +59,10 @@ void cpuid_vendor(char *buf)
 	buf[12] = '\0';
 }
 
+/*
+	@brief 获取 CPU 品牌字符串。
+	@param brand 存储品牌字符串的缓冲区，长度至少为 49 字节
+*/
 void cpuid_brand(char *brand)
 {
 	uint32_t eax, ebx, ecx, edx;
@@ -64,6 +75,10 @@ void cpuid_brand(char *brand)
 	brand[48] = '\0';
 }
 
+/*
+	@brief 获取 CPU APIC ID。
+	@return APIC ID
+*/
 uint32_t get_apic_id()
 {
 	uint32_t ebx;
@@ -71,6 +86,10 @@ uint32_t get_apic_id()
 	return ebx >> 24;
 }
 
+/*
+	@brief 获取 CPU 缓存数量。
+	@return 缓存数量
+*/
 int32_t get_cache_count()
 {
 	uint32_t eax, ebx, ecx, edx;
@@ -89,6 +108,12 @@ int32_t get_cache_count()
 	return i;
 }
 
+/*
+	@brief 获取指定索引的 CPU 缓存信息。
+	@param index 缓存索引
+	@param buf 存储缓存信息的缓冲区
+	@return 0 - 成功，1 - 无效缓存
+*/
 int32_t get_cache_info(int32_t index, cache_info_t *buf)
 {
 	uint32_t eax, ebx, ecx, edx;

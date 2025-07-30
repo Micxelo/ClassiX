@@ -78,6 +78,9 @@ static void set_gatedesc(gate_descriptor_t *gd, size_t offset, uint32_t selector
 	return;
 }
 
+/*
+	@brief 初始化 GDT 和 IDT。
+*/
 void init_gdtidt(void)
 {
 	segment_descriptor_t *gdt = (segment_descriptor_t *) ADDR_GDT;
