@@ -1,0 +1,13 @@
+#
+#	File: .gitignore
+#
+
+# Ignore options files, build results, etc.
+
+# Visual Studio Code options directory
+.vscode/
+
+# Build results
+*.obj
+*.bin
+*.sys
