@@ -6,6 +6,7 @@
 #include <ClassiX/debug.h>
 #include <ClassiX/graphic.h>
 #include <ClassiX/int.h>
+#include <ClassiX/io.h>
 #include <ClassiX/multiboot.h>
 #include <ClassiX/rtc.h>
 #include <ClassiX/typedef.h>
