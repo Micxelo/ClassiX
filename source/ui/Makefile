@@ -8,7 +8,7 @@ AS      =
 CFLAGS  =
 ASFLAGS =
 
-TARGETS = graphic.obj
+TARGETS = cga.obj
 
 .PHONY : default
 default :

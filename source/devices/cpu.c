@@ -51,6 +51,8 @@ bool check_cpuid_support(void)
 */
 bool check_tsc_support(void)
 {
+	if (!check_cpuid_support()) return false;
+
 	uint32_t eax, ebx, ecx, edx;
 
 	/* 使用 CPUID 功能 1 */
@@ -99,11 +101,9 @@ inline uint64_t rdtsc(void)
 {
 	uint32_t lo, hi;
 	asm volatile(
-		"mfence\n\t" /* 内存屏障 */
 		"lfence\n\t" /* 加载屏障 */
 		"rdtsc"
 		:"=a"(lo), "=d"(hi)::"memory");
-	asm volatile("lfence":::"memory"); /* 防止后续指令乱序 */
 	return ((uint64_t) hi << 32) | lo;
 }
 
@@ -123,18 +123,19 @@ void get_cpu_vendor(char *buf)
 
 /*
 	@brief 获取 CPU 品牌字符串。
-	@param brand 存储品牌字符串的缓冲区，长度至少为 49 字节
+	@param buf 存储品牌字符串的缓冲区，长度至少为 49 字节
 */
-void get_cpu_brand(char *brand)
+void get_cpu_brand(char *buf)
 {
 	uint32_t eax, ebx, ecx, edx;
 	for (int i = 0; i < 3; i++) {
 		asm volatile("cpuid"
 					 :"=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
 					 :"a"(0x80000002 + i));
-		memcpy(brand + i * 16, &eax, 16); /* 复制 48 字节字符串 */
+		uint32_t regs[4] = { eax, ebx, ecx, edx };
+		memcpy(buf + i * 16, regs, sizeof(regs));
 	}
-	brand[48] = '\0';
+	buf[48] = '\0';
 }
 
 /*
@@ -155,9 +156,9 @@ uint32_t get_apic_id()
 int32_t get_cache_count()
 {
 	uint32_t eax, ebx, ecx, edx;
-	int32_t i = 0;
+	int32_t count = 0;
 	
-	for (i = 0; ; i++) {
+	for (int i = 0; i < 256; i++) {
 		asm volatile("cpuid"
 					 :"=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
 					 :"a"(4), "c"(i)); /* EAX = 4，ECX = 缓存索引 */
@@ -165,9 +166,10 @@ int32_t get_cache_count()
 		uint8_t cache_type = eax & 0x1f;
 		if (cache_type == 0)
 			break; /* 无效缓存 */
+		count++;
 	}
 
-	return i;
+	return count;
 }
 
 /*
@@ -181,8 +183,8 @@ int32_t get_cache_info(int32_t index, cache_info_t *buf)
 	uint32_t eax, ebx, ecx, edx;
 	
 	asm volatile("cpuid"
-					:"=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
-					:"a"(4), "c"(index)); /* EAX = 4，ECX = 缓存索引 */
+				 :"=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
+				 :"a"(4), "c"(index)); /* EAX = 4，ECX = 缓存索引 */
 
 	uint8_t cache_type = eax & 0x1f;
 	if (cache_type == 0)

@@ -22,7 +22,7 @@ bool check_tsc_support(void);
 bool check_tsc_invariant(void);
 uint64_t rdtsc(void);
 void get_cpu_vendor(char *buf);
-void get_cpu_brand(char *brand);
+void get_cpu_brand(char *buf);
 uint32_t get_apic_id();
 int32_t get_cache_count();
 int32_t get_cache_info(int32_t index, cache_info_t *buf);

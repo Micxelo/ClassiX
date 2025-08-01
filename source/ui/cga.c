@@ -1,5 +1,5 @@
 /*
-	ui/graphic.c
+	ui/cga.c
 */
 
 #include <ClassiX/graphic.h>
