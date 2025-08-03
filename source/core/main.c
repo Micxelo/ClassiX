@@ -5,8 +5,9 @@
 #include <ClassiX/cpu.h>
 #include <ClassiX/debug.h>
 #include <ClassiX/graphic.h>
-#include <ClassiX/int.h>
+#include <ClassiX/interrupt.h>
 #include <ClassiX/io.h>
+#include <ClassiX/keyboard.h>
 #include <ClassiX/multiboot.h>
 #include <ClassiX/rtc.h>
 #include <ClassiX/typedef.h>
@@ -33,10 +34,11 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 		return;
 	}
 
-	init_gdtidt();
+	init_gdt();
+	init_idt();
 	init_pic();
 	uart_init();
-
+	
 	sti();
 
 	debug("\nMultiboot Bootloader Information\n\n");
@@ -52,7 +54,7 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	}
 
 	/* 传递 Video Mode 信息 */
-	debug("\nFrame buffer info:\n  Type: %s, Address: 0x%llx, Width: %d, Height: %d\n",
+	debug("\nFrame buffer info:\n  Type: %s, Address: 0x%llx, Width: %d, Height: %d\n\n",
 		"INDEXED\0RGB\0    EGATEXT\0" + 8 * mbi->framebuffer_type,
 		mbi->framebuffer_addr, mbi->framebuffer_width, mbi->framebuffer_height);
 

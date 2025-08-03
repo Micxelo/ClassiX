@@ -1,5 +1,5 @@
 #
-#	core/int/Makefile
+#	core/interrupt/Makefile
 #
 
 INCPATH =  ../../include/
@@ -8,7 +8,7 @@ AS      =
 CFLAGS  =
 ASFLAGS =
 
-TARGETS = dsctable.obj inthandler.obj pic.obj
+TARGETS = gdt.obj idt.obj isr.obj pic.obj
 
 .PHONY : default
 default :

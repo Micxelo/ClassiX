@@ -9,18 +9,16 @@
 #define BLOCK_USED							1
 #define BLOCK_MAGIC							0x0d000721
 
-struct block_header {
+typedef struct __attribute__((aligned(16))) {
 	uint32_t magic;
 	size_t size;		/* 包括头尾 */
 	uint8_t state;
 	handle task;
-} __attribute__((aligned(16)));
-typedef struct block_header block_header_t;
+} block_header_t;
 
-struct block_footer {
+typedef struct __attribute__((aligned(16))) {
 	size_t size;		/* 必须与 header 中 size 一致 */
-} __attribute__((aligned(16)));
-typedef struct block_footer block_footer_t;
+} block_footer_t;
 
 struct freeblock {
 	struct freeblock *prev;

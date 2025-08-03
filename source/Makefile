@@ -13,7 +13,7 @@ LDFLAGS  = -T $(LDSCRIPT) -melf_i386 -nostdlib -z noexecstack
 MAKE     = make CC=$(CC) CFLAGS=$(CFLAGS) AS=$(AS) ASFLAGS=$(ASFLAGS)
 
 DEPS     = core/boot.obj core/main.obj core/memory.obj \
-           core/int/dsctable.obj core/int/inthandler.obj core/int/pic.obj \
+           core/interrupt/gdt.obj core/interrupt/idt.obj core/interrupt/isr.obj core/interrupt/pic.obj \
            devices/cpu.obj devices/keyboard.obj devices/serial.obj \
            libc/string.obj libc/stdio.obj \
            ui/cga.obj \
@@ -23,7 +23,7 @@ TARGETS  = ClassiX.sys
 .PHONY : default
 default :
 	$(MAKE) -C core
-	$(MAKE) -C core/int
+	$(MAKE) -C core/interrupt
 	$(MAKE) -C devices
 	$(MAKE) -C libc
 	$(MAKE) -C ui
@@ -35,10 +35,10 @@ $(TARGETS) : $(DEPS)
 
 PHONY : mrproper
 mrproper:
-	$(MAKE) -C core         mrproper
-	$(MAKE) -C core/int     mrproper
-	$(MAKE) -C devices      mrproper
-	$(MAKE) -C libc         mrproper
-	$(MAKE) -C ui           mrproper
-	$(MAKE) -C utilities    mrproper
+	$(MAKE) -C core             mrproper
+	$(MAKE) -C core/interrupt   mrproper
+	$(MAKE) -C devices          mrproper
+	$(MAKE) -C libc             mrproper
+	$(MAKE) -C ui               mrproper
+	$(MAKE) -C utilities        mrproper
 	rm -f $(TARGETS)
