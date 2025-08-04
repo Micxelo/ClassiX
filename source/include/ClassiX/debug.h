@@ -19,7 +19,7 @@
 	#define assert(condition, info)			do {						\
 		if(!(condition)) {												\
 			debug("[Assert] %s:%d  %s\n", __FILE__, __LINE__, info);	\
-			asm volatile ("    cli\n""1:  hlt\n""    jmp 1b")			\
+			asm volatile ("    cli\n""1:  hlt\n""    jmp 1b");			\
 		}																\
 	} while(0)
 #else

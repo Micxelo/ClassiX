@@ -12,6 +12,8 @@
 #include <ClassiX/fifo.h>
 #include <ClassiX/typedef.h>
 
+#define INT_NUM_KEYBOARD					0x21
+
 #define PORT_KEYBOARD_DATA					0x0060
 #define PORT_KEYBOARD_COMMAND				0x0064
 

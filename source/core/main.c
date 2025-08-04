@@ -10,6 +10,7 @@
 #include <ClassiX/keyboard.h>
 #include <ClassiX/mouse.h>
 #include <ClassiX/multiboot.h>
+#include <ClassiX/pit.h>
 #include <ClassiX/rtc.h>
 #include <ClassiX/typedef.h>
 
@@ -26,7 +27,7 @@ extern uintptr_t bss_end;
 #define PIT_DATA0							768
 static FIFO fifo;
 static uint32_t fifo_buf[FIFO_SIZE];
-static MOUSE_DATA mouse_data;
+static MOUSE_DATA mouse_data = { };
 
 /*
 	@brief 检查 Multiboot 启动信息。
@@ -72,17 +73,13 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	init_idt();
 	init_pic();
 	uart_init();
-
 	fifo_init(&fifo, FIFO_SIZE, fifo_buf, NULL);
-	init_mouse(&fifo, MOUSE_DATA0);
 	init_keyboard(&fifo, KEYBOARD_DATA0);
-	
-	sti();
+	init_mouse(&fifo, MOUSE_DATA0);
+	init_pit(1000); /* 初始化 PIT，频率为 1000 Hz */
 
 	debug("\nKernel PHYS: 0x%x - 0x%x\n", (uint32_t) &kernel_start_phys, (uint32_t) &kernel_end_phys);
-
 	debug("\nMultiboot Bootloader Information\n\n");
-
 	/* 内存信息 */
 	multiboot_memory_map_t *mmap;
 	debug("Available memory size: %d KiB\n", mbi->mem_lower + mbi->mem_upper);
@@ -92,11 +89,13 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 		debug("  Size: 0x%x, Base: 0x%016llx, Length: 0x%016llx, Type: %d\n",
 			mmap->size, mmap->addr, mmap->len, mmap->type);
 	}
-
 	/* Video Mode 信息 */
 	debug("\nFrame buffer info:\n  Type: %s, Address: 0x%llx, Width: %d, Height: %d\n\n",
 		"INDEXED\0RGB\0    EGATEXT\0" + 8 * mbi->framebuffer_type,
 		mbi->framebuffer_addr, mbi->framebuffer_width, mbi->framebuffer_height);
+
+	sti();
+	
 
 	for(;;) {
 		if (fifo_status(&fifo) == 0) {

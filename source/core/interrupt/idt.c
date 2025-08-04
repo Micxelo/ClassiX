@@ -44,10 +44,6 @@ void init_idt(void)
 	idt_ptr.base = (uint32_t) &idt_entries;
 
 	/* 设置 IDT */
-	extern void asm_isr_keyboard(void);
-	extern void asm_isr_mouse(void);
-	idt_set_gate(0x21, (uint32_t) asm_isr_keyboard, 0x08, AR_INTGATE32);
-	idt_set_gate(0x2c, (uint32_t) asm_isr_mouse, 0x08, AR_INTGATE32);
 
 	/* 加载 IDT */
 	asm volatile ("lidt %0"::"m"(idt_ptr));

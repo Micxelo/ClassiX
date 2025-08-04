@@ -27,6 +27,10 @@ void init_keyboard(FIFO *fifo, int data0)
 	keyboard_fifo = fifo;
 	keydata0 = data0;
 
+	/* 注册 IRQ */
+	extern void asm_isr_keyboard(void);
+	idt_set_gate(INT_NUM_KEYBOARD, (uint32_t) asm_isr_keyboard, 0x08, AR_INTGATE32);
+
 	/* 键盘控制电路初始化 */
 	wait_kbc_sendready();
 	out8(PORT_KEYBOARD_COMMAND, KEYCMD_WRITE_MODE);
