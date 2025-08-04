@@ -2,17 +2,57 @@
 	devices/keyboard.c
 */
 
+#include <ClassiX/debug.h>
+#include <ClassiX/fifo.h>
 #include <ClassiX/keyboard.h>
 #include <ClassiX/interrupt.h>
 #include <ClassiX/io.h>
 #include <ClassiX/typedef.h>
 
+#define PORT_KEYSTA							0x0064
+#define KEYSTA_SEND_NOTREADY				0x02
+#define KEYCMD_WRITE_MODE					0x60
+#define KBC_MODE							0x47
+
+static uint32_t keydata0;
+static FIFO *keyboard_fifo;
+
+/*	@brief 初始化键盘。
+	@param fifo FIFO 缓冲区指针
+	@param data0 键盘数据偏移量
+*/
+void init_keyboard(FIFO *fifo, int data0)
+{
+	/* 将 FIFO 缓冲区的内容保存到全局变量里 */
+	keyboard_fifo = fifo;
+	keydata0 = data0;
+
+	/* 键盘控制电路初始化 */
+	wait_kbc_sendready();
+	out8(PORT_KEYBOARD_COMMAND, KEYCMD_WRITE_MODE);
+	wait_kbc_sendready();
+	out8(PORT_KEYBOARD_DATA, KBC_MODE);
+	
+	debug("Keyboard initialized.\n");
+}
+
+/*
+	@brief 等待键盘控制器发送就绪。
+*/
+void wait_kbc_sendready(void)
+{
+	for (;;)
+		if ((in8(PORT_KEYSTA) & KEYSTA_SEND_NOTREADY) == 0)
+			break;
+	return;
+}
+
 void isr_keyboard(uint32_t *esp)
 {
-	int data;
+	uint32_t data;
 	out8(PIC0_OCW2, 0x20);
-	data = in8(PORT_KEYDATA);
-	#include <ClassiX/debug.h>
-	debug("%02x\n", data);
+	data = in8(PORT_KEYBOARD_DATA);
+	fifo_push(keyboard_fifo, data + keydata0);
+	debug("Keyboard data: 0x%02x.\n", data);
 	return;
 }

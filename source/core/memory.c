@@ -13,7 +13,7 @@ typedef struct __attribute__((aligned(16))) {
 	uint32_t magic;
 	size_t size;		/* 包括头尾 */
 	uint8_t state;
-	handle task;
+	HANDLE task;
 } block_header_t;
 
 typedef struct __attribute__((aligned(16))) {
@@ -67,7 +67,7 @@ void memory_init(void *base, size_t size)
 	@param task 任务句柄
 	@return 分配的内存指针，失败返回 NULL
 */
-void *kmalloc(size_t size, handle task)
+void *kmalloc(size_t size, HANDLE task)
 {
 	if (size == 0) return NULL;
 

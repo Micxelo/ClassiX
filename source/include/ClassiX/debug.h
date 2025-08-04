@@ -9,7 +9,6 @@
 	extern "C" {
 #endif
 
-#include <ClassiX/io.h>
 #include <ClassiX/serial.h>
 #include <ClassiX/typedef.h>
 
@@ -20,8 +19,7 @@
 	#define assert(condition, info)			do {						\
 		if(!(condition)) {												\
 			debug("[Assert] %s:%d  %s\n", __FILE__, __LINE__, info);	\
-			cli();														\
-			for (;;) hlt();												\
+			asm volatile ("    cli\n""1:  hlt\n""    jmp 1b")			\
 		}																\
 	} while(0)
 #else

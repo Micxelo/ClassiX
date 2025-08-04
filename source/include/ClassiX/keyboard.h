@@ -9,11 +9,14 @@
 	extern "C" {
 #endif
 
+#include <ClassiX/fifo.h>
 #include <ClassiX/typedef.h>
 
-#define PORT_KEYDATA						0x0060
-#define PORT_KEYCMD							0x0064
+#define PORT_KEYBOARD_DATA					0x0060
+#define PORT_KEYBOARD_COMMAND				0x0064
 
+void init_keyboard(FIFO *fifo, int data0);
+void wait_kbc_sendready(void);
 void isr_keyboard(uint32_t *esp);
 
 #ifdef __cplusplus

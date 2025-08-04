@@ -17,9 +17,9 @@
 	#define NULL					((void *) 0)
 #endif
 
-typedef void * handle;
+typedef void * HANDLE;
 
-typedef uint32_t color_t;
+typedef uint32_t COLOR;
 
 #ifdef __cplusplus
 	}

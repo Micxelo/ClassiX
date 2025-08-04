@@ -30,6 +30,14 @@ typedef struct __attribute__((packed)) {
 static gdt_entry_t gdt_entries[6];
 static gdt_ptr_t gdt_ptr;
 
+/*
+	@brief 设置 GDT 描述符。
+	@param num 描述符编号
+	@param base 段基址
+	@param limit 段界限
+	@param access 访问权限
+	@param gran 粒度
+*/
 void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran)
 {
 	gdt_entries[num].limit_low = (limit & 0xffff);
@@ -41,6 +49,9 @@ void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access, uint8_
 	gdt_entries[num].base_high = (base >> 24) & 0xff;
 }
 
+/*
+	@brief 初始化 GDT。
+*/
 void init_gdt(void)
 {
 	/* 设置 GDT 指针 */
@@ -59,12 +70,12 @@ void init_gdt(void)
 
 	/* 刷新段寄存器 */
 	asm volatile(
-		"movw $0x10, %ax\n"	/* 0x10 - 内核数据段选择子 */
-		"movw %ax, %ds\n"
-		"movw %ax, %es\n"
-		"movw %ax, %fs\n"
-		"movw %ax, %gs\n"
-		"movw %ax, %ss\n"
-		"ljmp $0x08, $flush \n"	/* 0x08 - 内核代码段选择子 */
+		"movw $0x10, %ax   \n"	/* 0x10 - 内核数据段选择子 */
+		"movw %ax, %ds     \n"
+		"movw %ax, %es     \n"
+		"movw %ax, %fs     \n"
+		"movw %ax, %gs     \n"
+		"movw %ax, %ss     \n"
+		"ljmp $0x08, $flush\n"	/* 0x08 - 内核代码段选择子 */
 		"flush:");
 }

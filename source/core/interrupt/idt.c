@@ -21,6 +21,13 @@ typedef struct __attribute__((packed)) {
 static idt_entry_t idt_entries[256] = { };
 static idt_ptr_t idt_ptr;
 
+/*
+	@brief 设置 IDT 描述符。
+	@param num 描述符编号
+	@param base 中断处理函数地址
+	@param selector 段选择子
+	@param ar 访问权限和属性
+*/
 void idt_set_gate(uint8_t num, uint32_t base, uint16_t selector, uint32_t ar)
 {
 	idt_entries[num].base_low = base & 0xffff;
@@ -30,8 +37,6 @@ void idt_set_gate(uint8_t num, uint32_t base, uint16_t selector, uint32_t ar)
 	idt_entries[num].base_high = (base >> 16) & 0xffff;
 }
 
-extern void asm_isr_keyboard(void);
-
 void init_idt(void)
 {
 	/* 设置 IDT 指针 */
@@ -39,7 +44,10 @@ void init_idt(void)
 	idt_ptr.base = (uint32_t) &idt_entries;
 
 	/* 设置 IDT */
+	extern void asm_isr_keyboard(void);
+	extern void asm_isr_mouse(void);
 	idt_set_gate(0x21, (uint32_t) asm_isr_keyboard, 0x08, AR_INTGATE32);
+	idt_set_gate(0x2c, (uint32_t) asm_isr_mouse, 0x08, AR_INTGATE32);
 
 	/* 加载 IDT */
 	asm volatile ("lidt %0"::"m"(idt_ptr));

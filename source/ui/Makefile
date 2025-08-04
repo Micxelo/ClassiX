@@ -12,14 +12,17 @@ TARGETS = cga.obj
 
 .PHONY : default
 default :
-	make $(TARGETS)
+	@make $(TARGETS)
 
 %.obj : %.c Makefile
-	$(CC) -c $(CFLAGS) -I $(INCPATH) $< -o $@
+	@$(CC) -c $(CFLAGS) -I $(INCPATH) $< -o $@
+	@echo "\tCC\t$@"
 
 %.obj : %.asm Makefile
-	$(AS) $(ASFLAGS) $< -o $@
+	@$(AS) $(ASFLAGS) $< -o $@
+	@echo "\tAS\t$@"
 
 .PHONY : mrproper
 mrproper:
-	rm -f $(TARGETS)
+	@rm -f $(TARGETS)
+	@echo "\tRM\t$@"

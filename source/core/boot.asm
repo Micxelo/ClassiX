@@ -41,10 +41,10 @@ stack_bottom:
 	resb 0x10000			; 保留 1 MiB 栈空间
 stack_top:
 
-; linker.ld 指定 _start 为内核入口点
+; linker.ld 指定 start 为内核入口点
 section .text
-global _start: function (_start.end - _start)
-_start:
+global start: function (start.end - start)
+start:
 	; GRUB 已切换至 32 位保护模式、禁用中断和分页
 
 	mov esp, stack_top		; 将 ESP 指向栈顶
