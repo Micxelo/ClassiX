@@ -8,7 +8,7 @@ AS      =
 CFLAGS  =
 ASFLAGS =
 
-TARGETS = fifo.obj rtc.obj
+TARGETS = fifo.obj rtc.obj timer.obj
 
 .PHONY : default
 default :

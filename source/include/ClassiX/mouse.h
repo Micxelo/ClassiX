@@ -13,9 +13,9 @@
 
 #define INT_NUM_MOUSE						0x2c
 
-#define PORT_MOUSE_DATA						0x60
-#define PORT_MOUSE_STATUS					0x64
-#define PORT_MOUSE_COMMAND					0x64
+#define MOUSE_LBUTTON						0b00000001
+#define MOUSE_RBUTTON						0b00000010
+#define MOUSE_MBUTTON						0b00000100
 
 typedef struct {
 	uint8_t phase;
@@ -26,7 +26,6 @@ typedef struct {
 
 void init_mouse(FIFO *fifo, int data0);
 int mouse_decoder(MOUSE_DATA *mouse_data, uint8_t data);
-bool mouse_has_wheel_support(void);
 void isr_mouse(uint32_t *esp);
 
 #ifdef __cplusplus

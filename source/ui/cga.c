@@ -54,9 +54,9 @@ void cga_clear(void)
 {
 	cga_cursor_x = 0;
 	cga_cursor_y = 0;
-    for (size_t i = 0; i < CGA_SIZE; i++) {
-        buffer[i] = CGA_ENTRY(' ', cga_color);
-    }
+	for (size_t i = 0; i < CGA_SIZE; i++) {
+		buffer[i] = CGA_ENTRY(' ', cga_color);
+	}
 }
 
 static void cga_backspace(void)

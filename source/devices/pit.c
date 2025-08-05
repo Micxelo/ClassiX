@@ -8,8 +8,12 @@
 #include <ClassiX/pit.h>
 #include <ClassiX/typedef.h>
 
-static volatile uint64_t system_ticks = 0; /* 系统时钟滴答计数 */
+volatile uint64_t system_ticks = 0; /* 系统时钟滴答计数 */
 
+/*
+	@brief 初始化可编程间隔定时器（PIT）。
+	@param frequency PIT 的工作频率（Hz）
+*/
 void init_pit(uint32_t frequency)
 {
 	/* 计算 PIT 的分频值 */
@@ -24,8 +28,8 @@ void init_pit(uint32_t frequency)
 	out8(PIT_COMMAND, PIT_CMD_CH0 | PIT_CMD_LOHI | PIT_CMD_MODE3 | PIT_CMD_BINARY);
 
 	/* 写入分频值 */
-    out8(PIT_CHANNEL0, divisor & 0xff);			/* 低字节 */
-    out8(PIT_CHANNEL0, (divisor >> 8) & 0xff);	/* 高字节 */
+	out8(PIT_CHANNEL0, divisor & 0xff);			/* 低字节 */
+	out8(PIT_CHANNEL0, (divisor >> 8) & 0xff);	/* 高字节 */
 
 	/* 注册 IRQ */
 	extern void asm_isr_pit(void);
@@ -42,11 +46,18 @@ void isr_pit(uint32_t *esp)
 	system_ticks++;
 }
 
+/*
+	@brief 获取当前系统时钟滴答计数。
+	@return 当前系统时钟滴答计数
+*/
 inline uint64_t get_system_ticks(void)
 {
 	return system_ticks;
 }
 
+/*
+	@brief 重置系统时钟滴答计数。
+*/
 void reset_system_ticks(void)
 {
 	system_ticks = 0;

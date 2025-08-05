@@ -20,11 +20,10 @@ typedef struct __attribute__((aligned(16))) {
 	size_t size;		/* 必须与 header 中 size 一致 */
 } block_footer_t;
 
-struct freeblock {
-	struct freeblock *prev;
-	struct freeblock *next;
-};
-typedef struct freeblock freeblock_t;
+typedef struct freeblock_t {
+	struct freeblock_t *prev;
+	struct freeblock_t *next;
+} freeblock_t;
 
 #define MIN_BLOCK_SIZE						(sizeof(block_header_t) + sizeof(block_footer_t) + sizeof(freeblock_t))
 
@@ -40,9 +39,12 @@ static void *memory_pool_end;
 */
 void memory_init(void *base, size_t size)
 {
-	memory_pool_start = base;
-	memory_pool_size = size;
-	memory_pool_end = (void *) ((uint8_t *) base + size);
+	uintptr_t aligned_base = ALIGN_UP((uintptr_t) base, ALLOC_ALIGNMENT);
+	size_t aligned_size = size - (aligned_base - (uintptr_t) base);
+
+	memory_pool_start = (void*) aligned_base;
+	memory_pool_size = aligned_size;
+	memory_pool_end = (void*) ((uint8_t*) aligned_base + aligned_size);
 
 	/* 初始化第一个内存块 */
 	block_header_t *header = (block_header_t *) base;

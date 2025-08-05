@@ -14,9 +14,6 @@
 
 #define INT_NUM_KEYBOARD					0x21
 
-#define PORT_KEYBOARD_DATA					0x0060
-#define PORT_KEYBOARD_COMMAND				0x0064
-
 void init_keyboard(FIFO *fifo, int data0);
 void wait_kbc_sendready(void);
 void isr_keyboard(uint32_t *esp);

@@ -18,7 +18,7 @@ DEPS     = core/boot.obj core/main.obj core/memory.obj \
            devices/cpu.obj devices/keyboard.obj devices/mouse.obj devices/pit.obj devices/serial.obj \
            libc/string.obj libc/stdio.obj \
            ui/cga.obj \
-           utilities/fifo.obj utilities/rtc.obj
+           utilities/fifo.obj utilities/rtc.obj utilities/timer.obj
 TARGETS  = ClassiX.sys
 
 .PHONY : default
