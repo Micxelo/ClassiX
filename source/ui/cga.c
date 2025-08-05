@@ -2,7 +2,7 @@
 	ui/cga.c
 */
 
-#include <ClassiX/graphic.h>
+#include <ClassiX/cga.h>
 #include <ClassiX/io.h>
 
 #include <stdarg.h>

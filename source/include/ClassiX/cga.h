@@ -1,17 +1,15 @@
 /*
-	include/ClassiX/graphic.h
+	include/ClassiX/cga.h
 */
 
-#ifndef _GRAPHIC_H_
-#define _GRAPHIC_H_
+#ifndef _CLASSIX_CGA_H_
+#define _CLASSIX_CGA_H_
 
 #ifdef __cplusplus
 	extern "C" {
 #endif
 
 #include <ClassiX/typedef.h>
-
-#pragma region CGA 80 * 25 终端
 
 #define CGA_COLUMNS						80
 #define CGA_ROWS						25
@@ -44,8 +42,6 @@ void cga_show_cursor(void);
 void cga_putchar(char c);
 void cga_puts(const char *str);
 int cga_printf(const char *format, ...)  __attribute__((format(printf, 1, 2)));
-
-#pragma endregion
 
 #ifdef __cplusplus
 	}

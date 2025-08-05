@@ -2,8 +2,8 @@
 	include/ClassiX/memory.h
 */
 
-#ifndef _MEMORY_H_
-#define _MEMORY_H_
+#ifndef _CLASSIX_MEMORY_H_
+#define _CLASSIX_MEMORY_H_
 
 #ifdef __cplusplus
 	extern "C" {

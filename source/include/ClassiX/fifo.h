@@ -2,8 +2,8 @@
 	include/ClassiX/fifo.h
 */
 
-#ifndef _FIFO_H_
-#define _FIFO_H_
+#ifndef _CLASSIX_FIFO_H_
+#define _CLASSIX_FIFO_H_
 
 #ifdef __cplusplus
 	extern "C" {

@@ -2,8 +2,8 @@
 	include/ClassiX/mouse.h
 */
 
-#ifndef _MOUSE_H_
-#define _MOUSE_H_
+#ifndef _CLASSIX_MOUSE_H_
+#define _CLASSIX_MOUSE_H_
 
 #ifdef __cplusplus
 	extern "C" {

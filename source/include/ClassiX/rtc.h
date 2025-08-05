@@ -2,8 +2,8 @@
 	include/ClassiX/rtc.h
 */
 
-#ifndef _RTC_H_
-#define _RTC_H_
+#ifndef _CLASSIX_RTC_H_
+#define _CLASSIX_RTC_H_
 
 #ifdef __cplusplus
 	extern "C" {

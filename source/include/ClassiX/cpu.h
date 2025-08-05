@@ -2,8 +2,8 @@
 	include/ClassiX/cpu.h
 */
 
-#ifndef _CPU_H_
-#define _CPU_H_
+#ifndef _CLASSIX_CPU_H_
+#define _CLASSIX_CPU_H_
 
 #ifdef __cplusplus
 	extern "C" {
@@ -26,7 +26,6 @@ void get_cpu_brand(char *buf);
 uint32_t get_apic_id();
 int32_t get_cache_count();
 int32_t get_cache_info(int32_t index, cache_info_t *buf);
-
 
 #ifdef __cplusplus
 	}

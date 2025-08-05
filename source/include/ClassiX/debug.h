@@ -2,8 +2,8 @@
 	include/ClassiX/debug.h
 */
 
-#ifndef _DEBUG_H_
-#define _DEBUG_H_
+#ifndef _CLASSIX_DEBUG_H_
+#define _CLASSIX_DEBUG_H_
 
 #ifdef __cplusplus
 	extern "C" {

@@ -2,8 +2,8 @@
 	include/ClassiX/timer.h
 */
 
-#ifndef _TIMER_H
-#define _TIMER_H
+#ifndef _CLASSIX_TIMER_H_
+#define _CLASSIX_TIMER_H_
 
 #ifdef __cplusplus
 	extern "C" {

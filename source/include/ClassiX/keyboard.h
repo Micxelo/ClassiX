@@ -2,8 +2,8 @@
 	include/ClassiX/keyboard.h
 */
 
-#ifndef _KEYBOARD_H_
-#define _KEYBOARD_H_
+#ifndef _CLASSIX_KEYBOARD_H_
+#define _CLASSIX_KEYBOARD_H_
 
 #ifdef __cplusplus
 	extern "C" {

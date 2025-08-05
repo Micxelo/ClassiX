@@ -4,10 +4,9 @@
 
 section .text
 
-; 定义中断处理（无错误号）宏
-%macro ISR_HANDLER 1
+; 中断处理（无错误号）宏
+%macro ISR_TEMPLATE		1
 global _asm_isr_%1
-extern _isr_%1
 _asm_isr_%1:
 	; 保存段寄存器
 	push es
@@ -24,7 +23,8 @@ _asm_isr_%1:
 	; 构建参数结构体指针
 	mov eax, esp
 	push eax			; 压入参数指针
-	call _isr_%1		; 调用C处理函数
+	extern _isr_%1
+	call _isr_%1		; 调用 C 处理函数
 	add esp, 4			; 清理参数
 	
 	; 恢复通用寄存器
@@ -39,6 +39,6 @@ _asm_isr_%1:
 %endmacro
 
 ; 使用宏定义各中断处理程序
-ISR_HANDLER pit
-ISR_HANDLER keyboard
-ISR_HANDLER mouse
+ISR_TEMPLATE keyboard
+ISR_TEMPLATE mouse
+ISR_TEMPLATE pit

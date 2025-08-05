@@ -2,9 +2,11 @@
 	core/main.c
 */
 
+#include <ClassiX/cga.h>
 #include <ClassiX/cpu.h>
 #include <ClassiX/debug.h>
-#include <ClassiX/graphic.h>
+#include <ClassiX/fifo.h>
+#include <ClassiX/framebuf.h>
 #include <ClassiX/interrupt.h>
 #include <ClassiX/io.h>
 #include <ClassiX/keyboard.h>
@@ -59,6 +61,12 @@ static bool check_boot_info(uint32_t mb_magic, multiboot_info_t *mbi)
 		return false;
 	}
 
+	if (mbi->framebuffer_type != MULTIBOOT_FRAMEBUFFER_TYPE_RGB || mbi->framebuffer_bpp != 32) {
+		/* 不支持的帧缓冲类型 */
+		cga_printf("Unsupported frame buffer type: %d.\n", mbi->framebuffer_type);
+		return false;
+	}
+
 	return true;
 }
 
@@ -95,9 +103,8 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	}
 
 	/* Video Mode 信息 */
-	debug("\nFrame buffer info:\n  Type: %s, Address: 0x%llx, Width: %d, Height: %d\n\n",
-		"INDEXED\0RGB\0    EGATEXT\0" + 8 * mbi->framebuffer_type,
-		mbi->framebuffer_addr, mbi->framebuffer_width, mbi->framebuffer_height);
+	debug("\nFrame buffer info:\n  Address: 0x%llx, Width: %d, Height: %d, Pitch: %d, BPP: %d\n\n",
+		mbi->framebuffer_addr, mbi->framebuffer_width, mbi->framebuffer_height, mbi->framebuffer_pitch, mbi->framebuffer_bpp);
 
 	sti();
 
@@ -107,6 +114,7 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	memory_init((void*) mem_start, mem_size);
 
 	timer_init();
+	
 
 	for(;;) {
 		if (fifo_status(&fifo) == 0) {

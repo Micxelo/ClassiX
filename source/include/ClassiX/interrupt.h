@@ -2,8 +2,8 @@
 	include/ClassiX/interrupt.h
 */
 
-#ifndef _INTERRUPT_H_
-#define _INTERRUPT_H_
+#ifndef _CLASSIX_INTERRUPT_H_
+#define _CLASSIX_INTERRUPT_H_
 
 #ifdef __cplusplus
 	extern "C" {

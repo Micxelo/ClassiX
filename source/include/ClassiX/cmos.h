@@ -2,8 +2,8 @@
 	include/ClassiX/cmos.h
 */
 
-#ifndef _CMOS_H_
-#define _CMOS_H_
+#ifndef _CLASSIX_CMOS_H_
+#define _CLASSIX_CMOS_H_
 
 #ifdef __cplusplus
 	extern "C" {

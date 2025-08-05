@@ -2,8 +2,8 @@
 	include/ClassiX/io.h
 */
 
-#ifndef _IO_H_
-#define _IO_H_
+#ifndef _CLASSIX_IO_H_
+#define _CLASSIX_IO_H_
 
 #ifdef __cplusplus
 	extern "C" {

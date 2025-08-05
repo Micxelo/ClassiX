@@ -24,8 +24,12 @@
 	DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef MULTIBOOT_HEADER
-#define MULTIBOOT_HEADER
+#ifndef _CLASSIX_MULTIBOOT_H_
+#define _CLASSIX_MULTIBOOT_H_
+
+#ifdef __cplusplus
+	extern "C" {
+#endif
 
 #define MULTIBOOT_SEARC						8192			/* 从文件起始处搜索头部的字节数 */
 #define MULTIBOOT_HEADER_ALIGN				4
@@ -59,8 +63,6 @@
 #define MULTIBOOT_INFO_APM_TABLE			0x00000400		/* 是否有 APM 表 */
 #define MULTIBOOT_INFO_VBE_INFO				0x00000800		/* 是否有视频信息 */
 #define MULTIBOOT_INFO_FRAMEBUFFER_INFO		0x00001000
-
-#ifndef ASM_FILE
 
 typedef unsigned char multiboot_uint8_t;
 typedef unsigned short multiboot_uint16_t;
@@ -223,6 +225,8 @@ struct multiboot_apm_info {
 	multiboot_uint16_t dseg_len;
 };
 
-#endif /* ! ASM_FILE */
+#ifdef __cplusplus
+	}
+#endif
 
-#endif /* ! MULTIBOOT_HEADER */
+#endif

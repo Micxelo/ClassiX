@@ -17,7 +17,7 @@ DEPS     = core/boot.obj core/main.obj core/memory.obj \
            core/interrupt/gdt.obj core/interrupt/idt.obj core/interrupt/isr.obj core/interrupt/pic.obj \
            devices/cpu.obj devices/keyboard.obj devices/mouse.obj devices/pit.obj devices/serial.obj \
            libc/string.obj libc/stdio.obj \
-           ui/cga.obj \
+           ui/cga.obj ui/framebuf.obj \
            utilities/fifo.obj utilities/rtc.obj utilities/timer.obj
 TARGETS  = ClassiX.sys
 

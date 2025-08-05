@@ -2,8 +2,8 @@
 	include/ClassiX/pit.h
 */
 
-#ifndef _PIT_H_
-#define _PIT_H_
+#ifndef _CLASSIX_PIT_H_
+#define _CLASSIX_PIT_H_
 
 #ifdef __cplusplus
 	extern "C" {
