@@ -9,6 +9,7 @@
 	extern "C" {
 #endif
 
+#include <ClassiX/interrupt.h>
 #include <ClassiX/typedef.h>
 
 #define INT_NUM_PIT							0x20
@@ -39,7 +40,7 @@
 #define PIT_BASE_FREQ						1193182	/* PIT 的基准频率 (1.193182 MHz) */
 
 void init_pit(uint32_t frequency);
-void isr_pit(uint32_t *esp);
+void isr_pit(isr_params_t params);
 uint64_t get_system_ticks(void);
 void reset_system_ticks(void);
 

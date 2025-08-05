@@ -37,7 +37,7 @@ void init_pit(uint32_t frequency)
 	debug("PIT initialized at %d Hz (divisor: %d).\n", frequency, divisor);
 }
 
-void isr_pit(uint32_t *esp)
+void isr_pit(isr_params_t params)
 {
 	/* 发送 EOI 到 PIC */
 	out8(PIC0_OCW2, 0x20); /* 主 PIC EOI */

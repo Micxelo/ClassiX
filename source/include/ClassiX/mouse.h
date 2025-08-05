@@ -9,6 +9,8 @@
 	extern "C" {
 #endif
 
+#include <ClassiX/fifo.h>
+#include <ClassiX/interrupt.h>
 #include <ClassiX/typedef.h>
 
 #define INT_NUM_MOUSE						0x2c
@@ -26,7 +28,7 @@ typedef struct {
 
 void init_mouse(FIFO *fifo, int data0);
 int mouse_decoder(MOUSE_DATA *mouse_data, uint8_t data);
-void isr_mouse(uint32_t *esp);
+void isr_mouse(isr_params_t params);
 
 #ifdef __cplusplus
 	}

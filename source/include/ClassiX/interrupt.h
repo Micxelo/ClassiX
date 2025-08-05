@@ -33,6 +33,28 @@
 #define PIC1_ICW3							0x00a1
 #define PIC1_ICW4							0x00a1
 
+typedef struct {
+	/* 由处理器自动压入的部分 */
+	uint32_t eip;
+	uint32_t cs;
+	uint32_t eflags;
+	
+	/* 由中断处理程序压入的部分 */
+	uint32_t es;
+	uint32_t ds;
+	
+	/* 通用寄存器 (PUSHAD 顺序) */
+	uint32_t edi;
+	uint32_t esi;
+	uint32_t ebp;
+	uint32_t esp;	/* 中断前的 ESP 值 */
+	uint32_t ebx;
+	uint32_t edx;
+	uint32_t ecx;
+	uint32_t eax;
+} isr_params_t;
+
+
 void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran);
 void idt_set_gate(uint8_t num, uint32_t base, uint16_t selector, uint32_t ar);
 

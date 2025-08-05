@@ -98,7 +98,7 @@ int mouse_decoder(MOUSE_DATA *mouse_data, uint8_t data)
 	return 0;
 }
 
-void isr_mouse(uint32_t *esp)
+void isr_mouse(isr_params_t params)
 {
 	out8(PIC1_OCW2, 0x20); /* 从 PIC EOI */
 	out8(PIC0_OCW2, 0x20); /* 主 PIC EOI */

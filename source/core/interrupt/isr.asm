@@ -4,59 +4,41 @@
 
 section .text
 
-; PIT 中断
-global _asm_isr_pit
-extern _isr_pit
-_asm_isr_pit:
+; 定义中断处理（无错误号）宏
+%macro ISR_HANDLER 1
+global _asm_isr_%1
+extern _isr_%1
+_asm_isr_%1:
+	; 保存段寄存器
 	push es
 	push ds
-	pushad					; 保存所有通用寄存器
-	mov eax, esp			; 将当前栈指针作为参数传递
-	push eax
-	mov ax, 0x10			; 内核数据段选择子
-	mov ds, ax				; 设置 DS = SS（内核数据段）
-	mov es, ax				; 设置 ES = SS（内核数据段）
-	call _isr_pit			; 调用 C 中断处理函数
-	pop eax					; 清理参数
-	popad					; 恢复所有通用寄存器
+	
+	; 保存通用寄存器
+	pushad
+	
+	; 设置内核数据段
+	mov ax, 0x10
+	mov ds, ax
+	mov es, ax
+	
+	; 构建参数结构体指针
+	mov eax, esp
+	push eax			; 压入参数指针
+	call _isr_%1		; 调用C处理函数
+	add esp, 4			; 清理参数
+	
+	; 恢复通用寄存器
+	popad
+	
+	; 恢复段寄存器
 	pop ds
 	pop es
-	iretd					; 32 位中断返回
+	
+	; 中断返回
+	iretd
+%endmacro
 
-; 键盘中断
-global _asm_isr_keyboard
-extern _isr_keyboard
-_asm_isr_keyboard:
-	push es
-	push ds
-	pushad					; 保存所有通用寄存器
-	mov eax, esp			; 将当前栈指针作为参数传递
-	push eax
-	mov ax, 0x10			; 内核数据段选择子
-	mov ds, ax				; 设置 DS = SS（内核数据段）
-	mov es, ax				; 设置 ES = SS（内核数据段）
-	call _isr_keyboard		; 调用 C 中断处理函数
-	pop eax					; 清理参数
-	popad					; 恢复所有通用寄存器
-	pop ds
-	pop es
-	iretd					; 32 位中断返回
-
-; 鼠标中断
-global _asm_isr_mouse
-extern _isr_mouse
-_asm_isr_mouse:
-	push es
-	push ds
-	pushad					; 保存所有通用寄存器
-	mov eax, esp			; 将当前栈指针作为参数传递
-	push eax
-	mov ax, 0x10			; 内核数据段选择子
-	mov ds, ax				; 设置 DS = SS（内核数据段）
-	mov es, ax				; 设置 ES = SS（内核数据段）
-	call _isr_mouse			; 调用 C 中断处理函数
-	pop eax					; 清理参数
-	popad					; 恢复所有通用寄存器
-	pop ds
-	pop es
-	iretd					; 32 位中断返回
+; 使用宏定义各中断处理程序
+ISR_HANDLER pit
+ISR_HANDLER keyboard
+ISR_HANDLER mouse
