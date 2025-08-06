@@ -9,12 +9,7 @@
 #include <ClassiX/timer.h>
 #include <ClassiX/typedef.h>
 
-typedef struct {
-	TIMER *head;				/* 定时器链表的头指针 */
-	uint64_t *current_tick;		/* 当前系统滴答数 */
-} TIMER_MANAGER;
-
-static TIMER_MANAGER timer_manager;		/* 定时器管理器 */
+static TIMER *timer_head = NULL;		/* 定时器链表的头指针 */
 static volatile int timer_lock = 0;		/* 互斥锁 */
 
 /* 获取锁 */
@@ -28,19 +23,6 @@ static void timer_lock_acquire(void)
 static void timer_lock_release(void)
 {
 	__sync_lock_release(&timer_lock);
-}
-
-/*
-	@brief 初始化定时器管理器。
-*/
-void timer_init(void)
-{
-	timer_manager.head = NULL;
-
-	extern uint64_t system_ticks;
-	timer_manager.current_tick = &system_ticks;
-
-	debug("Timer manager initialized.\n");
 }
 
 /*
@@ -71,10 +53,10 @@ TIMER *timer_create(TIMER_CALLBACK callback, void *arg)
 	new_timer->next = NULL;
 
 	/* 将新定时器插入链表 */
-	if (!timer_manager.head) {
-		timer_manager.head = new_timer;
+	if (!timer_head) {
+		timer_head = new_timer;
 	} else {
-		TIMER *current = timer_manager.head;
+		TIMER *current = timer_head;
 		while (current->next) {
 			current = current->next;
 		}
@@ -97,7 +79,7 @@ int timer_start(TIMER *timer, uint64_t interval, int32_t repetition)
 {
 	timer_lock_acquire();
 
-	TIMER *current = timer_manager.head;
+	TIMER *current = timer_head;
 	while (current) {
 		if (current == timer) {
 			if (current->state == TIMER_ACTIVE) {
@@ -107,7 +89,7 @@ int timer_start(TIMER *timer, uint64_t interval, int32_t repetition)
 			}
 			current->interval = interval;
 			current->repetition = repetition;
-			current->expire_tick = *timer_manager.current_tick + interval;
+			current->expire_tick = system_ticks + interval;
 			current->state = TIMER_ACTIVE;
 			timer_lock_release();
 			debug("Started timer %p, expires at tick %llu, repeats %d times.\n",
@@ -131,7 +113,7 @@ int timer_stop(TIMER *timer)
 {
 	timer_lock_acquire();
 
-	TIMER *current = timer_manager.head;
+	TIMER *current = timer_head;
 	while (current) {
 		if (current == timer) {
 			if (current->state != TIMER_ACTIVE) {
@@ -161,14 +143,14 @@ int timer_delete(TIMER *timer)
 {
 	timer_lock_acquire();
 	
-	TIMER *current = timer_manager.head;
+	TIMER *current = timer_head;
 	TIMER *prev = NULL;
 	while (current) {
 		if (current == timer) {
 			if (prev)
 				prev->next = current->next;
 			else
-				timer_manager.head = current->next;
+				timer_head = current->next;
 			kfree(current);
 			timer_lock_release();
 			debug("Deleted timer %p.\n", timer);
@@ -190,8 +172,8 @@ void timer_process(void)
 {
 	timer_lock_acquire();
 
-	uint64_t current_tick = *timer_manager.current_tick;
-	TIMER *current = timer_manager.head;
+	uint64_t current_tick = system_ticks;
+	TIMER *current = timer_head;
 	while (current) {
 		if (current->state == TIMER_ACTIVE && current->expire_tick <= current_tick) {
 			/* 定时器到期，调用回调函数 */
@@ -224,10 +206,10 @@ void timer_process(void)
 	timer_lock_release();
 
 	static uint64_t last_cleanup_tick = 0;
-	if (*timer_manager.current_tick - last_cleanup_tick >= 60000) {
+	if (system_ticks - last_cleanup_tick >= 60000) {
 		/* 每 60 秒清理一次 */
 		timer_cleanup();
-		last_cleanup_tick = *timer_manager.current_tick;
+		last_cleanup_tick = system_ticks;
 	}
 }
 
@@ -239,21 +221,21 @@ void timer_cleanup(void)
 	timer_lock_acquire();
 	
 	uint32_t removed_count = 0;
-	TIMER *current = timer_manager.head;
+	TIMER *current = timer_head;
 	TIMER *prev = NULL;
 	while (current) {	
 		if (current->state == TIMER_INACTIVE) {
 			if (prev)
 				prev->next = current->next;
 			else
-				timer_manager.head = current->next;
+				timer_head = current->next;
 			kfree(current);
 			removed_count++;
 			debug("Cleaned up inactive timer %p.\n", current);
 			if (prev)
 				current = prev->next;
 			else
-				current = timer_manager.head;
+				current = timer_head;
 		} else {
 			prev = current;
 			current = current->next;
@@ -274,7 +256,7 @@ uint32_t timer_get_count(void)
 	uint32_t count = 0;
 	timer_lock_acquire();
 
-	TIMER *current = timer_manager.head;
+	TIMER *current = timer_head;
 	while (current) {
 		count++;
 		current = current->next;
@@ -293,7 +275,7 @@ uint32_t timer_get_active_count(void)
 	uint32_t count = 0;
 	timer_lock_acquire();
 
-	TIMER *current = timer_manager.head;
+	TIMER *current = timer_head;
 	while (current) {
 		if (current->state == TIMER_ACTIVE)
 			count++;

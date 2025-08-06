@@ -2,6 +2,7 @@
 	ui/graphic.c
 */
 
+#include <ClassiX/font.h>
 #include <ClassiX/graphic.h>
 #include <ClassiX/palette.h>
 #include <ClassiX/typedef.h>
@@ -318,4 +319,40 @@ void bit_blit(uint32_t *src, uint16_t src_bx, uint16_t src_x, uint16_t src_y, ui
 	for (uint16_t y = 0; y < height; y++)
 		for (uint16_t x = 0; x < width; x++)
 			SET_PIXEL32(dst, dst_bx, dst_x + x, dst_y + y, GET_PIXEL32(src, src_bx, src_x + x, src_y + y));
+}
+
+static void draw_ascii_font(uint32_t *buf, uint16_t bx, uint16_t x, uint16_t y, COLOR color, uint16_t height, const uint8_t *font)
+{
+	uint32_t i; /* 行 */
+	for (i = 0; i < height; i++) {
+		if (font[i] & 0x80) SET_PIXEL32(buf, bx, x + 0, y + i, color);
+		if (font[i] & 0x40) SET_PIXEL32(buf, bx, x + 1, y + i, color);
+		if (font[i] & 0x20) SET_PIXEL32(buf, bx, x + 2, y + i, color);
+		if (font[i] & 0x10) SET_PIXEL32(buf, bx, x + 3, y + i, color);
+		if (font[i] & 0x08) SET_PIXEL32(buf, bx, x + 4, y + i, color);
+		if (font[i] & 0x04) SET_PIXEL32(buf, bx, x + 5, y + i, color);
+		if (font[i] & 0x02) SET_PIXEL32(buf, bx, x + 6, y + i, color);
+		if (font[i] & 0x01) SET_PIXEL32(buf, bx, x + 7, y + i, color);
+	}
+	return;
+}
+
+/*
+	@brief 使用 PSF 字体绘制 ASCII 字符串。
+	@param buf 绘图缓冲区
+	@param bx 绘图缓冲区的宽度
+	@param x X 坐标
+	@param y Y 坐标
+	@param color 字符颜色
+	@param str 字符串内容
+	@param font 使用的 PSF 字体
+	@note 仅支持单行、ASCII 字符集，字体宽度不超过 8。
+*/
+void draw_ascii_string(uint32_t *buf, uint16_t bx, uint16_t x, uint16_t y, COLOR color, const char *str, BITMAP_FONT font)
+{
+	for (; *str != 0x00; str++) {
+		draw_ascii_font(buf, bx, x, y, color, font.height, font.buf + (*str) * font.charsize);
+		x += font.width;
+	}
+	return;
 }

@@ -2,10 +2,13 @@
 	core/main.c
 */
 
+#include <ClassiX/builtin.h>
 #include <ClassiX/cga.h>
 #include <ClassiX/cpu.h>
 #include <ClassiX/debug.h>
 #include <ClassiX/fifo.h>
+#include <ClassiX/font.h>
+#include <ClassiX/framebuf.h>
 #include <ClassiX/graphic.h>
 #include <ClassiX/interrupt.h>
 #include <ClassiX/io.h>
@@ -36,6 +39,10 @@ extern uintptr_t bss_end;								/* BSS 段结束地址 */
 static FIFO kmsg_queue = { };							/* 内核消息队列 */
 static uint32_t kmsg_queue_buf[KMSG_QUEUE_SIZE] = { };	/* 内核消息队列缓冲区 */
 static MOUSE_DATA mouse_data = { };						/* 鼠标数据结构 */
+
+BITMAP_FONT font_terminus_12n;
+BITMAP_FONT font_terminus_16n;
+BITMAP_FONT font_terminus_16b;
 
 /*
 	@brief 检查 Multiboot 启动信息。
@@ -82,16 +89,7 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	/* 清零 BSS */
 	memset((void*) &bss_start, 0, (size_t) (&bss_end - &bss_start));
 
-	init_gdt();
-	init_idt();
-	init_pic();
-
 	uart_init();
-
-	fifo_init(&kmsg_queue, KMSG_QUEUE_SIZE, kmsg_queue_buf, NULL);
-	init_keyboard(&kmsg_queue, KEYBOARD_DATA0);
-	init_mouse(&kmsg_queue, MOUSE_DATA0);
-	init_pit(1000); /* 频率为 1000 Hz */
 
 	debug("\nKernel PHYS: 0x%x - 0x%x\n", (uint32_t) &kernel_start_phys, (uint32_t) &kernel_end_phys);
 	
@@ -111,6 +109,17 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	debug("\nFrame buffer info:\n  Address: 0x%llx, Width: %d, Height: %d, Pitch: %d, BPP: %d\n\n",
 		mbi->framebuffer_addr, mbi->framebuffer_width, mbi->framebuffer_height, mbi->framebuffer_pitch, mbi->framebuffer_bpp);
 
+	/* 初始化中断服务 */
+	init_gdt();
+	init_idt();
+	init_pic();
+
+	/* 初始化键盘、鼠标、PIT */
+	fifo_init(&kmsg_queue, KMSG_QUEUE_SIZE, kmsg_queue_buf, NULL);
+	init_keyboard(&kmsg_queue, KEYBOARD_DATA0);
+	init_mouse(&kmsg_queue, MOUSE_DATA0);
+	init_pit(1000); /* 频率为 1000 Hz */
+
 	sti();
 
 	/* 初始化内存管理 */
@@ -118,8 +127,10 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	size_t mem_size = (size_t) (mbi->mem_upper * 1024 - (&kernel_end_phys - &kernel_start_phys));
 	memory_init((void*) mem_start, mem_size);
 
-	/* 初始化定时器 */
-	timer_init();
+	/* 初始化内嵌资源 */
+	font_terminus_12n = psf_load(builtin_terminus12n);
+	font_terminus_16n = psf_load(builtin_terminus16n);
+	font_terminus_16b = psf_load(builtin_terminus16b);
 
 	for(;;) {
 		if (fifo_status(&kmsg_queue) == 0) {

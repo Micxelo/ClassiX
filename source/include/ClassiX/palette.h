@@ -21,10 +21,11 @@ typedef union {
 	};
 } COLOR;
 
-#define COLOR32(c)							((COLOR) { .color = (c)})
-#define COLOR32_FROM_RGBA(a, r, g, b)		((COLOR) { .a = (a), .r = (r), .g = (g), .b = (b) })
+#define COLOR32(_color)						((COLOR) { .color = (_color) })
+#define COLOR32_FROM_RGBA(_r, _g, _b, _a)	((COLOR) { .a = (_a), .r = (_r), .g = (_g), .b = (_b) })
 
-#define COLOR32_INVERT(c)					((COLOR) { .a = (c).a, .r = 255 - (c).r, .g = 255 - (c).g, .b = 255 - (c).b })
+#define COLOR32_INVERT(_color)				\
+	((COLOR) { .a = (_color).a, .r = 255 - (_color).r, .g = 255 - (_color).g, .b = 255 - (_color).b })
 
 #define SET_PIXEL32(buf, bx, x, y, c)		((buf)[(y) * (bx) + (x)] = (c).color)
 #define GET_PIXEL32(buf, bx, x, y)			((COLOR) { .color = (buf)[(y) * (bx) + (x)] })

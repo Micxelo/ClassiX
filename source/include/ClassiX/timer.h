@@ -30,7 +30,6 @@ typedef struct TIMER {
 	struct TIMER *next;			/* 指向下一个定时器的指针 */
 } TIMER;
 
-void timer_init(void);
 TIMER *timer_create(TIMER_CALLBACK callback, void *arg);
 int timer_start(TIMER *timer, uint64_t interval, int32_t repetition);
 int timer_stop(TIMER *timer);

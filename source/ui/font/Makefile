@@ -1,14 +1,14 @@
 #
-#	ui/Makefile
+#	ui/font/Makefile
 #
 
-INCPATH = ../include/
+INCPATH =  ../../include/
 CC      =
 AS      =
 CFLAGS  =
 ASFLAGS =
 
-TARGETS = builtin.obj cga.obj framebuf.obj graphic.obj layer.obj palette.obj
+TARGETS = psf.obj
 
 .PHONY : default
 default :
