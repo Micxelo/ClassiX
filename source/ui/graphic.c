@@ -1,8 +1,9 @@
 /*
-	ui/framebuf.c
+	ui/graphic.c
 */
 
-#include <ClassiX/framebuf.h>
+#include <ClassiX/graphic.h>
+#include <ClassiX/palette.h>
 #include <ClassiX/typedef.h>
 
 /*
@@ -16,7 +17,7 @@
 	@param thickness 边框厚度
 	@param color 边框颜色
 */
-void draw_rectangle(COLOR *buf, uint16_t bx, uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t thickness, COLOR color)
+void draw_rectangle(uint32_t *buf, uint16_t bx, uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t thickness, COLOR color)
 {
 	draw_rectangle_by_corners(buf, bx, x, y, x + width - 1, y + height - 1, thickness, color);
 }
@@ -32,7 +33,7 @@ void draw_rectangle(COLOR *buf, uint16_t bx, uint16_t x, uint16_t y, uint16_t wi
 	@param thickness 边框厚度
 	@param color 边框颜色
 */
-void draw_rectangle_by_corners(COLOR *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t thickness, COLOR color)
+void draw_rectangle_by_corners(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t thickness, COLOR color)
 {
 	if (thickness == 0) return;
 	
@@ -72,7 +73,7 @@ void draw_rectangle_by_corners(COLOR *buf, uint16_t bx, uint16_t x0, uint16_t y0
 	@param height 矩形高度
 	@param color 填充颜色
 */
-void fill_rectangle(COLOR *buf, uint16_t bx, uint16_t x, uint16_t y, uint16_t width, uint16_t height, COLOR color)
+void fill_rectangle(uint32_t *buf, uint16_t bx, uint16_t x, uint16_t y, uint16_t width, uint16_t height, COLOR color)
 {
 	fill_rectangle_by_corners(buf, bx, x, y, x + width - 1, y + height - 1, color);
 }
@@ -87,7 +88,7 @@ void fill_rectangle(COLOR *buf, uint16_t bx, uint16_t x, uint16_t y, uint16_t wi
 	@param y1 右下角 y 坐标
 	@param color 填充颜色
 */
-void fill_rectangle_by_corners(COLOR *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, COLOR color)
+void fill_rectangle_by_corners(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, COLOR color)
 {
 	/* 确保坐标顺序正确 */
 	if (x0 > x1) {
@@ -119,7 +120,7 @@ void fill_rectangle_by_corners(COLOR *buf, uint16_t bx, uint16_t x0, uint16_t y0
 	@param y1 终点 y 坐标
 	@param color 线段颜色
 */
-void draw_line(COLOR *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, COLOR color)
+void draw_line(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, COLOR color)
 {
 	int dx = x1 - x0;
 	int dy = y1 - y0;
@@ -154,7 +155,7 @@ void draw_line(COLOR *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t x1, u
 	}
 }
 
-static void _draw_circle_points(COLOR *buf, uint16_t bx, int x0, int y0, int x, int y, COLOR color)
+static void _draw_circle_points(uint32_t *buf, uint16_t bx, int x0, int y0, int x, int y, COLOR color)
 {
 	/* 绘制当前点的 8 个对称位置 */
     SET_PIXEL32(buf, bx, x0 + x, y0 + y, color);
@@ -176,7 +177,7 @@ static void _draw_circle_points(COLOR *buf, uint16_t bx, int x0, int y0, int x, 
 	@param radius 圆半径
 	@param color 圆形颜色
 */
-void draw_circle(COLOR *buf, uint16_t bx, int x0, int y0, int radius, COLOR color)
+void draw_circle(uint32_t *buf, uint16_t bx, int x0, int y0, int radius, COLOR color)
 {
 	int x = 0;
 	int y = radius;
@@ -207,7 +208,7 @@ void draw_circle(COLOR *buf, uint16_t bx, int x0, int y0, int radius, COLOR colo
 	@param radius 圆半径
 	@param color 填充颜色
 */
-void fill_circle(COLOR *buf, uint16_t bx, int x0, int y0, int radius, COLOR color)
+void fill_circle(uint32_t *buf, uint16_t bx, int x0, int y0, int radius, COLOR color)
 {
 	for (int y = 0; y <= radius; y++) {
 		for (int x = 0; x <= radius; x++) {
@@ -302,19 +303,19 @@ void fill_ellipse(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t
 /*
 	@brief 位块拷贝。
 	@param src 源缓冲区
-	@param dst 目标缓冲区
 	@param src_bx 源缓冲区的宽度
-	@param dst_bx 目标缓冲区的宽度
-	@param x0 左上角 x 坐标
-	@param y0 左上角 y 坐标
+	@param x0 源缓冲区左上角 x 坐标
+	@param y0 源缓冲区左上角 y 坐标
+	@param dst 目标缓冲区
 	@param width 拷贝宽度
 	@param height 拷贝高度
+	@param dst_bx 目标缓冲区的宽度
 	@param dst_x 目标缓冲区左上角 x 坐标
 	@param dst_y 目标缓冲区左上角 y 坐标
 */
-void bit_blit(COLOR *src, COLOR *dst, uint16_t src_bx, uint16_t dst_bx, uint16_t x0, uint16_t y0, uint16_t width, uint16_t height, uint16_t dst_x, uint16_t dst_y)
+void bit_blit(uint32_t *src, uint16_t src_bx, uint16_t src_x, uint16_t src_y, uint16_t width, uint16_t height, uint32_t *dst, uint16_t dst_bx, uint16_t dst_x, uint16_t dst_y)
 {
 	for (uint16_t y = 0; y < height; y++)
 		for (uint16_t x = 0; x < width; x++)
-			SET_PIXEL32(dst, dst_bx, dst_x + x, dst_y + y, GET_PIXEL32(src, src_bx, x0 + x, y0 + y));
+			SET_PIXEL32(dst, dst_bx, dst_x + x, dst_y + y, GET_PIXEL32(src, src_bx, src_x + x, src_y + y));
 }

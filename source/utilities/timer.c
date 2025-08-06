@@ -9,6 +9,11 @@
 #include <ClassiX/timer.h>
 #include <ClassiX/typedef.h>
 
+typedef struct {
+	TIMER *head;				/* 定时器链表的头指针 */
+	uint64_t *current_tick;		/* 当前系统滴答数 */
+} TIMER_MANAGER;
+
 static TIMER_MANAGER timer_manager;		/* 定时器管理器 */
 static volatile int timer_lock = 0;		/* 互斥锁 */
 
@@ -31,7 +36,6 @@ static void timer_lock_release(void)
 void timer_init(void)
 {
 	timer_manager.head = NULL;
-	timer_manager.next_id = 1; /* 从 1 开始分配 ID */
 
 	extern uint64_t system_ticks;
 	timer_manager.current_tick = &system_ticks;
@@ -41,15 +45,13 @@ void timer_init(void)
 
 /*
 	@brief 创建一个新的定时器。
-	@param interval 定时器间隔（以系统滴答为单位）
 	@param callback 定时器到期时调用的回调函数
 	@param arg 传递给回调函数的参数
-	@return 新定时器的 ID，失败返回 0
-	@note 此函数请求内存分配。
+	@return 新定时器，失败返回 NULL
 */
-uint32_t timer_create(uint32_t interval, timer_callback_t callback, void *arg)
+TIMER *timer_create(TIMER_CALLBACK callback, void *arg)
 {
-	if (interval == 0 || callback == NULL) {
+	if (callback == NULL) {
 		debug("Invalid timer parameters.\n");
 		return 0; /* 无效参数 */
 	}
@@ -57,14 +59,12 @@ uint32_t timer_create(uint32_t interval, timer_callback_t callback, void *arg)
 	TIMER *new_timer = (TIMER *) kmalloc(sizeof(TIMER), NULL);
 	if (!new_timer) {
 		debug("Failed to allocate memory for new timer.\n");
-		return 0; /* 内存分配失败 */
+		return NULL; /* 内存分配失败 */
 	}
 
 	timer_lock_acquire();
 	
-	new_timer->id = timer_manager.next_id++;
 	new_timer->expire_tick = 0;		/* 尚未设置到期时间 */
-	new_timer->interval = interval;
 	new_timer->callback = callback;
 	new_timer->arg = arg;
 	new_timer->state = TIMER_INACTIVE;
@@ -82,122 +82,96 @@ uint32_t timer_create(uint32_t interval, timer_callback_t callback, void *arg)
 	}
 	
 	timer_lock_release();
-	debug("Created timer ID %d with interval %d ticks.\n", new_timer->id, interval);
-	return new_timer->id;
+	debug("Created timer %p.\n", new_timer);
+	return new_timer;
 }
 
 /*
-	@brief 启动指定 ID 的定时器。
-	@param timer_id 定时器 ID
+	@brief 启动指定定时器。
+	@param timer 定时器
+	@param interval 定时器触发间隔
+	@param repetition 定时器重复次数，-1 表示循环
 	@return 成功返回 0，失败返回 -1
 */
-int timer_start(uint32_t timer_id)
+int timer_start(TIMER *timer, uint64_t interval, int32_t repetition)
 {
 	timer_lock_acquire();
 
 	TIMER *current = timer_manager.head;
 	while (current) {
-		if (current->id == timer_id) {
+		if (current == timer) {
 			if (current->state == TIMER_ACTIVE) {
-				debug("Timer ID %d is already active.\n", timer_id);
+				debug("Timer %p is already active.\n", timer);
 				timer_lock_release();
 				return -1; /* 定时器已激活 */
 			}
-			current->expire_tick = *timer_manager.current_tick + current->interval;
+			current->interval = interval;
+			current->repetition = repetition;
+			current->expire_tick = *timer_manager.current_tick + interval;
 			current->state = TIMER_ACTIVE;
 			timer_lock_release();
-			debug("Started timer ID %d, expires at tick %llu.\n", timer_id, current->expire_tick);
+			debug("Started timer %p, expires at tick %llu, repeats %d times.\n",
+				current, current->expire_tick, repetition);
 			return 0; /* 成功启动定时器 */
 		}
 		current = current->next;
 	}
 
 	timer_lock_release();
-	debug("Timer ID %d not found.\n", timer_id);
+	debug("Timer %p not found.\n", timer);
 	return -1; /* 未找到定时器 */
 }
 
 /*
-	@brief 停止指定 ID 的定时器。
-	@param timer_id 定时器 ID
+	@brief 停止指定定时器。
+	@param timer 定时器
 	@return 成功返回 0，失败返回 -1
 */
-int timer_stop(uint32_t timer_id)
+int timer_stop(TIMER *timer)
 {
 	timer_lock_acquire();
 
 	TIMER *current = timer_manager.head;
 	while (current) {
-		if (current->id == timer_id) {
+		if (current == timer) {
 			if (current->state != TIMER_ACTIVE) {
-				debug("Timer ID %d is not active.\n", timer_id);
+				debug("Timer %p is not active.\n", timer);
 				timer_lock_release();
 				return -1; /* 定时器未激活 */
 			}
 			current->state = TIMER_INACTIVE;
 			timer_lock_release();
-			debug("Stopped timer ID %d.\n", timer_id);
+			debug("Stopped timer %p.\n", timer);
 			return 0; /* 成功停止定时器 */
 		}
 		current = current->next;
 	}
 
 	timer_lock_release();
-	debug("Timer ID %d not found.\n", timer_id);
+	debug("Timer %p not found.\n", timer);
 	return -1; /* 未找到定时器 */
 }
 
 /*
-	@brief 重启指定 ID 的定时器。
-	@param timer_id 定时器 ID
-	@param new_interval 新的定时器间隔（以系统滴答为单位），如果为 0 则保持原间隔
+	@brief 删除指定定时器。
+	@param timer 定时器
 	@return 成功返回 0，失败返回 -1
 */
-int timer_restart(uint32_t timer_id, uint64_t new_interval)
-{
-	timer_lock_acquire();
-
-	TIMER *current = timer_manager.head;
-	while (current) {
-		if (current->id == timer_id) {
-			if (new_interval > 0) {
-				current->interval = new_interval;
-			}
-			current->expire_tick = *timer_manager.current_tick + current->interval;
-			current->state = TIMER_ACTIVE;
-			timer_lock_release();
-			debug("Restarted timer ID %d with new interval %d ticks, expires at tick %llu.\n",
-				timer_id, current->interval, current->expire_tick);
-			return 0; /* 成功重启定时器 */
-		}
-		current = current->next;
-	}
-
-	timer_lock_release();
-	debug("Timer ID %d not found.\n", timer_id);
-	return -1; /* 未找到定时器 */
-}
-
-/*
-	@brief 删除指定 ID 的定时器。
-	@param timer_id 定时器 ID
-	@return 成功返回 0，失败返回 -1
-*/
-int timer_delete(uint32_t timer_id)
+int timer_delete(TIMER *timer)
 {
 	timer_lock_acquire();
 	
 	TIMER *current = timer_manager.head;
 	TIMER *prev = NULL;
 	while (current) {
-		if (current->id == timer_id) {
+		if (current == timer) {
 			if (prev)
 				prev->next = current->next;
 			else
 				timer_manager.head = current->next;
 			kfree(current);
 			timer_lock_release();
-			debug("Deleted timer ID %d.\n", timer_id);
+			debug("Deleted timer %p.\n", timer);
 			return 0; /* 成功删除定时器 */
 		}
 		prev = current;
@@ -205,12 +179,12 @@ int timer_delete(uint32_t timer_id)
 	}
 
 	timer_lock_release();
-	debug("Timer ID %d not found.\n", timer_id);
+	debug("Timer %p not found.\n", timer);
 	return -1; /* 未找到定时器 */
 }
 
 /*
-	@brief 处理所有到期的定时器。
+	@brief 处理定时器过程。
 */
 void timer_process(void)
 {
@@ -222,10 +196,10 @@ void timer_process(void)
 		if (current->state == TIMER_ACTIVE && current->expire_tick <= current_tick) {
 			/* 定时器到期，调用回调函数 */
 			current->state = TIMER_EXPIRED;
-			debug("Timer ID %d expired at tick %llu, invoking callback.\n", current->id, current_tick);
+			debug("Timer %p expired at tick %llu, invoking callback.\n", current, current_tick);
 			
 			/* 执行回调 */
-			timer_callback_t callback = current->callback;
+			TIMER_CALLBACK callback = current->callback;
 			void *arg = current->arg;
 			timer_lock_release(); /* 释放锁以允许回调函数执行时其他操作 */
 			if (callback)
@@ -234,13 +208,13 @@ void timer_process(void)
 
 			/* 处理重复定时器 */
 			if (current->state == TIMER_EXPIRED) {
-				if (current->interval > 0) {
+				if (current->repetition < 0 || current->repetition-- > 0) {
 					current->expire_tick = current_tick + current->interval;
 					current->state = TIMER_ACTIVE;
-					debug("Reactivated periodic timer ID %d to expire at tick %llu.\n", current->id, current->expire_tick);
-				} else {
+					debug("Reactivated periodic timer %p to expire at tick %llu.\n", current, current->expire_tick);
+				}else {
 					current->state = TIMER_INACTIVE;
-					debug("One-shot timer ID %d set to inactive after expiration.\n", current->id);
+					debug("Timer %p set to inactive.\n", current);
 				}
 			}
 		}
@@ -275,7 +249,7 @@ void timer_cleanup(void)
 				timer_manager.head = current->next;
 			kfree(current);
 			removed_count++;
-			debug("Cleaned up inactive timer ID %d.\n", current->id);
+			debug("Cleaned up inactive timer %p.\n", current);
 			if (prev)
 				current = prev->next;
 			else

@@ -6,13 +6,15 @@
 #include <ClassiX/cpu.h>
 #include <ClassiX/debug.h>
 #include <ClassiX/fifo.h>
-#include <ClassiX/framebuf.h>
+#include <ClassiX/graphic.h>
 #include <ClassiX/interrupt.h>
 #include <ClassiX/io.h>
 #include <ClassiX/keyboard.h>
+#include <ClassiX/layer.h>
 #include <ClassiX/memory.h>
 #include <ClassiX/mouse.h>
 #include <ClassiX/multiboot.h>
+#include <ClassiX/palette.h>
 #include <ClassiX/pit.h>
 #include <ClassiX/rtc.h>
 #include <ClassiX/timer.h>
@@ -20,18 +22,20 @@
 
 #include <string.h>
 
-extern uintptr_t kernel_start_phys;
-extern uintptr_t kernel_end_phys;
-extern uintptr_t bss_start;
-extern uintptr_t bss_end;
+extern uintptr_t kernel_start_phys;						/* 内核起始物理地址 */
+extern uintptr_t kernel_end_phys;						/* 内核结束物理地址 */
+extern uintptr_t bss_start;								/* BSS 段起始地址 */
+extern uintptr_t bss_end;								/* BSS 段结束地址 */
 
-#define FIFO_SIZE							128
-#define KEYBOARD_DATA0						256
-#define MOUSE_DATA0							512
-#define PIT_DATA0							768
-static FIFO fifo;
-static uint32_t fifo_buf[FIFO_SIZE];
-static MOUSE_DATA mouse_data = { };
+#define KMSG_QUEUE_SIZE						128			/* 内核消息队列大小 */
+
+#define KEYBOARD_DATA0						256			/* 键盘数据起始索引 */
+#define MOUSE_DATA0							512			/* 鼠标数据起始索引 */
+#define PIT_DATA0							768			/* PIT 数据起始索引 */
+
+static FIFO kmsg_queue = { };							/* 内核消息队列 */
+static uint32_t kmsg_queue_buf[KMSG_QUEUE_SIZE] = { };	/* 内核消息队列缓冲区 */
+static MOUSE_DATA mouse_data = { };						/* 鼠标数据结构 */
 
 /*
 	@brief 检查 Multiboot 启动信息。
@@ -61,7 +65,7 @@ static bool check_boot_info(uint32_t mb_magic, multiboot_info_t *mbi)
 		return false;
 	}
 
-	if (mbi->framebuffer_type != MULTIBOOT_FRAMEBUFFER_TYPE_RGB || mbi->framebuffer_bpp != 32) {
+	if (mbi->framebuffer_type != MULTIBOOT_FRAMEBUFFER_TYPE_RGB) {
 		/* 不支持的帧缓冲类型 */
 		cga_printf("Unsupported frame buffer type: %d.\n", mbi->framebuffer_type);
 		return false;
@@ -72,7 +76,6 @@ static bool check_boot_info(uint32_t mb_magic, multiboot_info_t *mbi)
 
 void main(uint32_t mb_magic, multiboot_info_t *mbi)
 {
-
 	/* 检查 Multiboot 启动信息 */
 	if (!check_boot_info(mb_magic, mbi)) return;
 
@@ -82,11 +85,13 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	init_gdt();
 	init_idt();
 	init_pic();
+
 	uart_init();
-	fifo_init(&fifo, FIFO_SIZE, fifo_buf, NULL);
-	init_keyboard(&fifo, KEYBOARD_DATA0);
-	init_mouse(&fifo, MOUSE_DATA0);
-	init_pit(1000); /* 初始化 PIT，频率为 1000 Hz */
+
+	fifo_init(&kmsg_queue, KMSG_QUEUE_SIZE, kmsg_queue_buf, NULL);
+	init_keyboard(&kmsg_queue, KEYBOARD_DATA0);
+	init_mouse(&kmsg_queue, MOUSE_DATA0);
+	init_pit(1000); /* 频率为 1000 Hz */
 
 	debug("\nKernel PHYS: 0x%x - 0x%x\n", (uint32_t) &kernel_start_phys, (uint32_t) &kernel_end_phys);
 	
@@ -110,17 +115,17 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 
 	/* 初始化内存管理 */
 	uintptr_t mem_start = (uintptr_t) &kernel_end_phys;
-	size_t mem_size = (size_t) (mbi->mem_upper * 1024);
+	size_t mem_size = (size_t) (mbi->mem_upper * 1024 - (&kernel_end_phys - &kernel_start_phys));
 	memory_init((void*) mem_start, mem_size);
 
+	/* 初始化定时器 */
 	timer_init();
-	
 
 	for(;;) {
-		if (fifo_status(&fifo) == 0) {
+		if (fifo_status(&kmsg_queue) == 0) {
 			
 		} else {
-			uint32_t _data = fifo_pop(&fifo);
+			uint32_t _data = fifo_pop(&kmsg_queue);
 			if (KEYBOARD_DATA0 <= _data && _data < MOUSE_DATA0) {
 				/* 键盘数据 */
 			} else if (MOUSE_DATA0 <= _data && _data < PIT_DATA0) {
