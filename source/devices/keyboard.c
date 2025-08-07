@@ -9,12 +9,12 @@
 #include <ClassiX/io.h>
 #include <ClassiX/typedef.h>
 
-#define PORT_KEYBOARD_DATA					0x0060
-#define PORT_KEYBOARD_COMMAND				0x0064
-#define PORT_KEYSTA							0x0064
-#define KEYSTA_SEND_NOTREADY				0x02
-#define KEYCMD_WRITE_MODE					0x60
-#define KBC_MODE							0x47
+#define PORT_KEYBOARD_DATA					(0x0060)
+#define PORT_KEYBOARD_COMMAND				(0x0064)
+#define PORT_KEYSTA							(0x0064)
+#define KEYSTA_SEND_NOTREADY				(0x02)
+#define KEYCMD_WRITE_MODE					(0x60)
+#define KBC_MODE							(0x47)
 
 static uint32_t keydata0;
 static FIFO *keyboard_fifo;
@@ -62,3 +62,27 @@ void isr_keyboard(isr_params_t params)
 	debug("Keyboard data: 0x%02x.\n", data);
 	return;
 }
+
+/* 键盘映射表 */
+const uint8_t keymap0[] = {
+	0,   0,   '1', '2',  '3', '4', '5', '6', '7',  '8', '9', '0',  '-',  '=',  0x08, 0,
+	'Q', 'W', 'E', 'R',  'T', 'Y', 'U', 'I', 'O',  'P', '[', ']',  0x0a, 0,    'A', 'S',
+	'D', 'F', 'G', 'H',  'J', 'K', 'L', ';', '\'', '`',   0,  '\\', 'Z', 'X',  'C', 'V',
+	'B', 'N', 'M', ',',  '.', '/', 0,   '*', 0,    ' ', 0,   0,    0,    0,    0,   0,
+	0,   0,   0,   0,    0,   0,   0,   '7', '8',  '9', '-', '4',  '5',  '6',  '+', '1',
+	'2', '3', '0', '.',  0,   0,   0,   0,   0,    0,   0,   0,    0,    0,    0,   0,
+	0,   0,   0,   0,    0,   0,   0,   0,   0,    0,   0,   0,    0,    0,    0,   0,
+	0,   0,   0,   0x5c, 0,   0,   0,   0,   0,    0,   0,   0,    0,    0x5c, 0,   0
+};
+
+/* 按下 SHIFT 时的键盘映射表 */
+const uint8_t keymap1[] = {
+	0,   0,   '!', '@', '#', '$', '%', '^', '&',  '*', '(', ')', '_',  '+', 0x08, 0,
+	'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O',  'P', '{', '}', 0x0a, 0,   'A', 'S',
+	'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '\"', '~', 0,   '|', 'Z',  'X', 'C', 'V',
+	'B', 'N', 'M', '<', '>', '?', 0,   '*', 0,    ' ', 0,   0,   0,    0,   0,   0,
+	0,   0,   0,   0,   0,   0,   0,   '7', '8',  '9', '-', '4', '5',  '6', '+', '1',
+	'2', '3', '0', '.', 0,   0,   0,   0,   0,    0,   0,   0,   0,    0,   0,   0,
+	0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,    0,   0,   0,
+	0,   0,   0,   '_', 0,   0,   0,   0,   0,    0,   0,   0,   0,    '|', 0,   0
+};

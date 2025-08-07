@@ -305,16 +305,16 @@ void fill_ellipse(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t
 	@brief 位块拷贝。
 	@param src 源缓冲区
 	@param src_bx 源缓冲区的宽度
-	@param x0 源缓冲区左上角 x 坐标
-	@param y0 源缓冲区左上角 y 坐标
-	@param dst 目标缓冲区
+	@param src_x 源缓冲区左上角 x 坐标
+	@param src_y 源缓冲区左上角 y 坐标
 	@param width 拷贝宽度
 	@param height 拷贝高度
+	@param dst 目标缓冲区
 	@param dst_bx 目标缓冲区的宽度
 	@param dst_x 目标缓冲区左上角 x 坐标
 	@param dst_y 目标缓冲区左上角 y 坐标
 */
-void bit_blit(uint32_t *src, uint16_t src_bx, uint16_t src_x, uint16_t src_y, uint16_t width, uint16_t height, uint32_t *dst, uint16_t dst_bx, uint16_t dst_x, uint16_t dst_y)
+void bit_blit(const uint32_t *src, uint16_t src_bx, uint16_t src_x, uint16_t src_y, uint16_t width, uint16_t height, uint32_t *dst, uint16_t dst_bx, uint16_t dst_x, uint16_t dst_y)
 {
 	for (uint16_t y = 0; y < height; y++)
 		for (uint16_t x = 0; x < width; x++)

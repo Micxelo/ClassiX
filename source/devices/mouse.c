@@ -10,11 +10,11 @@
 #include <ClassiX/mouse.h>
 #include <ClassiX/typedef.h>
 
-#define PORT_MOUSE_DATA						0x60
-#define PORT_MOUSE_STATUS					0x64
-#define PORT_MOUSE_COMMAND					0x64
-#define KEYCMD_SENDTO_MOUSE					0xd4
-#define MOUSECMD_ENABLE						0xf4
+#define PORT_MOUSE_DATA						(0x60)
+#define PORT_MOUSE_STATUS					(0x64)
+#define PORT_MOUSE_COMMAND					(0x64)
+#define KEYCMD_SENDTO_MOUSE					(0xd4)
+#define MOUSECMD_ENABLE						(0xf4)
 
 static uint32_t mousedata0;
 static FIFO *mouse_fifo;
@@ -83,10 +83,7 @@ int mouse_decoder(MOUSE_DATA *mouse_data, uint8_t data)
 			mouse_data->dy = -mouse_data->dy; /* Y 轴反转 */
 
 			/* 完整数据包已接收 */
-			mouse_data->dz = 0; /* 无滚轮数据 */
 			mouse_data->phase = 0; /* 重置阶段 */
-			debug("Mouse data: dX=%d, dY=%d, Buttons=%03b.\n",
-				mouse_data->dx, mouse_data->dy, mouse_data->button);
 			return 1;
 			break;
 

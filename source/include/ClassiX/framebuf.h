@@ -31,7 +31,7 @@ extern FRAMEBUFFER g_fb;
 
 int init_framebuffer(multiboot_info_t *mbi);
 COLOR get_pixel(uint16_t x, uint16_t y);
-void set_pixel(uint32_t x, uint32_t y, COLOR color);
+void set_pixel(uint16_t x, uint16_t y, COLOR color);
 
 #ifdef __cplusplus
 	}

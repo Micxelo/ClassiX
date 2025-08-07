@@ -12,32 +12,32 @@
 #include <ClassiX/interrupt.h>
 #include <ClassiX/typedef.h>
 
-#define INT_NUM_PIT							0x20
+#define INT_NUM_PIT							(0x20)
 
 /* PIT 端口 */
-#define PIT_CHANNEL0						0x40
-#define PIT_CHANNEL1						0x41
-#define PIT_CHANNEL2						0x42
-#define PIT_COMMAND							0x43
+#define PIT_CHANNEL0						(0x40)
+#define PIT_CHANNEL1						(0x41)
+#define PIT_CHANNEL2						(0x42)
+#define PIT_COMMAND							(0x43)
 
 /* PIT 命令字 */
-#define PIT_CMD_CH0							0x00	/* 通道0 */
-#define PIT_CMD_CH1							0x40	/* 通道1 */
-#define PIT_CMD_CH2							0x80	/* 通道2 */
-#define PIT_CMD_LATCH						0x00	/* 锁存计数器值 */
-#define PIT_CMD_LOBYTE						0x10	/* 只读写低字节 */
-#define PIT_CMD_HIBYTE						0x20	/* 只读写高字节 */
-#define PIT_CMD_LOHI						0x30	/* 先低字节后高字节 */
-#define PIT_CMD_MODE0						0x00	/* 中断结束计数 */
-#define PIT_CMD_MODE1						0x02	/* 可编程单脉冲 */
-#define PIT_CMD_MODE2						0x04	/* 速率发生器 */
-#define PIT_CMD_MODE3						0x06	/* 方波发生器 */
-#define PIT_CMD_MODE4						0x08	/* 软件触发选通 */
-#define PIT_CMD_MODE5						0x0A	/* 硬件触发选通 */
-#define PIT_CMD_BINARY						0x00	/* 二进制计数 */
-#define PIT_CMD_BCD							0x01	/* BCD 计数 */
+#define PIT_CMD_CH0							(0x00)		/* 通道0 */
+#define PIT_CMD_CH1							(0x40)		/* 通道1 */
+#define PIT_CMD_CH2							(0x80)		/* 通道2 */
+#define PIT_CMD_LATCH						(0x00)		/* 锁存计数器值 */
+#define PIT_CMD_LOBYTE						(0x10)		/* 只读写低字节 */
+#define PIT_CMD_HIBYTE						(0x20)		/* 只读写高字节 */
+#define PIT_CMD_LOHI						(0x30)		/* 先低字节后高字节 */
+#define PIT_CMD_MODE0						(0x00)		/* 中断结束计数 */
+#define PIT_CMD_MODE1						(0x02)		/* 可编程单脉冲 */
+#define PIT_CMD_MODE2						(0x04)		/* 速率发生器 */
+#define PIT_CMD_MODE3						(0x06)		/* 方波发生器 */
+#define PIT_CMD_MODE4						(0x08)		/* 软件触发选通 */
+#define PIT_CMD_MODE5						(0x0a)		/* 硬件触发选通 */
+#define PIT_CMD_BINARY						(0x00)		/* 二进制计数 */
+#define PIT_CMD_BCD							(0x01)		/* BCD 计数 */
 
-#define PIT_BASE_FREQ						1193182	/* PIT 的基准频率 (1.193182 MHz) */
+#define PIT_BASE_FREQ						(1193182)	/* PIT 的基准频率 (1.193182 MHz) */
 
 extern volatile uint64_t system_ticks;
 

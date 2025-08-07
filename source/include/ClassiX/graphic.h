@@ -22,7 +22,7 @@ void draw_circle(uint32_t *buf, uint16_t bx, int x0, int y0, int radius, COLOR c
 void fill_circle(uint32_t *buf, uint16_t bx, int x0, int y0, int radius, COLOR color);
 void draw_ellipse(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t a, uint16_t b, COLOR color);
 void fill_ellipse(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t a, uint16_t b, COLOR color);
-void bit_blit(uint32_t *src, uint16_t src_bx, uint16_t src_x, uint16_t src_y, uint16_t width, uint16_t height, uint32_t *dst, uint16_t dst_bx, uint16_t dst_x, uint16_t dst_y);
+void bit_blit(const uint32_t *src, uint16_t src_bx, uint16_t src_x, uint16_t src_y, uint16_t width, uint16_t height, uint32_t *dst, uint16_t dst_bx, uint16_t dst_x, uint16_t dst_y);
 void draw_ascii_string(uint32_t *buf, uint16_t bx, uint16_t x, uint16_t y, COLOR color, const char *str, BITMAP_FONT font);
 
 #ifdef __cplusplus

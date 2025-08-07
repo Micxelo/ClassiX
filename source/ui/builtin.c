@@ -3,6 +3,7 @@
 */
 
 #include <ClassiX/builtin.h>
+#include <ClassiX/palette.h>
 #include <ClassiX/typedef.h>
 
 const uint8_t builtin_terminus12n[] = {
@@ -1188,4 +1189,29 @@ const uint8_t builtin_terminus16b[] = {
 	0xff, 0xff, 0xf8, 0x00, 0xff, 0xff, 0xf9, 0x00, 0xff, 0xff, 0xfa, 0x00,
 	0xff, 0xff, 0xfb, 0x00, 0xff, 0xff, 0xfc, 0x00, 0xff, 0xff, 0xfd, 0x00,
 	0xff, 0xff, 0xfe, 0x00, 0xff, 0xff, 0xff, 0x00, 0xff, 0xff
+};
+
+const uint32_t builtin_cursor_arrow[] = {
+#define T									0x00ffffff
+#define B									0xff000000
+#define W									0xffffffff
+	B, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, 
+	B, B, T, T, T, T, T, T, T, T, T, T, T, T, T, T, 
+	B, W, B, T, T, T, T, T, T, T, T, T, T, T, T, T, 
+	B, W, W, B, T, T, T, T, T, T, T, T, T, T, T, T, 
+	B, W, W, W, B, T, T, T, T, T, T, T, T, T, T, T, 
+	B, W, W, W, W, B, T, T, T, T, T, T, T, T, T, T, 
+	B, W, W, W, W, W, B, T, T, T, T, T, T, T, T, T, 
+	B, W, W, W, W, W, W, B, T, T, T, T, T, T, T, T, 
+	B, W, W, W, W, W, W, W, B, T, T, T, T, T, T, T, 
+	B, W, W, W, W, W, W, W, W, B, T, T, T, T, T, T, 
+	B, W, W, W, W, W, W, W, W, W, B, T, T, T, T, T, 
+	B, W, W, W, W, B, B, B, B, B, B, T, T, T, T, T, 
+	B, W, W, W, B, T, T, T, T, T, T, T, T, T, T, T, 
+	B, W, W, B, T, T, T, T, T, T, T, T, T, T, T, T, 
+	B, W, B, T, T, T, T, T, T, T, T, T, T, T, T, T, 
+	B, B, T, T, T, T, T, T, T, T, T, T, T, T, T, T, 
+#undef W
+#undef B
+#undef T
 };

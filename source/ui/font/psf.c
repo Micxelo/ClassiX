@@ -6,13 +6,13 @@
 #include <ClassiX/font.h>
 #include <ClassiX/typedef.h>
 
-#define PSF1_MAGIC							0x0436
-#define PSF1_MODE512						0x01
-#define PSF1_MODEHASTAB						0x02
-#define PSF1_MODEHASSEQ						0x04
-#define PSF1_MAXMODE						0x05
-#define PSF1_SEPARATOR						0xffff
-#define PSF1_STARTSEQ						0xfffe
+#define PSF1_MAGIC							(0x0436)
+#define PSF1_MODE512						(0x01)
+#define PSF1_MODEHASTAB						(0x02)
+#define PSF1_MODEHASSEQ						(0x04)
+#define PSF1_MAXMODE						(0x05)
+#define PSF1_SEPARATOR						(0xffff)
+#define PSF1_STARTSEQ						(0xfffe)
 
 typedef struct {
     uint16_t magic;
@@ -20,11 +20,11 @@ typedef struct {
     uint8_t charsize;
 } __attribute__((packed)) PSF1_HEADER;
 
-#define PSF2_MAGIC							0x864ab572
-#define PSF2_HAS_UNICODE_TABLE				0x01
-#define PSF2_MAXVERSION 					0
-#define PSF2_SEPARATOR						0xff
-#define PSF2_STARTSEQ						0xfe
+#define PSF2_MAGIC							(0x864ab572)
+#define PSF2_HAS_UNICODE_TABLE				(0x01)
+#define PSF2_MAXVERSION 					(0)
+#define PSF2_SEPARATOR						(0xff)
+#define PSF2_STARTSEQ						(0xfe)
 
 typedef struct {
 	uint32_t magic;

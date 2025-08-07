@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define COM1_BASE							0x3f8
+#define COM1_BASE							(0x3f8)
 
 /* 寄存器偏移量 */
 enum UART_REGISTERS {

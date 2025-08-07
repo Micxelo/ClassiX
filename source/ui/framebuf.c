@@ -8,11 +8,28 @@
 #include <ClassiX/palette.h>
 #include <ClassiX/typedef.h>
 
+typedef COLOR (* get_pixel_ptr_t) (uint16_t, uint16_t);
+typedef void (* set_pixel_ptr_t) (uint16_t, uint16_t, COLOR);
+
+static get_pixel_ptr_t get_pixel_ptr;
+static set_pixel_ptr_t set_pixel_ptr;
+
 FRAMEBUFFER g_fb;
 
+static inline COLOR get_pixel_argb(uint16_t x, uint16_t y);
+static inline void set_pixel_argb(uint16_t x, uint16_t y, COLOR color);
+static inline uint8_t expand_to_8bit(uint32_t value, uint8_t src_bits);
+static inline COLOR get_pixel_universal(uint16_t x, uint16_t y);
+static inline void set_pixel_universal(uint16_t x, uint16_t y, COLOR color);
+
+/*
+	@brief 初始化全局帧缓冲。
+	@param mbi Multiboot 信息
+	@return 成功返回 0，失败返回 -1
+*/
 int init_framebuffer(multiboot_info_t *mbi)
 {
-	if ((!mbi && mbi->flags & MULTIBOOT_INFO_FRAMEBUFFER_INFO)) {
+	if (!(mbi && mbi->flags & MULTIBOOT_INFO_FRAMEBUFFER_INFO)) {
 		debug("Failed to initialize global framebuffer.\n");
 		return -1; /* 未提供帧缓冲信息 */
 	}
@@ -30,8 +47,33 @@ int init_framebuffer(multiboot_info_t *mbi)
 	g_fb.blue_field_position = mbi->framebuffer_blue_field_position;
 	g_fb.blue_mask_size = mbi->framebuffer_blue_mask_size;
 
-	debug("Global framebuffer initialized.\n");
+	if (g_fb.bpp == 32 && 
+		g_fb.red_field_position == 16 && 
+		g_fb.green_field_position == 8 && 
+		g_fb.blue_field_position == 0) {
+		/* 32位 ARGB 颜色 */
+		get_pixel_ptr = get_pixel_argb;
+		set_pixel_ptr = set_pixel_argb;
+		debug("Global framebuffer initialized for ARGB color channel.\n");
+	} else {
+		get_pixel_ptr = get_pixel_universal;
+		set_pixel_ptr = set_pixel_universal;
+		debug("Global framebuffer initialized for universal color channel.\n");
+	}
+
 	return 0; /* 成功初始化帧缓冲 */
+}
+
+static inline COLOR get_pixel_argb(uint16_t x, uint16_t y)
+{
+	uint32_t *buf = (uint32_t *) g_fb.addr;
+	return GET_PIXEL32(buf, g_fb.width, x, y);
+}
+
+static inline void set_pixel_argb(uint16_t x, uint16_t y, COLOR color)
+{
+	uint32_t *buf = (uint32_t *) g_fb.addr;
+	SET_PIXEL32(buf, g_fb.width, x, y, color);
 }
 
 /* 将颜色分量扩展到 8 位精度 */
@@ -49,7 +91,7 @@ static inline uint8_t expand_to_8bit(uint32_t value, uint8_t src_bits)
 	return 0;
 }
 
-COLOR get_pixel(uint16_t x, uint16_t y)
+static inline COLOR get_pixel_universal(uint16_t x, uint16_t y)
 {
 	if (x >= g_fb.width || y >= g_fb.height)
 		return COLOR32(0); /* 超出帧缓冲范围，返回黑色 */
@@ -72,7 +114,7 @@ COLOR get_pixel(uint16_t x, uint16_t y)
 						 (*((uint8_t *) pixel_address + 2) << 16);
 			break;
 		case 32:
-			raw_pixel = *((uint32_t *)pixel_address);
+			raw_pixel = *((uint32_t *) pixel_address);
 			break;
 		default: /* 不支持的位深度 */
 			return COLOR32(0);
@@ -91,7 +133,7 @@ COLOR get_pixel(uint16_t x, uint16_t y)
 	return COLOR32_FROM_RGBA(r, g, b, 0xff);
 }
 
-void set_pixel(uint32_t x, uint32_t y, COLOR color)
+static inline void set_pixel_universal(uint16_t x, uint16_t y, COLOR color)
 {
 	if (x >= g_fb.width || y >= g_fb.height)
 		return; /* 超出帧缓冲范围 */
@@ -166,4 +208,30 @@ void set_pixel(uint32_t x, uint32_t y, COLOR color)
 	}
 }
 
+/*
+	@brief 获取物理显存指定像素的颜色值。
+	@param x X 坐标
+	@param y Y 坐标
+	@return 该点的颜色
+*/
+inline COLOR get_pixel(uint16_t x, uint16_t y)
+{
+	if (x >= g_fb.width || y >= g_fb.height)
+		return COLOR32(0); /* 超出帧缓冲范围，返回黑色 */
 
+	return get_pixel_ptr(x, y);
+}
+
+/*
+	@brief 设置物理显存指定像素的颜色值。
+	@param x X 坐标
+	@param y Y 坐标
+	@param color 指定的颜色值
+*/
+inline void set_pixel(uint16_t x, uint16_t y, COLOR color)
+{
+	if (x >= g_fb.width || y >= g_fb.height)
+		return; /* 超出帧缓冲范围 */
+
+	set_pixel_ptr(x, y, color);
+}

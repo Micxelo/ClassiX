@@ -5,9 +5,9 @@
 #include <ClassiX/memory.h>
 #include <ClassiX/typedef.h>
 
-#define BLOCK_FREE							0
-#define BLOCK_USED							1
-#define BLOCK_MAGIC							0x0d000721
+#define BLOCK_FREE							(0)
+#define BLOCK_USED							(1)
+#define BLOCK_MAGIC							(0x0d000721)
 
 typedef struct __attribute__((aligned(16))) {
 	uint32_t magic;

@@ -13,7 +13,7 @@
 
 #include <stdint.h>
 
-#define MAX_LAYER_IDX						UINT8_MAX			/* 最大图层下标 */
+#define MAX_LAYER_IDX						(UINT8_MAX)			/* 最大图层下标 */
 #define MAX_LAYERS							(MAX_LAYER_IDX + 1)	/* 最大图层数量 */
 
 #define LAYER_FREE							(0)

@@ -25,16 +25,31 @@
 
 #include <string.h>
 
+#define MODIFIER_LCONTROL					(0b00000001)
+#define MODIFIER_LSHIFT						(0b00000010)
+#define MODIFIER_LALT						(0b00000100)
+#define MODIFIER_LMETA						(0b00001000)
+
+#define MODIFIER_RCONTROL					(0b00010000)
+#define MODIFIER_RSHIFT						(0b00100000)
+#define MODIFIER_RALT						(0b01000000)
+#define MODIFIER_RMETA						(0b10000000)
+
+#define MODIFIER_CTRL						(MODIFIER_LCONTROL | MODIFIER_RCONTROL)
+#define MODIFIER_SHIFT						(MODIFIER_LSHIFT | MODIFIER_RSHIFT)
+#define MODIFIER_ALT						(MODIFIER_LALT | MODIFIER_RALT)
+#define MODIFIER_META						(MODIFIER_LMETA | MODIFIER_RMETA)
+
 extern uintptr_t kernel_start_phys;						/* 内核起始物理地址 */
 extern uintptr_t kernel_end_phys;						/* 内核结束物理地址 */
 extern uintptr_t bss_start;								/* BSS 段起始地址 */
 extern uintptr_t bss_end;								/* BSS 段结束地址 */
 
-#define KMSG_QUEUE_SIZE						128			/* 内核消息队列大小 */
+#define KMSG_QUEUE_SIZE						(128)		/* 内核消息队列大小 */
 
-#define KEYBOARD_DATA0						256			/* 键盘数据起始索引 */
-#define MOUSE_DATA0							512			/* 鼠标数据起始索引 */
-#define PIT_DATA0							768			/* PIT 数据起始索引 */
+#define KEYBOARD_DATA0						(256)		/* 键盘数据起始索引 */
+#define MOUSE_DATA0							(512)		/* 鼠标数据起始索引 */
+#define PIT_DATA0							(768)		/* PIT 数据起始索引 */
 
 static FIFO kmsg_queue = { };							/* 内核消息队列 */
 static uint32_t kmsg_queue_buf[KMSG_QUEUE_SIZE] = { };	/* 内核消息队列缓冲区 */
@@ -83,6 +98,18 @@ static bool check_boot_info(uint32_t mb_magic, multiboot_info_t *mbi)
 
 void main(uint32_t mb_magic, multiboot_info_t *mbi)
 {
+	/* 修饰键 */
+	/*   7    6     5      4     3    2     1      0   */
+	/* RMeta RAlt RShift RCtrl LMeta LAlt LShift LCtrl */
+	uint8_t key_modifiers = 0;
+	/* 扩展键盘扫描码的识别阶段 */
+	uint8_t expanded_key_phase = 0;
+
+	/* 光标位置 */
+	int cursor_x, cursor_y;
+	/* 光标移动后的位置，new_cursor_x >= 0 表示位置已更新 */
+	int new_cursor_x = -1, new_cursor_y = 0;
+
 	/* 检查 Multiboot 启动信息 */
 	if (!check_boot_info(mb_magic, mbi)) return;
 
@@ -132,17 +159,68 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	font_terminus_16n = psf_load(builtin_terminus16n);
 	font_terminus_16b = psf_load(builtin_terminus16b);
 
+	/* 初始化图层管理 */
+	init_framebuffer(mbi);
+	layer_init((uint32_t *) g_fb.addr, g_fb.width, g_fb.height);
+	/* 背景 */
+	LAYER *layer_back = layer_alloc(g_fb.width, g_fb.height, false);
+	fill_rectangle(layer_back->buf, layer_back->width, 0, 0, layer_back->width, layer_back->height, COLOR_MIKU);
+	layer_move(layer_back, 0, 0);
+	layer_set_z(layer_back, 0);
+	/* 光标 */
+	cursor_x = (g_fb.width - CURSOR_WIDTH) / 2;
+	cursor_y = (g_fb.height - CURSOR_HEIGHT) / 2;
+	LAYER *layer_cursor = layer_alloc(CURSOR_WIDTH, CURSOR_HEIGHT, true);
+	bit_blit(builtin_cursor_arrow, CURSOR_WIDTH, 0, 0, CURSOR_WIDTH, CURSOR_HEIGHT, 
+		layer_cursor->buf, layer_cursor->width, 0, 0);
+	layer_move(layer_cursor, cursor_x, cursor_y);
+	layer_set_z(layer_cursor, 1);
+
 	for(;;) {
+		cli();
 		if (fifo_status(&kmsg_queue) == 0) {
-			
+			sti();
+			if (new_cursor_x >= 0) {
+				/* 光标位置已更新 */
+				layer_move(layer_cursor, new_cursor_x, new_cursor_y);
+				new_cursor_x = -1;
+			}
 		} else {
 			uint32_t _data = fifo_pop(&kmsg_queue);
+			sti();
 			if (KEYBOARD_DATA0 <= _data && _data < MOUSE_DATA0) {
 				/* 键盘数据 */
+				if (_data == KEYBOARD_DATA0 + EXPANDED_KEY_PREFIX) {
+					/* 扩展键前缀 */
+					expanded_key_phase = 1;
+				}
 			} else if (MOUSE_DATA0 <= _data && _data < PIT_DATA0) {
 				/* 鼠标数据 */
 				if (mouse_decoder(&mouse_data, _data - MOUSE_DATA0)) {
+					/* 移动光标 */
+					cursor_x += mouse_data.dx;
+					cursor_y += mouse_data.dy;
+					/* 修正超出屏幕的值 */
+					if (cursor_x < 0) cursor_x = 0;
+					if (cursor_y < 0) cursor_y = 0;
+					if (cursor_x > (signed) (g_fb.width - 1)) cursor_x = g_fb.width - 1;
+					if (cursor_y > (signed) (g_fb.height - 1)) cursor_y = g_fb.height - 1;
+					new_cursor_x = cursor_x;
+					new_cursor_y = cursor_y;
+					
+					if (mouse_data.button) {
+						/* 按下鼠标 */
+						if (mouse_data.button & MOUSE_LBUTTON) {
+							/* 按下鼠标左键 */
+						} else if (mouse_data.button & MOUSE_RBUTTON) {
+							/* 按下鼠标右键 */
+						} else if (mouse_data.button & MOUSE_MBUTTON) {
+							/* 按下鼠标中键 */
+						}
+					} else {
+						/* 松开鼠标 */
 
+					}
 				}
 			}
 		}
