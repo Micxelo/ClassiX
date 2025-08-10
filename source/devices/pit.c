@@ -6,8 +6,10 @@
 #include <ClassiX/interrupt.h>
 #include <ClassiX/io.h>
 #include <ClassiX/pit.h>
+#include <ClassiX/timer.h>
 #include <ClassiX/typedef.h>
 
+uint32_t pit_frequency;
 volatile uint64_t system_ticks = 0; /* 系统时钟滴答计数 */
 
 /*
@@ -18,9 +20,11 @@ void init_pit(uint32_t frequency)
 {
 	/* 计算 PIT 的分频值 */
 	uint16_t divisor = PIT_BASE_FREQ / frequency;
+	pit_frequency = frequency;
 
 	if (divisor == 0) {
 		divisor = 1;		/* 最低分频值*/
+		pit_frequency = PIT_BASE_FREQ;
 		debug("PIT frequency too high, setting to max frequency.\n");
 	}
 
@@ -37,13 +41,13 @@ void init_pit(uint32_t frequency)
 	debug("PIT initialized at %d Hz (divisor: %d).\n", frequency, divisor);
 }
 
-void isr_pit(isr_params_t params)
+void isr_pit(ISR_PARAMS params)
 {
-	/* 发送 EOI 到 PIC */
-	out8(PIC0_OCW2, 0x20); /* 主 PIC EOI */
-	
 	/* 增加系统时钟滴答计数 */
 	system_ticks++;
+
+	/* 发送 EOI 到 PIC */
+	out8(PIC0_OCW2, 0x20); /* 主 PIC EOI */
 }
 
 /*

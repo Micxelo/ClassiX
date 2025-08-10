@@ -23,11 +23,8 @@ typedef struct __attribute__((packed)) {
 	0 - reserved
 	1 - kernel code segment
 	2 - kernel data segment
-	3 - user code segment
-	4 - user data segment
-	5 - tss
 */
-static gdt_entry_t gdt_entries[6];
+static gdt_entry_t gdt_entries[GDT_LIMIT];
 static gdt_ptr_t gdt_ptr;
 
 /*
@@ -62,8 +59,6 @@ void init_gdt(void)
 	gdt_set_gate(0, 0, 0,          0,                     0                  );	/* 空描述符 */
 	gdt_set_gate(1, 0, 0xffffffff, AR_0_CODE32_ER & 0xff, AR_0_CODE32_ER >> 8); /* 内核代码段 */
 	gdt_set_gate(2, 0, 0xffffffff, AR_0_DATA32_RW & 0xff, AR_0_DATA32_RW >> 8);	/* 内核数据段 */
-	gdt_set_gate(3, 0, 0xffffffff, AR_3_CODE32_ER & 0xff, AR_3_CODE32_ER >> 8);	/* 用户代码段 */
-	gdt_set_gate(4, 0, 0xffffffff, AR_3_DATA32_RW & 0xff, AR_3_DATA32_RW >> 8);	/* 用户数据段 */
 
 	/* 加载 GDT */
 	asm volatile ("lgdt %0"::"m"(gdt_ptr));

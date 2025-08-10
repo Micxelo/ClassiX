@@ -38,7 +38,7 @@
 
 #define load_eflags() ({									\
 	uint32_t _eflags;										\
-	asm volatile ("pushfl\npopl %0"):"=r"(_eflags);			\
+	asm volatile ("pushfl\npopl %0":"=r"(_eflags));			\
 	_eflags; })
 
 #define store_cr0(cr0)						asm volatile ("mov %0, %%cr0"::"r"(cr0):"memory")

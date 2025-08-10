@@ -17,7 +17,7 @@
 
 void init_keyboard(FIFO *fifo, int data0);
 void wait_kbc_sendready(void);
-void isr_keyboard(isr_params_t params);
+void isr_keyboard(ISR_PARAMS params);
 
 #define EXPANDED_KEY_PREFIX					(0xe0)
 

@@ -27,7 +27,7 @@ typedef struct {
 
 void init_mouse(FIFO *fifo, int data0);
 int mouse_decoder(MOUSE_DATA *mouse_data, uint8_t data);
-void isr_mouse(isr_params_t params);
+void isr_mouse(ISR_PARAMS params);
 
 #ifdef __cplusplus
 	}

@@ -15,14 +15,20 @@ static volatile int timer_lock = 0;		/* 互斥锁 */
 /* 获取锁 */
 static void timer_lock_acquire(void)
 {
+	uint32_t eflags = load_eflags();
+	cli();
 	while (__sync_lock_test_and_set(&timer_lock, 1))
 		pause(); /* 自旋等待 */
+	store_eflags(eflags);
 }
 
 /* 释放锁 */
 static void timer_lock_release(void)
 {
+	uint32_t eflags = load_eflags();
+	cli();
 	__sync_lock_release(&timer_lock);
+	store_eflags(eflags);
 }
 
 /*
@@ -38,7 +44,7 @@ TIMER *timer_create(TIMER_CALLBACK callback, void *arg)
 		return 0; /* 无效参数 */
 	}
 	
-	TIMER *new_timer = (TIMER *) kmalloc(sizeof(TIMER), NULL);
+	TIMER *new_timer = (TIMER *) kmalloc(sizeof(TIMER));
 	if (!new_timer) {
 		debug("Failed to allocate memory for new timer.\n");
 		return NULL; /* 内存分配失败 */
@@ -92,8 +98,8 @@ int timer_start(TIMER *timer, uint64_t interval, int32_t repetition)
 			current->expire_tick = system_ticks + interval;
 			current->state = TIMER_ACTIVE;
 			timer_lock_release();
-			debug("Started timer %p, expires at tick %llu, repeats %d times.\n",
-				current, current->expire_tick, repetition);
+			debug("Started timer %p, interval %d ticks, expires at tick %llu, repeats %d times.\n",
+				current, current->interval, current->expire_tick, repetition);
 			return 0; /* 成功启动定时器 */
 		}
 		current = current->next;
@@ -206,7 +212,7 @@ void timer_process(void)
 	timer_lock_release();
 
 	static uint64_t last_cleanup_tick = 0;
-	if (system_ticks - last_cleanup_tick >= 60000) {
+	if (system_ticks - last_cleanup_tick >= 60 * pit_frequency) {
 		/* 每 60 秒清理一次 */
 		timer_cleanup();
 		last_cleanup_tick = system_ticks;

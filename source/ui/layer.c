@@ -21,7 +21,7 @@ LAYER_MANAGER layer_manager = { };	/* 图层管理器 */
 */
 int layer_init(uint32_t *fb, uint16_t width, uint16_t height)
 {
-	layer_manager.map = kmalloc(width * height * sizeof(uint8_t), NULL);
+	layer_manager.map = kmalloc(width * height * sizeof(uint8_t));
 	if (!layer_manager.map) {
 		debug("Failed to allocate memory for layer manager.\n");
 		return -1; /* 内存分配失败 */
@@ -56,7 +56,7 @@ LAYER *layer_alloc(uint16_t width, uint16_t height, bool allow_inv)
 	for (int i = 0; i < MAX_LAYERS; i++) {
 		if (layer_manager.layers0[i].flags == LAYER_FREE) {
 			layer = &layer_manager.layers0[i];
-			layer->buf = kmalloc(width * height * sizeof(uint32_t), NULL);
+			layer->buf = kmalloc(width * height * sizeof(uint32_t));
 			if (!layer->buf) {
 				debug("Failed to allocate memory for new layer.\n");
 				return NULL;

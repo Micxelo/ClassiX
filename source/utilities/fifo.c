@@ -12,7 +12,7 @@
 	@param buf FIFO 缓冲区指针
 	@param task 有数据写入时需要唤醒的任务
 */
-void fifo_init(FIFO *fifo, size_t size, uint32_t *buf, HANDLE task)
+void fifo_init(FIFO *fifo, size_t size, uint32_t *buf, HANDLE *task)
 {
 	fifo->buf = buf;
 	fifo->size = size;
@@ -41,12 +41,12 @@ int fifo_push(FIFO *fifo, uint32_t data)
 		fifo->idx_write = 0;
 	}
 	fifo->free--;
-	if (fifo->task != 0) {
-		// if (fifo->task->flags != 2) {
-		// 	/* 任务处于休眠状态 */
-		// 	task_run(fifo->task, -1, 0); /* 唤醒任务 */
-		// }
-	}
+	// if (fifo->task != 0) {
+	// 	if (fifo->task->flags != 2) {
+	// 		/* 任务处于休眠状态 */
+	// 		task_run(fifo->task, -1, 0); /* 唤醒任务 */
+	// 	}
+	// }
 	return 0;
 }
 

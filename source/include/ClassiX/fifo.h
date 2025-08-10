@@ -15,10 +15,10 @@ typedef struct {
 	uint32_t *buf;
 	int idx_read, idx_write;
 	size_t size, free;
-	HANDLE task;
+	HANDLE *task;
 } FIFO;
 
-void fifo_init(FIFO *fifo, size_t size, uint32_t *buf, HANDLE task);
+void fifo_init(FIFO *fifo, size_t size, uint32_t *buf, HANDLE *task);
 int fifo_push(FIFO *fifo, uint32_t data);
 uint32_t fifo_pop(FIFO *fifo);
 int fifo_status(FIFO *fifo);

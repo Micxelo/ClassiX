@@ -16,6 +16,8 @@
 #define AR_3_CODE32_ER						(0xcffa)
 #define AR_3_DATA32_RW						(0xcff2)
 
+#define GDT_LIMIT							(0x0800)
+
 #define AR_LDT								(0x0082)
 #define AR_TSS32							(0x0089)
 #define AR_INTGATE32						(0x008e)
@@ -52,7 +54,7 @@ typedef struct {
 	uint32_t edx;
 	uint32_t ecx;
 	uint32_t eax;
-} isr_params_t;
+} ISR_PARAMS;
 
 void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran);
 void idt_set_gate(uint8_t num, uint32_t base, uint16_t selector, uint32_t ar);

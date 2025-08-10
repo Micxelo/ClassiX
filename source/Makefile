@@ -13,7 +13,7 @@ LDSCRIPT = linker.ld
 LDFLAGS  = -T $(LDSCRIPT) -melf_i386 -nostdlib -z noexecstack
 MAKE     = make CC=$(CC) CFLAGS=$(CFLAGS) AS=$(AS) ASFLAGS=$(ASFLAGS) --no-print-directory
 
-DEPS     = core/boot.obj core/main.obj core/memory.obj \
+DEPS     = core/boot.obj core/main.obj core/memory.obj core/syscall.obj \
            core/interrupt/gdt.obj core/interrupt/idt.obj core/interrupt/isr.obj core/interrupt/pic.obj \
            devices/cpu.obj devices/keyboard.obj devices/mouse.obj devices/pit.obj devices/serial.obj \
            libc/string.obj libc/stdio.obj \

@@ -13,7 +13,7 @@ typedef struct __attribute__((aligned(16))) {
 	uint32_t magic;
 	size_t size;		/* 包括头尾 */
 	uint8_t state;
-	HANDLE task;
+	HANDLE *task;
 } block_header_t;
 
 typedef struct __attribute__((aligned(16))) {
@@ -66,10 +66,9 @@ void memory_init(void *base, size_t size)
 /*
 	@brief 分配内存。
 	@param size 需要分配的字节数
-	@param task 任务句柄
 	@return 分配的内存指针，失败返回 NULL
 */
-void *kmalloc(size_t size, HANDLE task)
+void *kmalloc(size_t size)
 {
 	if (size == 0) return NULL;
 
@@ -120,7 +119,7 @@ void *kmalloc(size_t size, HANDLE task)
 			}
 
 			header->state = BLOCK_USED;
-			header->task = task;
+			header->task = NULL;
 			return (void *) ((uint8_t *) header + sizeof(block_header_t));
 		}
 		current = current->next;

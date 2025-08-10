@@ -53,7 +53,7 @@ void wait_kbc_sendready(void)
 	return;
 }
 
-void isr_keyboard(isr_params_t params)
+void isr_keyboard(ISR_PARAMS params)
 {
 	uint32_t data;
 	out8(PIC0_OCW2, 0x20);

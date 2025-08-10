@@ -99,7 +99,7 @@ static bool check_boot_info(uint32_t mb_magic, multiboot_info_t *mbi)
 void main(uint32_t mb_magic, multiboot_info_t *mbi)
 {
 	/* 修饰键 */
-	/*   7    6     5      4     3    2     1      0   */
+	/* --7----6-----5------4-----3----2-----1------0-- */
 	/* RMeta RAlt RShift RCtrl LMeta LAlt LShift LCtrl */
 	uint8_t key_modifiers = 0;
 	/* 扩展键盘扫描码的识别阶段 */
@@ -162,12 +162,12 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	/* 初始化图层管理 */
 	init_framebuffer(mbi);
 	layer_init((uint32_t *) g_fb.addr, g_fb.width, g_fb.height);
-	/* 背景 */
+	/* 背景图层 */
 	LAYER *layer_back = layer_alloc(g_fb.width, g_fb.height, false);
 	fill_rectangle(layer_back->buf, layer_back->width, 0, 0, layer_back->width, layer_back->height, COLOR_MIKU);
 	layer_move(layer_back, 0, 0);
 	layer_set_z(layer_back, 0);
-	/* 光标 */
+	/* 光标图层 */
 	cursor_x = (g_fb.width - CURSOR_WIDTH) / 2;
 	cursor_y = (g_fb.height - CURSOR_HEIGHT) / 2;
 	LAYER *layer_cursor = layer_alloc(CURSOR_WIDTH, CURSOR_HEIGHT, true);
@@ -175,7 +175,7 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 		layer_cursor->buf, layer_cursor->width, 0, 0);
 	layer_move(layer_cursor, cursor_x, cursor_y);
 	layer_set_z(layer_cursor, 1);
-
+	
 	for(;;) {
 		cli();
 		if (fifo_status(&kmsg_queue) == 0) {
@@ -184,6 +184,8 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 				/* 光标位置已更新 */
 				layer_move(layer_cursor, new_cursor_x, new_cursor_y);
 				new_cursor_x = -1;
+			} else {
+				
 			}
 		} else {
 			uint32_t _data = fifo_pop(&kmsg_queue);
@@ -224,7 +226,8 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 				}
 			}
 		}
-		
+
+		/* 定时器过程 */
 		timer_process();
 		hlt();
 	}

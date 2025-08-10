@@ -34,11 +34,11 @@ align 4
 	dd 0
 
 ; Multiboot 标准未定义栈指针（ESP）的值，需由内核提供栈空间
-; x86 栈必须16字节对齐
+; x86 栈必须 16 字节对齐
 section .bss
 align 16
 stack_bottom:
-	resb 0x10000			; 保留 1 MiB 栈空间
+	resb 0x1000			; 保留 4 KiB 栈空间
 stack_top:
 
 ; linker.ld 指定 start 为内核入口点

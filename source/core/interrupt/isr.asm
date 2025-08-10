@@ -21,8 +21,7 @@ _asm_isr_%1:
 	mov es, ax
 	
 	; 构建参数结构体指针
-	mov eax, esp
-	push eax			; 压入参数指针
+	push esp			; 压入参数指针
 	extern _isr_%1
 	call _isr_%1		; 调用 C 处理函数
 	add esp, 4			; 清理参数
@@ -42,3 +41,4 @@ _asm_isr_%1:
 ISR_TEMPLATE keyboard
 ISR_TEMPLATE mouse
 ISR_TEMPLATE pit
+ISR_TEMPLATE syscall
