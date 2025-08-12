@@ -23,6 +23,6 @@ void init_pic(void)
 	out8(PIC1_ICW3, 0x02); /* PIC1 由 IRQ2 连接 */
 	out8(PIC1_ICW4, 0x01); /* 无缓冲区模式 */
 
-	out8(PIC0_IMR,  0b11111000); /* 允许 IRQ0、IRQ1 和 IRQ2 */
-	out8(PIC1_IMR,  0b11101111); /* 允许 IRQ12 */
+	out8(PIC0_IMR,  0b11111011); /* 仅允许 IRQ2 */
+	out8(PIC1_IMR,  0b11111111); /* 屏蔽从 PIC 所有中断 */
 }

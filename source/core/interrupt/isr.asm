@@ -41,4 +41,15 @@ _asm_isr_%1:
 ISR_TEMPLATE keyboard
 ISR_TEMPLATE mouse
 ISR_TEMPLATE pit
-ISR_TEMPLATE syscall
+
+; void farjmp(uint32_t eip, uint32_t cs)
+global _farjmp
+_farjmp:
+	jmp far [esp + 4]
+	ret
+
+; void farcall(uint32_t eip, uint32_t cs)
+global _farcall
+_farcall:
+	call far [esp + 4]
+	ret

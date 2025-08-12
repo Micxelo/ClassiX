@@ -258,7 +258,6 @@ void layer_move(LAYER *layer, int x, int y)
 	}
 }
 
-
 /*
 	@brief 释放图层。
 	@param layer 目标图层。

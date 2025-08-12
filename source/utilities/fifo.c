@@ -3,6 +3,7 @@
 */
 
 #include <ClassiX/fifo.h>
+#include <ClassiX/task.h>
 #include <ClassiX/typedef.h>
 
 /*
@@ -12,7 +13,7 @@
 	@param buf FIFO 缓冲区指针
 	@param task 有数据写入时需要唤醒的任务
 */
-void fifo_init(FIFO *fifo, size_t size, uint32_t *buf, HANDLE *task)
+void fifo_init(FIFO *fifo, size_t size, uint32_t *buf, TASK *task)
 {
 	fifo->buf = buf;
 	fifo->size = size;
@@ -30,23 +31,19 @@ void fifo_init(FIFO *fifo, size_t size, uint32_t *buf, HANDLE *task)
 */
 int fifo_push(FIFO *fifo, uint32_t data)
 {
-	if (fifo->free == 0) {
-		/* 无空间则溢出 */
-		return -1;
-	}
+	if (fifo->free == 0) 
+		return -1; /* 无空间则溢出 */
 
 	fifo->buf[fifo->idx_write] = data;
 	fifo->idx_write++;
-	if ((size_t) fifo->idx_write == fifo->size) {
+	if ((size_t) fifo->idx_write == fifo->size)
 		fifo->idx_write = 0;
-	}
 	fifo->free--;
-	// if (fifo->task != 0) {
-	// 	if (fifo->task->flags != 2) {
-	// 		/* 任务处于休眠状态 */
-	// 		task_run(fifo->task, -1, 0); /* 唤醒任务 */
-	// 	}
-	// }
+
+	if (fifo->task)
+		if (fifo->task->state != TASK_RUNNING) /* 任务处于休眠状态 */
+			task_register(fifo->task, fifo->task->priority); /* 唤醒任务 */
+
 	return 0;
 }
 
@@ -58,15 +55,14 @@ int fifo_push(FIFO *fifo, uint32_t data)
 uint32_t fifo_pop(FIFO *fifo)
 {
 	uint32_t data;
-	if (fifo->free == fifo->size) {
-		/* 缓冲区为空则溢出 */
-		return -1;
-	}
+	if (fifo->free == fifo->size)
+		return -1; /* 缓冲区为空则溢出 */
+
 	data = fifo->buf[fifo->idx_read];
 	fifo->idx_read++;
-	if ((size_t) fifo->idx_read == fifo->size) {
+	if ((size_t) fifo->idx_read == fifo->size)
 		fifo->idx_read = 0;
-	}
+
 	fifo->free++;
 	return data;
 }
@@ -76,10 +72,6 @@ uint32_t fifo_pop(FIFO *fifo)
 	@param fifo FIFO 结构体指针
 	@return FIFO 中的数据数量。
 */
-static inline int fifo_size(FIFO *fifo)
-{
-	return fifo->size - fifo->free;
-}
 inline int fifo_status(FIFO *fifo)
 {
 	return fifo->size - fifo->free;

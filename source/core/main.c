@@ -20,6 +20,7 @@
 #include <ClassiX/palette.h>
 #include <ClassiX/pit.h>
 #include <ClassiX/rtc.h>
+#include <ClassiX/task.h>
 #include <ClassiX/timer.h>
 #include <ClassiX/typedef.h>
 
@@ -49,11 +50,8 @@ extern uintptr_t bss_end;								/* BSS 段结束地址 */
 
 #define KEYBOARD_DATA0						(256)		/* 键盘数据起始索引 */
 #define MOUSE_DATA0							(512)		/* 鼠标数据起始索引 */
-#define PIT_DATA0							(768)		/* PIT 数据起始索引 */
 
 static FIFO kmsg_queue = { };							/* 内核消息队列 */
-static uint32_t kmsg_queue_buf[KMSG_QUEUE_SIZE] = { };	/* 内核消息队列缓冲区 */
-static MOUSE_DATA mouse_data = { };						/* 鼠标数据结构 */
 
 BITMAP_FONT font_terminus_12n;
 BITMAP_FONT font_terminus_16n;
@@ -96,14 +94,18 @@ static bool check_boot_info(uint32_t mb_magic, multiboot_info_t *mbi)
 	return true;
 }
 
-void main(uint32_t mb_magic, multiboot_info_t *mbi)
+void main(uint32_t mb_magic, multiboot_info_t *mbi, uintptr_t esp0)
 {
+	uint32_t kmsg_queue_buf[KMSG_QUEUE_SIZE] = { }; /* 内核消息队列缓冲区 */
+
 	/* 修饰键 */
 	/* --7----6-----5------4-----3----2-----1------0-- */
 	/* RMeta RAlt RShift RCtrl LMeta LAlt LShift LCtrl */
 	uint8_t key_modifiers = 0;
 	/* 扩展键盘扫描码的识别阶段 */
 	uint8_t expanded_key_phase = 0;
+
+	MOUSE_DATA mouse_data = { }; /* 鼠标数据结构 */
 
 	/* 光标位置 */
 	int cursor_x, cursor_y;
@@ -112,9 +114,6 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 
 	/* 检查 Multiboot 启动信息 */
 	if (!check_boot_info(mb_magic, mbi)) return;
-
-	/* 清零 BSS */
-	memset((void*) &bss_start, 0, (size_t) (&bss_end - &bss_start));
 
 	uart_init();
 
@@ -136,23 +135,34 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	debug("\nFrame buffer info:\n  Address: 0x%llx, Width: %d, Height: %d, Pitch: %d, BPP: %d\n\n",
 		mbi->framebuffer_addr, mbi->framebuffer_width, mbi->framebuffer_height, mbi->framebuffer_pitch, mbi->framebuffer_bpp);
 
+	/* 初始化内存管理 */
+	uintptr_t mem_start = (uintptr_t) &kernel_end_phys;
+	size_t mem_size = (size_t) (mbi->mem_upper * 1024 - (&kernel_end_phys - &kernel_start_phys));
+	memory_init((void*) mem_start, mem_size);
+
 	/* 初始化中断服务 */
 	init_gdt();
 	init_idt();
 	init_pic();
 
-	/* 初始化键盘、鼠标、PIT */
+	/* 初始化键盘、鼠标 */
 	fifo_init(&kmsg_queue, KMSG_QUEUE_SIZE, kmsg_queue_buf, NULL);
 	init_keyboard(&kmsg_queue, KEYBOARD_DATA0);
 	init_mouse(&kmsg_queue, MOUSE_DATA0);
+
+	/* 初始化多任务 */
+	TASK *ktask = init_multitasking();
+	kmsg_queue.task = ktask;
+	task_register(ktask, PRIORITY_HIGH);
+
+	/* 初始化 PIT */
 	init_pit(1000); /* 频率为 1000 Hz */
 
-	sti();
+	/* 开放中断 */
+	out8(PIC0_IMR,  0b11111000); /* 允许 IRQ0、IRQ1 和 IRQ2 */
+	out8(PIC1_IMR,  0b11101111); /* 允许 IRQ12 */
 
-	/* 初始化内存管理 */
-	uintptr_t mem_start = (uintptr_t) &kernel_end_phys;
-	size_t mem_size = (size_t) (mbi->mem_upper * 1024 - (&kernel_end_phys - &kernel_start_phys));
-	memory_init((void*) mem_start, mem_size);
+	sti();
 
 	/* 初始化内嵌资源 */
 	font_terminus_12n = psf_load(builtin_terminus12n);
@@ -185,7 +195,7 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 				layer_move(layer_cursor, new_cursor_x, new_cursor_y);
 				new_cursor_x = -1;
 			} else {
-				
+				task_sleep(ktask);
 			}
 		} else {
 			uint32_t _data = fifo_pop(&kmsg_queue);
@@ -196,7 +206,7 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 					/* 扩展键前缀 */
 					expanded_key_phase = 1;
 				}
-			} else if (MOUSE_DATA0 <= _data && _data < PIT_DATA0) {
+			} else {
 				/* 鼠标数据 */
 				if (mouse_decoder(&mouse_data, _data - MOUSE_DATA0)) {
 					/* 移动光标 */
@@ -227,8 +237,6 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 			}
 		}
 
-		/* 定时器过程 */
-		timer_process();
 		hlt();
 	}
 }

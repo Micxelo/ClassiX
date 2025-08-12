@@ -16,7 +16,8 @@
 #define AR_3_CODE32_ER						(0xcffa)
 #define AR_3_DATA32_RW						(0xcff2)
 
-#define GDT_LIMIT							(0x0800)
+#define GDT_LIMIT							(1024)
+#define TASK_GDT0							(3)
 
 #define AR_LDT								(0x0082)
 #define AR_TSS32							(0x0089)
@@ -34,6 +35,7 @@
 #define PIC1_ICW2							(0x00a1)
 #define PIC1_ICW3							(0x00a1)
 #define PIC1_ICW4							(0x00a1)
+
 
 typedef struct {
 	/* 由处理器自动压入的部分 */
@@ -62,6 +64,9 @@ void idt_set_gate(uint8_t num, uint32_t base, uint16_t selector, uint32_t ar);
 void init_gdt(void);
 void init_idt(void);
 void init_pic(void);
+
+extern void farjmp(uint32_t eip, uint32_t cs);
+extern void farcall(uint32_t eip, uint32_t cs);
 
 #ifdef __cplusplus
 	}

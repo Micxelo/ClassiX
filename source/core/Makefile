@@ -8,7 +8,7 @@ AS      =
 CFLAGS  =
 ASFLAGS =
 
-TARGETS = boot.obj main.obj memory.obj syscall.obj
+TARGETS = boot.obj main.obj memory.obj task.obj
 
 .PHONY : default
 default :

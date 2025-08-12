@@ -84,6 +84,8 @@ int mouse_decoder(MOUSE_DATA *mouse_data, uint8_t data)
 
 			/* 完整数据包已接收 */
 			mouse_data->phase = 0; /* 重置阶段 */
+			/* debug("Mouse data: dX=%d, dY=%d, Buttons=0x%x.\n", 
+				mouse_data->dx, mouse_data->dy, mouse_data->button); */
 			return 1;
 			break;
 
@@ -97,10 +99,10 @@ int mouse_decoder(MOUSE_DATA *mouse_data, uint8_t data)
 
 void isr_mouse(ISR_PARAMS params)
 {
-	out8(PIC1_OCW2, 0x20); /* 从 PIC EOI */
-	out8(PIC0_OCW2, 0x20); /* 主 PIC EOI */
-
 	uint32_t data = in8(PORT_MOUSE_DATA);
 	fifo_push(mouse_fifo, data + mousedata0);
+
+	out8(PIC1_OCW2, 0x20); /* 从 PIC EOI */
+	out8(PIC0_OCW2, 0x20); /* 主 PIC EOI */
 	return;
 }

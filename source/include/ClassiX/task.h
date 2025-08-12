@@ -9,9 +9,48 @@
 	extern "C" {
 #endif
 
+#include <ClassiX/fifo.h>
+#include <ClassiX/interrupt.h>
 #include <ClassiX/typedef.h>
 
+#define MAX_TASKS							(1024)
 
+#define DEFAULT_USER_STACK					(4 * 1024)
+#define TIME_SLICE_BASE_PER_PRIORITY_MS		(5)
+
+typedef enum {
+	TASK_FREE = 0,
+	TASK_USED,
+	TASK_RUNNING
+} TASK_STATE;
+
+typedef enum {
+	PRIORITY_IDLE = 1,
+	PRIORITY_LOW,
+	PRIORITY_NORMAL,
+	PRIORITY_HIGH,
+} TASK_PRIORITY;
+
+typedef struct {
+	uint32_t backlink, esp0, ss0, esp1, ss1, esp2, ss2, cr3;
+	uint32_t eip, eflags, eax, ecx, edx, ebx, esp, ebp, esi, edi;
+	uint32_t es, cs, ss, ds, fs, gs;
+	uint32_t ldtr, iomap;
+} TSS;
+
+typedef struct TASK {
+	int32_t selector;		/* GDT 选择子 */
+	TASK_STATE state;		/* 任务状态 */
+	TASK_PRIORITY priority;	/* 任务优先级 */
+	FIFO fifo;
+	TSS tss;
+} TASK;
+
+TASK *init_multitasking(void);
+TASK *task_alloc(void);
+void task_register(TASK *task, TASK_PRIORITY priority);
+void task_schedule(void);
+void task_sleep(TASK *task);
 
 #ifdef __cplusplus
 	}

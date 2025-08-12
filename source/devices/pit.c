@@ -6,6 +6,7 @@
 #include <ClassiX/interrupt.h>
 #include <ClassiX/io.h>
 #include <ClassiX/pit.h>
+#include <ClassiX/task.h>
 #include <ClassiX/timer.h>
 #include <ClassiX/typedef.h>
 
@@ -46,8 +47,16 @@ void isr_pit(ISR_PARAMS params)
 	/* 增加系统时钟滴答计数 */
 	system_ticks++;
 
+	/* 定时器过程 */
+	timer_process();
+
 	/* 发送 EOI 到 PIC */
 	out8(PIC0_OCW2, 0x20); /* 主 PIC EOI */
+
+	/* 任务调度 */
+	extern uint64_t next_schedule_tick;
+	if (next_schedule_tick <= system_ticks)
+		task_schedule();
 }
 
 /*

@@ -54,6 +54,7 @@ start:
 	popf
 
 	; 传递 main 参数
+	push long stack_top		; 栈顶地址
 	push long ebx			; 指向 Multiboot 信息结构体的指针
 	push long eax			; Multiboot 魔数
 

@@ -98,7 +98,7 @@ int timer_start(TIMER *timer, uint64_t interval, int32_t repetition)
 			current->expire_tick = system_ticks + interval;
 			current->state = TIMER_ACTIVE;
 			timer_lock_release();
-			debug("Started timer %p, interval %d ticks, expires at tick %llu, repeats %d times.\n",
+			debug("Started timer %p, interval %llu ticks, expires at tick %llu, repeats %d times.\n",
 				current, current->interval, current->expire_tick, repetition);
 			return 0; /* 成功启动定时器 */
 		}

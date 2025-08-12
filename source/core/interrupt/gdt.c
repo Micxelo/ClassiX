@@ -4,6 +4,7 @@
 
 #include <ClassiX/interrupt.h>
 #include <ClassiX/io.h>
+#include <ClassiX/memory.h>
 
 typedef struct __attribute__((packed)) {
 	uint16_t limit_low;
@@ -41,8 +42,7 @@ void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access, uint8_
 	gdt_entries[num].base_low = (base & 0xffff);
 	gdt_entries[num].base_mid = (base >> 16) & 0xff;
 	gdt_entries[num].access = access;
-	gdt_entries[num].granularity = (limit >> 16) & 0x0f;
-	gdt_entries[num].granularity |= ((gran << 4) & 0xf0);
+	gdt_entries[num].granularity = ((limit >> 16) & 0x0f) | ((gran << 4) & 0xf0);	
 	gdt_entries[num].base_high = (base >> 24) & 0xff;
 }
 
@@ -55,8 +55,10 @@ void init_gdt(void)
 	gdt_ptr.limit = sizeof(gdt_entries) - 1;
 	gdt_ptr.base = (uint32_t) &gdt_entries;
 
-	/* 设置 GDT */
-	gdt_set_gate(0, 0, 0,          0,                     0                  );	/* 空描述符 */
+	for (int i = 0; i < GDT_LIMIT; i++)
+		gdt_set_gate(i, 0, 0, 0, 0);
+
+	/* 设置 GDT */	
 	gdt_set_gate(1, 0, 0xffffffff, AR_0_CODE32_ER & 0xff, AR_0_CODE32_ER >> 8); /* 内核代码段 */
 	gdt_set_gate(2, 0, 0xffffffff, AR_0_DATA32_RW & 0xff, AR_0_DATA32_RW >> 8);	/* 内核数据段 */
 
