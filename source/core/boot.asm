@@ -38,7 +38,7 @@ align 4
 section .bss
 align 16
 stack_bottom:
-	resb 0x1000			; 保留 4 KiB 栈空间
+	resb 0x10000			; 保留 1 MiB 栈空间
 stack_top:
 
 ; linker.ld 指定 start 为内核入口点
@@ -54,14 +54,13 @@ start:
 	popf
 
 	; 传递 main 参数
-	push long stack_top		; 栈顶地址
 	push long ebx			; 指向 Multiboot 信息结构体的指针
 	push long eax			; Multiboot 魔数
 
 	extern _main
 	call _main				; 跳转至 C 入口点
 
-	; 从 main 返回，锁死计算机
+	; 从 main 返回，锁死 CPU
 	cli						; 禁用中断
 .hang:
 	hlt

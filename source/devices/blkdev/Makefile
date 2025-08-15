@@ -1,5 +1,5 @@
 #
-#	ui/font/Makefile
+#	devices/blkdev/Makefile
 #
 
 INCPATH =  ../../include/
@@ -8,7 +8,7 @@ AS      =
 CFLAGS  =
 ASFLAGS =
 
-TARGETS = psf.obj
+TARGETS = harddisk.obj
 
 .PHONY : default
 default :

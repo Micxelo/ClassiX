@@ -2,6 +2,7 @@
 	core/main.c
 */
 
+#include <ClassiX/blkdev.h>
 #include <ClassiX/builtin.h>
 #include <ClassiX/cga.h>
 #include <ClassiX/cpu.h>
@@ -18,6 +19,7 @@
 #include <ClassiX/mouse.h>
 #include <ClassiX/multiboot.h>
 #include <ClassiX/palette.h>
+#include <ClassiX/pci.h>
 #include <ClassiX/pit.h>
 #include <ClassiX/rtc.h>
 #include <ClassiX/task.h>
@@ -94,7 +96,7 @@ static bool check_boot_info(uint32_t mb_magic, multiboot_info_t *mbi)
 	return true;
 }
 
-void main(uint32_t mb_magic, multiboot_info_t *mbi, uintptr_t esp0)
+void main(uint32_t mb_magic, multiboot_info_t *mbi)
 {
 	uint32_t kmsg_queue_buf[KMSG_QUEUE_SIZE] = { }; /* 内核消息队列缓冲区 */
 
@@ -165,9 +167,9 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi, uintptr_t esp0)
 	sti();
 
 	/* 初始化内嵌资源 */
-	font_terminus_12n = psf_load(builtin_terminus12n);
-	font_terminus_16n = psf_load(builtin_terminus16n);
-	font_terminus_16b = psf_load(builtin_terminus16b);
+	font_terminus_12n = psf_load(builtin_font_terminus12n);
+	font_terminus_16n = psf_load(builtin_font_terminus16n);
+	font_terminus_16b = psf_load(builtin_font_terminus16b);
 
 	/* 初始化图层管理 */
 	init_framebuffer(mbi);
@@ -185,6 +187,9 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi, uintptr_t esp0)
 		layer_cursor->buf, layer_cursor->width, 0, 0);
 	layer_move(layer_cursor, cursor_x, cursor_y);
 	layer_set_z(layer_cursor, 1);
+
+	/* 扫描 PCI 设备 */
+	pci_scan_devices();
 	
 	for(;;) {
 		cli();

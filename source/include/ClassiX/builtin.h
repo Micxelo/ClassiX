@@ -14,9 +14,9 @@
 #define MAJOR
 #define MINOR
 
-extern const uint8_t builtin_terminus12n[];
-extern const uint8_t builtin_terminus16n[];
-extern const uint8_t builtin_terminus16b[];
+extern const uint8_t builtin_font_terminus12n[];
+extern const uint8_t builtin_font_terminus16n[];
+extern const uint8_t builtin_font_terminus16b[];
 
 #define CURSOR_WIDTH						16
 #define CURSOR_HEIGHT						16

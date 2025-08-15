@@ -1,5 +1,5 @@
 /*
-	ui/font/psf.c
+	ui/font.c
 */
 
 #include <ClassiX/debug.h>

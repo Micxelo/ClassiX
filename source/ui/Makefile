@@ -8,7 +8,7 @@ AS      =
 CFLAGS  =
 ASFLAGS =
 
-TARGETS = builtin.obj cga.obj framebuf.obj graphic.obj layer.obj palette.obj
+TARGETS = builtin.obj cga.obj font.obj framebuf.obj graphic.obj layer.obj palette.obj
 
 .PHONY : default
 default :
