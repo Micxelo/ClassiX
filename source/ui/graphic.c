@@ -156,17 +156,17 @@ void draw_line(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t x1
 	}
 }
 
+/* 绘制当前点的 8 个对称位置 */
 static void _draw_circle_points(uint32_t *buf, uint16_t bx, int x0, int y0, int x, int y, COLOR color)
 {
-	/* 绘制当前点的 8 个对称位置 */
-    SET_PIXEL32(buf, bx, x0 + x, y0 + y, color);
-    SET_PIXEL32(buf, bx, x0 - x, y0 + y, color);
-    SET_PIXEL32(buf, bx, x0 + x, y0 - y, color);
-    SET_PIXEL32(buf, bx, x0 - x, y0 - y, color);
-    SET_PIXEL32(buf, bx, x0 + y, y0 + x, color);
-    SET_PIXEL32(buf, bx, x0 - y, y0 + x, color);
-    SET_PIXEL32(buf, bx, x0 + y, y0 - x, color);
-    SET_PIXEL32(buf, bx, x0 - y, y0 - x, color);
+	SET_PIXEL32(buf, bx, x0 + x, y0 + y, color);
+	SET_PIXEL32(buf, bx, x0 - x, y0 + y, color);
+	SET_PIXEL32(buf, bx, x0 + x, y0 - y, color);
+	SET_PIXEL32(buf, bx, x0 - x, y0 - y, color);
+	SET_PIXEL32(buf, bx, x0 + y, y0 + x, color);
+	SET_PIXEL32(buf, bx, x0 - y, y0 + x, color);
+	SET_PIXEL32(buf, bx, x0 + y, y0 - x, color);
+	SET_PIXEL32(buf, bx, x0 - y, y0 - x, color);
 }
 
 /*

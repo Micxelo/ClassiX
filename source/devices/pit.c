@@ -75,3 +75,13 @@ void reset_system_ticks(void)
 {
 	system_ticks = 0;
 }
+
+/*
+	@brief 阻塞延时。
+	@param ms 延时时长（毫秒）
+*/
+inline void delay(uint32_t ms)
+{
+	uint64_t end_tick = ms * pit_frequency / 1000;
+	while (system_ticks < end_tick) hlt();
+}

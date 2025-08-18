@@ -27,7 +27,7 @@ typedef struct {
 	uint8_t blue_mask_size;			/* B 掩码大小 */
 } FRAMEBUFFER;
 
-extern FRAMEBUFFER g_fb;
+extern FRAMEBUFFER g_fb;			/* 全局帧缓冲区 */
 
 int init_framebuffer(multiboot_info_t *mbi);
 COLOR get_pixel(uint16_t x, uint16_t y);

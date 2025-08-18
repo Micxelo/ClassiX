@@ -143,14 +143,14 @@ inline void set_year(uint32_t year)
 	@brief 获取当前时间戳（秒）。
 	@return 当前时间戳（秒）
 */
-inline uint32_t mktime(int32_t year0, int32_t mon0, int32_t day, int32_t hour, int32_t min, int32_t sec)
+inline uint64_t mktime(int32_t year0, int32_t mon0, int32_t day, int32_t hour, int32_t min, int32_t sec)
 {
-	uint32_t mon = mon0, year = year0;
+	uint64_t mon = mon0, year = year0;
 
-	if (0 >= (int32_t) (mon -= 2)) {
+	if (0 >= (uint64_t) (mon -= 2)) {
 		mon += 12;
 		year -= 1;
 	}
-	return ((((uint32_t) (year / 4 - year / 100 + year / 400 + 367 * mon / 12 + day) + year * 365 - 719499) * 24 + hour )
+	return ((((uint64_t) (year / 4 - year / 100 + year / 400 + 367 * mon / 12 + day) + year * 365 - 719499) * 24 + hour )
 		* 60 + min ) * 60 + sec;
 }

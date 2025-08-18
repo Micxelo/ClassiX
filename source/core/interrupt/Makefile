@@ -22,7 +22,7 @@ default :
 	@$(AS) $(ASFLAGS) $< -o $@
 	@echo "\tAS\t$@"
 
-.PHONY : mrproper
-mrproper:
+.PHONY : clean
+clean:
 	@rm -f $(TARGETS)
 	@echo "\tRM\t$@"

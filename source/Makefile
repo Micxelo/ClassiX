@@ -19,7 +19,7 @@ DEPS     = core/boot.obj core/main.obj core/memory.obj core/task.obj \
 		   devices/blkdev/harddisk.obj \
            libc/string.obj libc/stdio.obj \
            ui/builtin.obj ui/cga.obj ui/font.obj ui/framebuf.obj ui/graphic.obj ui/layer.obj ui/palette.obj \
-           utilities/fifo.obj utilities/rtc.obj utilities/timer.obj
+           utilities/fatfs.obj utilities/fifo.obj utilities/rtc.obj utilities/timer.obj
 TARGETS  = ClassiX.sys
 
 .PHONY : default
@@ -37,14 +37,14 @@ $(TARGETS) : $(DEPS)
 	@$(LD) $(LDFLAGS) $^ -o $@
 	@echo "\tLD\t$@"
 
-PHONY : mrproper
-mrproper:
-	@$(MAKE) -C core            mrproper
-	@$(MAKE) -C core/interrupt  mrproper
-	@$(MAKE) -C devices         mrproper
-	@$(MAKE) -C devices/blkdev  mrproper
-	@$(MAKE) -C libc            mrproper
-	@$(MAKE) -C ui              mrproper
-	@$(MAKE) -C utilities       mrproper
+PHONY : clean
+clean:
+	@$(MAKE) -C core            clean
+	@$(MAKE) -C core/interrupt  clean
+	@$(MAKE) -C devices         clean
+	@$(MAKE) -C devices/blkdev  clean
+	@$(MAKE) -C libc            clean
+	@$(MAKE) -C ui              clean
+	@$(MAKE) -C utilities       clean
 	@rm -f $(TARGETS)
 	@echo "\tRM\t$@"

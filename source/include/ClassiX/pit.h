@@ -46,6 +46,7 @@ void init_pit(uint32_t frequency);
 void isr_pit(ISR_PARAMS params);
 uint64_t get_system_ticks(void);
 void reset_system_ticks(void);
+void delay(uint32_t ms);
 
 #ifdef __cplusplus
 	}

@@ -98,6 +98,9 @@ static bool check_boot_info(uint32_t mb_magic, multiboot_info_t *mbi)
 
 void main(uint32_t mb_magic, multiboot_info_t *mbi)
 {
+	/* 清空 BSS */
+	memset((void*) &bss_start, 0, (size_t) (&bss_end - &bss_start));
+
 	uint32_t kmsg_queue_buf[KMSG_QUEUE_SIZE] = { }; /* 内核消息队列缓冲区 */
 
 	/* 修饰键 */

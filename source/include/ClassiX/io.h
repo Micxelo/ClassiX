@@ -17,9 +17,9 @@
 #define nop()								asm volatile ("nop")
 #define pause()								asm volatile ("pause")
 
-#define out8(port, data)					asm volatile ("outb %%al, %%dx"::"a"(data), "d"(port))
-#define out16(port, data)					asm volatile ("outw %%ax, %%dx"::"a"(data), "d"(port))
-#define out32(port, data)					asm volatile ("outl %%eax, %%dx"::"a"(data), "d"(port))
+#define out8(port, data)					asm volatile ("outb %%al, %%dx"::"a"((uint8_t) (data)), "d"(port))
+#define out16(port, data)					asm volatile ("outw %%ax, %%dx"::"a"((uint16_t) (data)), "d"(port))
+#define out32(port, data)					asm volatile ("outl %%eax, %%dx"::"a"((uint32_t) (data)), "d"(port))
 
 #define in8(port) ({										\
 	uint8_t _data;											\

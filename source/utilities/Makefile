@@ -8,7 +8,7 @@ AS      =
 CFLAGS  =
 ASFLAGS =
 
-TARGETS = fifo.obj rtc.obj timer.obj
+TARGETS = fatfs.obj fifo.obj rtc.obj timer.obj
 
 .PHONY : default
 default :
@@ -22,8 +22,8 @@ default :
 	@$(AS) $(ASFLAGS) $< -o $@
 	@echo "\tAS\t$@"
 
-.PHONY : mrproper
-mrproper:
+.PHONY : clean
+clean:
 	@rm -f $(TARGETS)
 	@echo "\tRM\t$@"
 	@echo "\tRM\t$@"

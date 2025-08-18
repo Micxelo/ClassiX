@@ -8,8 +8,8 @@
 #include <ClassiX/palette.h>
 #include <ClassiX/typedef.h>
 
-typedef COLOR (* get_pixel_ptr_t) (uint16_t, uint16_t);
-typedef void (* set_pixel_ptr_t) (uint16_t, uint16_t, COLOR);
+typedef COLOR (* get_pixel_ptr_t)(uint16_t, uint16_t);
+typedef void (* set_pixel_ptr_t)(uint16_t, uint16_t, COLOR);
 
 static get_pixel_ptr_t get_pixel_ptr;
 static set_pixel_ptr_t set_pixel_ptr;
@@ -64,12 +64,14 @@ int init_framebuffer(multiboot_info_t *mbi)
 	return 0; /* 成功初始化帧缓冲 */
 }
 
+/* 适用于 ARGB 颜色格式缓冲区的 Get Pixel */
 static inline COLOR get_pixel_argb(uint16_t x, uint16_t y)
 {
 	uint32_t *buf = (uint32_t *) g_fb.addr;
 	return GET_PIXEL32(buf, g_fb.width, x, y);
 }
 
+/* 适用于 ARGB 颜色格式缓冲区的 Set Pixel */
 static inline void set_pixel_argb(uint16_t x, uint16_t y, COLOR color)
 {
 	uint32_t *buf = (uint32_t *) g_fb.addr;
@@ -91,6 +93,7 @@ static inline uint8_t expand_to_8bit(uint32_t value, uint8_t src_bits)
 	return 0;
 }
 
+/* 适用于通用颜色格式缓冲区的 Get Pixel */
 static inline COLOR get_pixel_universal(uint16_t x, uint16_t y)
 {
 	if (x >= g_fb.width || y >= g_fb.height)
@@ -133,6 +136,7 @@ static inline COLOR get_pixel_universal(uint16_t x, uint16_t y)
 	return COLOR32_FROM_RGBA(r, g, b, 0xff);
 }
 
+/* 适用于通用颜色格式缓冲区的 Set Pixel */
 static inline void set_pixel_universal(uint16_t x, uint16_t y, COLOR color)
 {
 	if (x >= g_fb.width || y >= g_fb.height)

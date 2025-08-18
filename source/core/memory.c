@@ -3,7 +3,10 @@
 */
 
 #include <ClassiX/memory.h>
+#include <ClassiX/task.h>
 #include <ClassiX/typedef.h>
+
+#include <string.h>
 
 #define BLOCK_FREE							(0)
 #define BLOCK_USED							(1)
@@ -13,7 +16,7 @@ typedef struct __attribute__((aligned(16))) {
 	uint32_t magic;
 	size_t size;		/* 包括头尾 */
 	uint8_t state;
-	HANDLE *task;
+	TASK *task;			/* 使用此内存块的任务 */
 } block_header_t;
 
 typedef struct __attribute__((aligned(16))) {
@@ -126,6 +129,56 @@ void *kmalloc(size_t size)
 	}
 	/* 内存不足 */
 	return NULL;
+}
+
+/*
+	@brief 重新分配内存块。
+	@param ptr 原内存指针
+	@param new_size 新的字节数
+	@return 新分配的内存指针，失败返回 NULL
+*/
+void *krealloc(void *ptr, size_t new_size)
+{
+	if (ptr == NULL) {
+		/* 等价于 kmalloc */
+		return kmalloc(new_size);
+	}
+	if (new_size == 0) {
+		/* 等价于 kfree */
+		kfree(ptr);
+		return NULL;
+	}
+
+	block_header_t *header = (block_header_t *) ((uint8_t *) ptr - sizeof(block_header_t));
+	if (!(header->magic == BLOCK_MAGIC && header->state == BLOCK_USED)) return NULL;
+
+	size_t old_size = header->size - sizeof(block_header_t) - sizeof(block_footer_t);
+	if (new_size <= old_size) {
+		/* 新尺寸小于等于旧尺寸，直接返回原指针 */
+		return ptr;
+	}
+
+	/* 分配新内存并拷贝旧数据 */
+	void *new_ptr = kmalloc(new_size);
+	if (new_ptr == NULL) return NULL;
+	memcpy(new_ptr, ptr, old_size);
+	kfree(ptr);
+	return new_ptr;
+}
+
+/*
+	@brief 分配并清零内存块。
+	@param nmemb 元素数量
+	@param size 每个元素的字节数
+	@return 分配的内存指针，失败返回 NULL
+*/
+void *kcalloc(size_t nmemb, size_t size)
+{
+	size_t total_size = nmemb * size;
+	void *ptr = kmalloc(total_size);
+	if (ptr)
+		memset(ptr, 0, total_size); /* 清零分配的内存 */
+	return ptr;
 }
 
 /*

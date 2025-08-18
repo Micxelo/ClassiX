@@ -29,29 +29,29 @@ typedef enum {
 
 /* PCI 设备信息 */
 typedef struct {
-    uint8_t bus;
-    uint8_t device;
-    uint8_t function;
-    
-    uint16_t vendor_id;
-    uint16_t device_id;
-    
-    uint8_t class_code;
-    uint8_t subclass;
-    uint8_t prog_if;
-    uint8_t revision;
-    
-    PCI_DEVICE_TYPE type;
-    
-    uint32_t bars[6];     // BAR0-BAR5
-    uint8_t interrupt_pin;
-    uint8_t interrupt_line;
+	uint8_t bus;
+	uint8_t device;
+	uint8_t function;
+
+	uint16_t vendor_id;
+	uint16_t device_id;
+
+	uint8_t class_code;
+	uint8_t subclass;
+	uint8_t prog_if;
+	uint8_t revision;
+
+	PCI_DEVICE_TYPE type;
+
+	uint32_t bars[6];	/* BAR0-BAR5 */
+	uint8_t interrupt_pin;
+	uint8_t interrupt_line;
 } PCI_DEVICE;
 
 /* PCI 设备列表 */
 typedef struct {
-    PCI_DEVICE* devices;
-    int count;
+	PCI_DEVICE* devices;
+	int count;
 } PCI_DEVICE_LIST;
 
 extern PCI_DEVICE_LIST pci_devices;
@@ -62,8 +62,6 @@ uint32_t pci_get_bar(uint8_t bus, uint8_t device, uint8_t function, uint8_t bar_
 void pci_scan_devices(void);
 PCI_DEVICE* pci_find_device(PCI_DEVICE_TYPE type);
 void pci_free_device_list(void);
-
-uint32_t pci_get_ide_bm_base(void);
 
 #ifdef __cplusplus
 	}

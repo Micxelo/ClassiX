@@ -304,33 +304,3 @@ void pci_free_device_list(void)
 	if (pci_devices.devices)
 		kfree(pci_devices.devices);
 }
-
-/*
-	@brief 查找 IDE 控制器。
-	@return Bus Master 基址
-*/
-uint32_t pci_get_ide_bm_base(void)
-{
-	PCI_DEVICE *ide_dev = pci_find_device(PCI_DEV_IDE);
-	if (!ide_dev) {
-		debug("No IDE controller found.\n");
-		return 0;
-	}
-
-	/* BAR4 是 Bus Master 寄存器基址 */
-	uint32_t bm_base = ide_dev->bars[4];
-
-	/* 清除低 4 位标志位 */
-	if (bm_base & 1) /* I/O 空间映射 */
-		bm_base &= ~3;
-	else /* 内存空间映射 */
-		bm_base &= ~0xF;
-
-	if (bm_base == 0) {
-		debug("IDE Bus Master base is zero.\n");
-		return 0;
-	}
-
-	debug("IDE Bus Master base: 0x%08x\n", bm_base);
-	return bm_base;
-}

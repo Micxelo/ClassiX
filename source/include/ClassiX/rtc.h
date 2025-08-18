@@ -25,7 +25,7 @@ uint32_t get_month(void);
 void set_month(uint32_t mon_hex);
 uint32_t get_year(void);
 void set_year(uint32_t year);
-uint32_t mktime(int32_t year0, int32_t mon0, int32_t day, int32_t hour, int32_t min, int32_t sec);
+uint64_t mktime(int32_t year0, int32_t mon0, int32_t day, int32_t hour, int32_t min, int32_t sec);
 
 #ifdef __cplusplus
 	}

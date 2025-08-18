@@ -26,7 +26,6 @@ typedef struct {
 	int32_t z;							/* Z 高度 */
 	uint32_t flags;
 	bool allow_inv;						/* 是否启用透明色 */
-	HANDLE *task;
 } LAYER;
 
 typedef struct {

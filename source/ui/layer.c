@@ -67,7 +67,6 @@ LAYER *layer_alloc(uint16_t width, uint16_t height, bool allow_inv)
 			layer->height = height;
 			layer->z = -1; /* 隐藏 */
 			layer->allow_inv = allow_inv;
-			layer->task = NULL;
 
 			debug("Layer created at %p, size %dx%d.\n", layer, width, height);
 			return layer;
