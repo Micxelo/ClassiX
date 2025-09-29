@@ -12,8 +12,6 @@
 #include <ClassiX/interrupt.h>
 #include <ClassiX/typedef.h>
 
-#define INT_NUM_PIT							(0x20)
-
 /* PIT 端口 */
 #define PIT_CHANNEL0						(0x40)
 #define PIT_CHANNEL1						(0x41)
@@ -39,11 +37,9 @@
 
 #define PIT_BASE_FREQ						(1193182)	/* PIT 的基准频率 (1.193182 MHz) */
 
-extern uint32_t pit_frequency;
-extern volatile uint64_t system_ticks;
+extern const uint32_t pit_frequency;
 
 void init_pit(uint32_t frequency);
-void isr_pit(ISR_PARAMS params);
 uint64_t get_system_ticks(void);
 void reset_system_ticks(void);
 void delay(uint32_t ms);

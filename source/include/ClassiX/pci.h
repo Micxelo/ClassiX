@@ -11,7 +11,7 @@
 
 #include <ClassiX/typedef.h>
 
-/* PCI_DEVICE_TYPE */
+/* PCI 设备类型 */
 typedef enum {
 	PCI_DEV_UNKNOWN,	/* 未知设备 */
 	PCI_DEV_SCSI,		/* SCSI 控制器 */
@@ -55,6 +55,13 @@ typedef struct {
 } PCI_DEVICE_LIST;
 
 extern PCI_DEVICE_LIST pci_devices;
+
+/* 物理区域描述符 */
+typedef struct __attribute__((packed)) {
+	uint32_t physical_address;	/* 物理地址 (32 位) */
+	uint16_t length;			/* 传输长度 (最大 65535 字节) */
+	uint16_t eot;				/* 结束标志 (0x8000 表示最后一个描述符) */
+} PRD_ENTRY;
 
 void pci_enable_device(uint8_t bus, uint8_t device, uint8_t function);
 uint32_t pci_get_bar(uint8_t bus, uint8_t device, uint8_t function, uint8_t bar_index);

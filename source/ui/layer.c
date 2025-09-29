@@ -3,6 +3,7 @@
 */
 
 #include <ClassiX/debug.h>
+#include <ClassiX/framebuf.h>
 #include <ClassiX/layer.h>
 #include <ClassiX/memory.h>
 #include <ClassiX/palette.h>
@@ -10,7 +11,14 @@
 
 #include <string.h>
 
-LAYER_MANAGER layer_manager = { };	/* 图层管理器 */
+struct {
+	uint32_t *fb;						/* 帧缓冲区 */
+	uint8_t *map;
+	uint16_t width, height;
+	int32_t top;						/* 图层数量 */
+	LAYER *layers[MAX_LAYERS];
+	LAYER layers0[MAX_LAYERS];
+} layer_manager = { };					/* 图层管理器 */
 
 /*
 	@brief 初始化图层管理器。
@@ -158,7 +166,7 @@ static void layer_refreshsub(int vx0, int vy0, int vx1, int vy1, int z0, int z1)
 				int vx = layer->x + bx;
 				if (layer_manager.map[vy * layer_manager.width + vx] == id) {
 					COLOR pixel = GET_PIXEL32(layer->buf, layer->width, bx, by);
-					SET_PIXEL32(layer_manager.fb, layer_manager.width, vx, vy, pixel);
+					set_pixel(vx, vy, pixel);
 				}
 			}
 		}

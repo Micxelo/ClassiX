@@ -28,15 +28,6 @@ typedef struct {
 	bool allow_inv;						/* 是否启用透明色 */
 } LAYER;
 
-typedef struct {
-	uint32_t *fb;						/* 帧缓冲区 */
-	uint8_t *map;
-	uint16_t width, height;
-	int32_t top;						/* 图层数量 */
-	LAYER *layers[MAX_LAYERS];
-	LAYER layers0[MAX_LAYERS];
-} LAYER_MANAGER;
-
 int layer_init(uint32_t *fb, uint16_t width, uint16_t height);
 LAYER *layer_alloc(uint16_t width, uint16_t height, bool allow_inv);
 void layer_set_z(LAYER *layer, int z1);

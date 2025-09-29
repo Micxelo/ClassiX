@@ -20,7 +20,7 @@ align 4
 	dd MBFLAGS
 	dd CHECKSUM
 
-	; ELF
+	; ELF 忽略
 	dd 0
 	dd 0
 	dd 0

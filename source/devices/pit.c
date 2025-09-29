@@ -10,8 +10,9 @@
 #include <ClassiX/timer.h>
 #include <ClassiX/typedef.h>
 
-uint32_t pit_frequency;
-volatile uint64_t system_ticks = 0; /* 系统时钟滴答计数 */
+const uint32_t pit_frequency;
+
+static volatile uint64_t system_ticks = 0; /* 系统时钟滴答计数 */
 
 /*
 	@brief 初始化可编程间隔定时器（PIT）。
@@ -19,13 +20,15 @@ volatile uint64_t system_ticks = 0; /* 系统时钟滴答计数 */
 */
 void init_pit(uint32_t frequency)
 {
+	uint32_t *pit_freq = (uint32_t *) (&pit_frequency);
+
 	/* 计算 PIT 的分频值 */
 	uint16_t divisor = PIT_BASE_FREQ / frequency;
-	pit_frequency = frequency;
+	*pit_freq = frequency;
 
 	if (divisor == 0) {
 		divisor = 1;		/* 最低分频值*/
-		pit_frequency = PIT_BASE_FREQ;
+		*pit_freq = PIT_BASE_FREQ;
 		debug("PIT frequency too high, setting to max frequency.\n");
 	}
 

@@ -3,13 +3,23 @@
 */
 
 #ifndef _CLASSIX_FATFS_H_
-#define _CLASSIX_FAT_H_
+#define _CLASSIX_FATFS_H_
 
 #ifdef __cplusplus
 	extern "C" {
 #endif
 
 #include <ClassiX/typedef.h>
+
+/* MBR 分区表项 */
+typedef struct __attribute__((packed)) {
+	uint8_t bootable;		/* 引导标志 */
+	uint8_t start_chs[3];	/* 起始 CHS（弃用） */
+	uint8_t type;			/* 分区类型 */
+	uint8_t end_chs[3];		/* 结束 CHS（弃用） */
+	uint32_t start_lba;		/* 起始 LBA */
+	uint32_t num_sectors;	/* 扇区数 */
+} PART_ENTRY;
 
 #define FAT_MAX_PATH						256
 

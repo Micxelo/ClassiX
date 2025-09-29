@@ -13,8 +13,6 @@
 #include <ClassiX/interrupt.h>
 #include <ClassiX/typedef.h>
 
-#define INT_NUM_MOUSE						(0x2c)
-
 #define MOUSE_LBUTTON						(0b00000001)
 #define MOUSE_RBUTTON						(0b00000010)
 #define MOUSE_MBUTTON						(0b00000100)
@@ -27,7 +25,6 @@ typedef struct {
 
 void init_mouse(FIFO *fifo, int data0);
 int mouse_decoder(MOUSE_DATA *mouse_data, uint8_t data);
-void isr_mouse(ISR_PARAMS params);
 
 #ifdef __cplusplus
 	}

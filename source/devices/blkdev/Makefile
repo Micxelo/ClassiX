@@ -8,7 +8,7 @@ AS      =
 CFLAGS  =
 ASFLAGS =
 
-TARGETS = harddisk.obj
+TARGETS = blkdev.obj fd.obj hd.obj
 
 .PHONY : default
 default :

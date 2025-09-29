@@ -56,7 +56,7 @@ void wait_kbc_sendready(void)
 void isr_keyboard(ISR_PARAMS params)
 {
 	uint32_t data;
-	out8(PIC0_OCW2, 0x20);
+	out8(PIC0_OCW2, 0x20); /* 主 PIC EOI */
 	data = in8(PORT_KEYBOARD_DATA);
 	fifo_push(keyboard_fifo, data + keydata0);
 	debug("Keyboard data: 0x%02x.\n", data);

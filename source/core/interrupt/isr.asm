@@ -38,9 +38,9 @@ _asm_isr_%1:
 %endmacro
 
 ; 使用宏定义各中断处理程序
+ISR_TEMPLATE pit
 ISR_TEMPLATE keyboard
 ISR_TEMPLATE mouse
-ISR_TEMPLATE pit
 
 ; void farjmp(uint32_t eip, uint32_t cs)
 global _farjmp

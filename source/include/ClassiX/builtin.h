@@ -13,6 +13,7 @@
 
 #define MAJOR
 #define MINOR
+#define PATCH
 
 extern const uint8_t builtin_font_terminus12n[];
 extern const uint8_t builtin_font_terminus16n[];

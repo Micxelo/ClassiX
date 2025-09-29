@@ -48,16 +48,16 @@ extern uintptr_t kernel_end_phys;						/* 内核结束物理地址 */
 extern uintptr_t bss_start;								/* BSS 段起始地址 */
 extern uintptr_t bss_end;								/* BSS 段结束地址 */
 
+BITMAP_FONT font_terminus_12n;
+BITMAP_FONT font_terminus_16n;
+BITMAP_FONT font_terminus_16b;
+
 #define KMSG_QUEUE_SIZE						(128)		/* 内核消息队列大小 */
 
 #define KEYBOARD_DATA0						(256)		/* 键盘数据起始索引 */
 #define MOUSE_DATA0							(512)		/* 鼠标数据起始索引 */
 
 static FIFO kmsg_queue = { };							/* 内核消息队列 */
-
-BITMAP_FONT font_terminus_12n;
-BITMAP_FONT font_terminus_16n;
-BITMAP_FONT font_terminus_16b;
 
 /*
 	@brief 检查 Multiboot 启动信息。
@@ -78,6 +78,12 @@ static bool check_boot_info(uint32_t mb_magic, multiboot_info_t *mbi)
 	if (!(mbi->flags & MULTIBOOT_INFO_MEMORY)) {
 		/* 未传递内存信息 */
 		cga_printf("Memory information is unavailable.");
+		return false;
+	}
+
+	if (!(mbi->flags & MULTIBOOT_INFO_BOOTDEV)) {
+		/* 未传递启动设备信息 */
+		cga_printf("Boot device information is unavailable.");
 		return false;
 	}
 
@@ -110,12 +116,11 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	/* 扩展键盘扫描码的识别阶段 */
 	uint8_t expanded_key_phase = 0;
 
-	MOUSE_DATA mouse_data = { }; /* 鼠标数据结构 */
+	MOUSE_DATA mouse_data = { }; 	/* 鼠标数据结构 */
 
-	/* 光标位置 */
-	int cursor_x, cursor_y;
-	/* 光标移动后的位置，new_cursor_x >= 0 表示位置已更新 */
-	int new_cursor_x = -1, new_cursor_y = 0;
+	int cursor_x, cursor_y;				/* 光标位置 */
+	int new_cursor_x, new_cursor_y;		/* 光标移动后的位置 */
+	bool cursor_updated = false;		/* 光标是否已更新 */
 
 	/* 检查 Multiboot 启动信息 */
 	if (!check_boot_info(mb_magic, mbi)) return;
@@ -136,14 +141,37 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 			mmap->size, mmap->addr, mmap->len, mmap->type);
 	}
 
+	/* 启动设备信息 */
+	debug("\nBoot device: %08x\n", mbi->boot_device);
+	switch(mbi->boot_device >> 24) {
+		case BIOS_DEV_FD0:
+			debug("Boot from floppy 0.\n");
+			break;
+		case BIOS_DEV_FD1:
+			debug("Boot from floppy 1.\n");
+			break;
+		case BIOS_DEV_HD0:
+			debug("Boot from harddisk 0.\n");
+			break;
+		case BIOS_DEV_HD1:
+			debug("Boot from harddisk 0.\n");
+			break;
+		default:
+			debug("Unknown boot device.\n");
+	}
+
 	/* Video Mode 信息 */
 	debug("\nFrame buffer info:\n  Address: 0x%llx, Width: %d, Height: %d, Pitch: %d, BPP: %d\n\n",
 		mbi->framebuffer_addr, mbi->framebuffer_width, mbi->framebuffer_height, mbi->framebuffer_pitch, mbi->framebuffer_bpp);
 
+	/* 启动参数 */
+	if (mbi->flags & MULTIBOOT_INFO_CMDLINE)
+		debug("Boot comand line: %s\n\n", mbi->cmdline);
+	
 	/* 初始化内存管理 */
 	uintptr_t mem_start = (uintptr_t) &kernel_end_phys;
 	size_t mem_size = (size_t) (mbi->mem_upper * 1024 - (&kernel_end_phys - &kernel_start_phys));
-	memory_init((void*) mem_start, mem_size);
+	memory_init(&g_mp, (void*) mem_start, mem_size);
 
 	/* 初始化中断服务 */
 	init_gdt();
@@ -163,16 +191,14 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	/* 初始化 PIT */
 	init_pit(1000); /* 频率为 1000 Hz */
 
-	/* 开放中断 */
+	/* 初始化 PIC */
 	out8(PIC0_IMR,  0b11111000); /* 允许 IRQ0、IRQ1 和 IRQ2 */
 	out8(PIC1_IMR,  0b11101111); /* 允许 IRQ12 */
 
-	sti();
-
 	/* 初始化内嵌资源 */
-	font_terminus_12n = psf_load(builtin_font_terminus12n);
-	font_terminus_16n = psf_load(builtin_font_terminus16n);
-	font_terminus_16b = psf_load(builtin_font_terminus16b);
+	// font_terminus_12n = psf_load(builtin_font_terminus12n);
+	// font_terminus_16n = psf_load(builtin_font_terminus16n);
+	// font_terminus_16b = psf_load(builtin_font_terminus16b);
 
 	/* 初始化图层管理 */
 	init_framebuffer(mbi);
@@ -191,17 +217,30 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	layer_move(layer_cursor, cursor_x, cursor_y);
 	layer_set_z(layer_cursor, 1);
 
+	sti();
+
 	/* 扫描 PCI 设备 */
-	pci_scan_devices();
-	
+	// pci_scan_devices();
+
+	/* 注册块设备 */
+	// register_blkdevs();
+
+	/* 获取启动设备 */
+	BLKDEV *boot_device = get_device((mbi->boot_device >> 24) & 0xFF);
+	if (boot_device)
+		debug("Boot device found: ID=0x%x, Sector size=%d, Total sectors=%d\n",
+			boot_device->id, boot_device->sector_size, boot_device->total_sectors);
+	else
+		debug("Boot device not found.\n");
+
 	for(;;) {
 		cli();
 		if (fifo_status(&kmsg_queue) == 0) {
 			sti();
-			if (new_cursor_x >= 0) {
+			if (cursor_updated) {
 				/* 光标位置已更新 */
 				layer_move(layer_cursor, new_cursor_x, new_cursor_y);
-				new_cursor_x = -1;
+				cursor_updated = false;
 			} else {
 				task_sleep(ktask);
 			}
@@ -227,6 +266,7 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 					if (cursor_y > (signed) (g_fb.height - 1)) cursor_y = g_fb.height - 1;
 					new_cursor_x = cursor_x;
 					new_cursor_y = cursor_y;
+					cursor_updated = true;
 					
 					if (mouse_data.button) {
 						/* 按下鼠标 */

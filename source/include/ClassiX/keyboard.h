@@ -13,11 +13,8 @@
 #include <ClassiX/interrupt.h>
 #include <ClassiX/typedef.h>
 
-#define INT_NUM_KEYBOARD					(0x21)
-
 void init_keyboard(FIFO *fifo, int data0);
 void wait_kbc_sendready(void);
-void isr_keyboard(ISR_PARAMS params);
 
 #define EXPANDED_KEY_PREFIX					(0xe0)
 

@@ -2,6 +2,7 @@
 	core/task.c
 */
 
+#include <ClassiX/debug.h>
 #include <ClassiX/fifo.h>
 #include <ClassiX/interrupt.h>
 #include <ClassiX/io.h>
@@ -64,8 +65,9 @@ TASK *init_multitasking(void)
 	task_register(idle, PRIORITY_IDLE);
 
 	ticks_per_priority_unit = (pit_frequency * TIME_SLICE_BASE_PER_PRIORITY_MS) / 1000;
-	next_schedule_tick = system_ticks + ktask->priority * ticks_per_priority_unit;
+	next_schedule_tick = get_system_ticks() + ktask->priority * ticks_per_priority_unit;
 
+	debug("Multitasking initialized.\n");
 	return ktask;
 }
 
@@ -95,9 +97,12 @@ TASK *task_alloc(void)
 			task->tss.gs = 0;
 			task->tss.ldtr = 0;
 			task->tss.iomap = 0x40000000;
+			debug("Allocated task %p.\n", task);
 			return task;
 		}
 	}
+	
+	debug("Failed to allocate free task.\n");
 	return NULL; /* 无空闲任务 */
 }
 

@@ -95,7 +95,7 @@ int timer_start(TIMER *timer, uint64_t interval, int32_t repetition)
 			}
 			current->interval = interval;
 			current->repetition = repetition;
-			current->expire_tick = system_ticks + interval;
+			current->expire_tick = get_system_ticks() + interval;
 			current->state = TIMER_ACTIVE;
 			timer_lock_release();
 			debug("Started timer %p, interval %llu ticks, expires at tick %llu, repeats %d times.\n",
@@ -178,7 +178,7 @@ void timer_process(void)
 {
 	timer_lock_acquire();
 
-	uint64_t current_tick = system_ticks;
+	uint64_t current_tick = get_system_ticks();
 	TIMER *current = timer_head;
 	while (current) {
 		if (current->state == TIMER_ACTIVE && current->expire_tick <= current_tick) {
@@ -212,10 +212,11 @@ void timer_process(void)
 	timer_lock_release();
 
 	static uint64_t last_cleanup_tick = 0;
-	if (system_ticks - last_cleanup_tick >= 60 * pit_frequency) {
+	current_tick = get_system_ticks();
+	if (current_tick - last_cleanup_tick >= 60 * pit_frequency) {
 		/* 每 60 秒清理一次 */
 		timer_cleanup();
-		last_cleanup_tick = system_ticks;
+		last_cleanup_tick = current_tick;
 	}
 }
 

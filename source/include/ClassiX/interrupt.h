@@ -36,6 +36,10 @@
 #define PIC1_ICW3							(0x00a1)
 #define PIC1_ICW4							(0x00a1)
 
+#define INT_NUM_PIT							(0x20 + 0)
+#define INT_NUM_KEYBOARD					(0x20 + 1)
+#define INT_NUM_FDC							(0x20 + 6)
+#define INT_NUM_MOUSE						(0x20 + 12)
 
 typedef struct {
 	/* 由处理器自动压入的部分 */
