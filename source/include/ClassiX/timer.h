@@ -31,9 +31,9 @@ typedef struct TIMER {
 } TIMER;
 
 TIMER *timer_create(TIMER_CALLBACK callback, void *arg);
-int timer_start(TIMER *timer, uint64_t interval, int32_t repetition);
-int timer_stop(TIMER *timer);
-int timer_delete(TIMER *timer);
+int32_t timer_start(TIMER *timer, uint64_t interval, int32_t repetition);
+int32_t timer_stop(TIMER *timer);
+int32_t timer_delete(TIMER *timer);
 void timer_process(void);
 void timer_cleanup(void);
 uint32_t timer_get_count(void);

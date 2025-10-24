@@ -1,3 +1,8 @@
+/*
+	linker.ld
+	ClassiX Kernel Linking Script
+*/
+
 ENTRY(start)
 
 PHYS_BASE = 0x00100000;					/* 1 M */

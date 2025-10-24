@@ -123,16 +123,16 @@ void fill_rectangle_by_corners(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t
 */
 void draw_line(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, COLOR color)
 {
-	int dx = x1 - x0;
-	int dy = y1 - y0;
-	int abs_dx = (dx < 0) ? -dx : dx;
-	int abs_dy = (dy < 0) ? -dy : dy;
+	int32_t dx = x1 - x0;
+	int32_t dy = y1 - y0;
+	int32_t abs_dx = (dx < 0) ? -dx : dx;
+	int32_t abs_dy = (dy < 0) ? -dy : dy;
 
-	int sx = (dx < 0) ? -1 : 1;
-	int sy = (dy < 0) ? -1 : 1;
+	int32_t sx = (dx < 0) ? -1 : 1;
+	int32_t sy = (dy < 0) ? -1 : 1;
 
 	if (abs_dx >= abs_dy) {
-		int err = abs_dx / 2;
+		int32_t err = abs_dx / 2;
 		while (x0 != x1) {
 			SET_PIXEL32(buf, bx, x0, y0, color);
 			err -= abs_dy;
@@ -143,7 +143,7 @@ void draw_line(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t x1
 			x0 += sx;
 		}
 	} else {
-		int err = abs_dy / 2;
+		int32_t err = abs_dy / 2;
 		while (y0 != y1) {
 			SET_PIXEL32	(buf, bx, x0, y0, color);
 			err -= abs_dx;
@@ -157,7 +157,7 @@ void draw_line(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t x1
 }
 
 /* 绘制当前点的 8 个对称位置 */
-static void _draw_circle_points(uint32_t *buf, uint16_t bx, int x0, int y0, int x, int y, COLOR color)
+static void _draw_circle_points(uint32_t *buf, uint16_t bx, int32_t x0, int32_t y0, int32_t x, int32_t y, COLOR color)
 {
 	SET_PIXEL32(buf, bx, x0 + x, y0 + y, color);
 	SET_PIXEL32(buf, bx, x0 - x, y0 + y, color);
@@ -178,11 +178,11 @@ static void _draw_circle_points(uint32_t *buf, uint16_t bx, int x0, int y0, int 
 	@param radius 圆半径
 	@param color 圆形颜色
 */
-void draw_circle(uint32_t *buf, uint16_t bx, int x0, int y0, int radius, COLOR color)
+void draw_circle(uint32_t *buf, uint16_t bx, int32_t x0, int32_t y0, int32_t radius, COLOR color)
 {
-	int x = 0;
-	int y = radius;
-	int d = 1 - radius;
+	int32_t x = 0;
+	int32_t y = radius;
+	int32_t d = 1 - radius;
 
 	/* 绘制初始的 8 个对称点 */
 	_draw_circle_points(buf, bx, x0, y0, x, y, color);
@@ -209,10 +209,10 @@ void draw_circle(uint32_t *buf, uint16_t bx, int x0, int y0, int radius, COLOR c
 	@param radius 圆半径
 	@param color 填充颜色
 */
-void fill_circle(uint32_t *buf, uint16_t bx, int x0, int y0, int radius, COLOR color)
+void fill_circle(uint32_t *buf, uint16_t bx, int32_t x0, int32_t y0, int32_t radius, COLOR color)
 {
-	for (int y = 0; y <= radius; y++) {
-		for (int x = 0; x <= radius; x++) {
+	for (int32_t y = 0; y <= radius; y++) {
+		for (int32_t x = 0; x <= radius; x++) {
 			if (x * x + y * y <= radius * radius) {
 				SET_PIXEL32(buf, bx, x0 + x, y0 + y, color);
 				SET_PIXEL32(buf, bx, x0 - x, y0 + y, color);
@@ -223,7 +223,7 @@ void fill_circle(uint32_t *buf, uint16_t bx, int x0, int y0, int radius, COLOR c
 	}
 }
 
-static void _draw_ellipse_points(uint32_t *buf, uint16_t bx, int x0, int y0, int x, int y, COLOR color)
+static void _draw_ellipse_points(uint32_t *buf, uint16_t bx, int32_t x0, int32_t y0, int32_t x, int32_t y, COLOR color)
 {
 	/* 绘制当前点的 4 个对称位置 */
 	SET_PIXEL32(buf, bx, x0 + x, y0 + y, color);
@@ -248,9 +248,9 @@ void draw_ellipse(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t
 	if (a == 0 || b == 0)
 		return;
 
-	int x = 0, y = b;
-	int a2 = a * a, b2 = b * b;
-	int d1 = b2 - a2 * b + a2 / 4;
+	int32_t x = 0, y = b;
+	int32_t a2 = a * a, b2 = b * b;
+	int32_t d1 = b2 - a2 * b + a2 / 4;
 
 	while (b2 * x <= a2 * y) {
 		_draw_ellipse_points(buf, bx, x0, y0, x, y, color);
@@ -263,7 +263,7 @@ void draw_ellipse(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t
 		}
 	}
 
-	int d2 = b2 * (x + 0.5) * (x + 0.5) + a2 * (y - 1) * (y - 1) - a2 * b2;
+	int32_t d2 = b2 * (x + 0.5) * (x + 0.5) + a2 * (y - 1) * (y - 1) - a2 * b2;
 	while (y >= 0) {
 		_draw_ellipse_points(buf, bx, x0, y0, x, y, color);
 		y--;
@@ -289,8 +289,8 @@ void draw_ellipse(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t
 */
 void fill_ellipse(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t a, uint16_t b, COLOR color)
 {
-	for (int y = 0; y <= b; y++) {
-		for (int x = 0; x <= a; x++) {
+	for (int32_t y = 0; y <= b; y++) {
+		for (int32_t x = 0; x <= a; x++) {
 			if ((x * x * b * b + y * y * a * a) <= (a * a * b * b)) {
 				SET_PIXEL32(buf, bx, x0 + x, y0 + y, color);
 				SET_PIXEL32(buf, bx, x0 - x, y0 + y, color);

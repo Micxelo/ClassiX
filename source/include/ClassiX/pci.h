@@ -51,7 +51,7 @@ typedef struct {
 /* PCI 设备列表 */
 typedef struct {
 	PCI_DEVICE* devices;
-	int count;
+	int32_t count;
 } PCI_DEVICE_LIST;
 
 extern PCI_DEVICE_LIST pci_devices;

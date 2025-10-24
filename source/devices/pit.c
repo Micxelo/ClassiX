@@ -85,6 +85,7 @@ void reset_system_ticks(void)
 */
 inline void delay(uint32_t ms)
 {
-	uint64_t end_tick = ms * pit_frequency / 1000;
-	while (system_ticks < end_tick) hlt();
+	uint64_t end_tick = ms * pit_frequency / 1000 + system_ticks;
+	while (system_ticks < end_tick)
+		hlt();
 }

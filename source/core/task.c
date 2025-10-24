@@ -39,7 +39,7 @@ TASK *init_multitasking(void)
 	task_manager = kmalloc(sizeof(struct TASK_MANAGER));
 	if (!task_manager) return NULL;
 
-	for (int i = 0; i < MAX_TASKS; i++) {
+	for (int32_t i = 0; i < MAX_TASKS; i++) {
 		task_manager->tasks0[i].state = TASK_FREE;
 		task_manager->tasks0[i].selector = (TASK_GDT0 + i) * 8;
 		gdt_set_gate(TASK_GDT0 + i, (uint32_t) &task_manager->tasks0[i].tss, sizeof(TSS) - 1, AR_TSS32 & 0xff, AR_TSS32 >> 16);
@@ -79,7 +79,7 @@ TASK *init_multitasking(void)
 TASK *task_alloc(void)
 {
 	TASK *task;
-	for (int i = 0; i < MAX_TASKS; i++) {
+	for (int32_t i = 0; i < MAX_TASKS; i++) {
 		if (task_manager->tasks0[i].state == TASK_FREE) {
 			task = &task_manager->tasks0[i];
 			task->state = TASK_USED;
@@ -121,7 +121,7 @@ void task_register(TASK *task, TASK_PRIORITY priority)
 		task_manager->tasks[task_manager->running++] = task;
 		if (priority > task_manager->tasks[task_manager->now]->priority) {
 			/* 新任务优先级高于当前任务，立即切换 */
-			for (int i = 0; i < (signed)task_manager->running; i++) {
+			for (int32_t i = 0; i < (signed)task_manager->running; i++) {
 				if (task_manager->tasks[i] == task) {
 					task_manager->now = i;
 					break;
@@ -163,7 +163,7 @@ void task_sleep(TASK *task)
 		if (task == task_manager->tasks[task_manager->now])
 			ts = true; /* 使自己休眠（Yield），需要进行任务切换 */
 
-		for (int i = 0; i < (signed) task_manager->running; i++)
+		for (int32_t i = 0; i < (signed) task_manager->running; i++)
 			if (task == task_manager->tasks[i]) {
 				task_manager->running--;
 				if (i < (signed) task_manager->now) task_manager->now--;

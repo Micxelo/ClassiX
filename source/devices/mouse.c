@@ -24,7 +24,7 @@ static FIFO *mouse_fifo;
 	@param fifo 鼠标数据的 FIFO
 	@param data0 鼠标数据的偏移量
 */
-void init_mouse(FIFO *fifo, int data0)
+void init_mouse(FIFO *fifo, int32_t data0)
 {
 	mouse_fifo = fifo;
 	mousedata0 = data0;
@@ -47,7 +47,7 @@ void init_mouse(FIFO *fifo, int data0)
 	@param data 鼠标数据字节
 	@return 如果接收到完整的数据包，返回 1；否则返回 0。
 */
-int mouse_decoder(MOUSE_DATA *mouse_data, uint8_t data)
+int32_t mouse_decoder(MOUSE_DATA *mouse_data, uint8_t data)
 {
 	if (data == 0xfa) {
 		/* 初始化确认包，重置状态 */

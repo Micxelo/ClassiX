@@ -27,7 +27,7 @@ static inline void set_pixel_universal(uint16_t x, uint16_t y, COLOR color);
 	@param mbi Multiboot 信息
 	@return 成功返回 0，失败返回 -1
 */
-int init_framebuffer(multiboot_info_t *mbi)
+int32_t init_framebuffer(multiboot_info_t *mbi)
 {
 	if (!(mbi && mbi->flags & MULTIBOOT_INFO_FRAMEBUFFER_INFO)) {
 		debug("Failed to initialize global framebuffer.\n");

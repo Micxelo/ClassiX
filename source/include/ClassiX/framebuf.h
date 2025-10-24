@@ -29,7 +29,7 @@ typedef struct {
 
 extern FRAMEBUFFER g_fb;			/* 全局帧缓冲区 */
 
-int init_framebuffer(multiboot_info_t *mbi);
+int32_t init_framebuffer(multiboot_info_t *mbi);
 COLOR get_pixel(uint16_t x, uint16_t y);
 void set_pixel(uint16_t x, uint16_t y, COLOR color);
 

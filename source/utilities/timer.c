@@ -10,7 +10,7 @@
 #include <ClassiX/typedef.h>
 
 static TIMER *timer_head = NULL;		/* 定时器链表的头指针 */
-static volatile int timer_lock = 0;		/* 互斥锁 */
+static volatile int32_t timer_lock = 0;		/* 互斥锁 */
 
 /* 获取锁 */
 static void timer_lock_acquire(void)
@@ -81,7 +81,7 @@ TIMER *timer_create(TIMER_CALLBACK callback, void *arg)
 	@param repetition 定时器重复次数，-1 表示循环
 	@return 成功返回 0，失败返回 -1
 */
-int timer_start(TIMER *timer, uint64_t interval, int32_t repetition)
+int32_t timer_start(TIMER *timer, uint64_t interval, int32_t repetition)
 {
 	timer_lock_acquire();
 
@@ -115,7 +115,7 @@ int timer_start(TIMER *timer, uint64_t interval, int32_t repetition)
 	@param timer 定时器
 	@return 成功返回 0，失败返回 -1
 */
-int timer_stop(TIMER *timer)
+int32_t timer_stop(TIMER *timer)
 {
 	timer_lock_acquire();
 
@@ -145,7 +145,7 @@ int timer_stop(TIMER *timer)
 	@param timer 定时器
 	@return 成功返回 0，失败返回 -1
 */
-int timer_delete(TIMER *timer)
+int32_t timer_delete(TIMER *timer)
 {
 	timer_lock_acquire();
 	

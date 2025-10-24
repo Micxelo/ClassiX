@@ -23,7 +23,7 @@ static FIFO *keyboard_fifo;
 	@param fifo FIFO 缓冲区指针
 	@param data0 键盘数据偏移量
 */
-void init_keyboard(FIFO *fifo, int data0)
+void init_keyboard(FIFO *fifo, int32_t data0)
 {
 	/* 将 FIFO 缓冲区的内容保存到全局变量里 */
 	keyboard_fifo = fifo;

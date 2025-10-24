@@ -56,7 +56,7 @@ IDE_DEVICE ide_devices[IDE_DEVICE_COUNT] = {
 };
 
 /* 等待 IDE 状态 */
-static int ide_wait_status(bool primary, uint8_t mask, uint8_t value)
+static int32_t ide_wait_status(bool primary, uint8_t mask, uint8_t value)
 {
 	uint32_t timeout = IDE_WAIT_TIMEOUT;
 	uint16_t base = primary ? IDE_PRIMARY_BASE : IDE_SECONDARY_BASE;
@@ -80,19 +80,19 @@ static int ide_wait_status(bool primary, uint8_t mask, uint8_t value)
 }
 
 /* 等待 IDE 就绪 */
-static int ide_wait_ready(bool primary)
+static int32_t ide_wait_ready(bool primary)
 {
 	return ide_wait_status(primary, IDE_STATUS_BSY, 0);
 }
 
 /* 等待数据请求 */
-static int ide_wait_drq(bool primary)
+static int32_t ide_wait_drq(bool primary)
 {
 	return ide_wait_status(primary, IDE_STATUS_BSY | IDE_STATUS_DRQ, IDE_STATUS_DRQ);
 }
 
 /* 识别 IDE 设备 */
-static int ide_identify(IDE_DEVICE *dev)
+static int32_t ide_identify(IDE_DEVICE *dev)
 {
 	uint16_t base = dev->primary ? IDE_PRIMARY_BASE : IDE_SECONDARY_BASE;
 	uint16_t buffer[256];
@@ -101,7 +101,7 @@ static int ide_identify(IDE_DEVICE *dev)
 	out8(base + IDE_REG_DRIVE_SELECT, 
 		(dev->master ? IDE_DRIVE_MASTER : IDE_DRIVE_SLAVE) | IDE_DRIVE_LBA_MODE);
 
-	int err = ide_wait_ready(dev->primary);
+	int32_t err = ide_wait_ready(dev->primary);
 	if (err != BD_SUCCESS) {
 		dev->type = IDE_DEVICE_NONE;
 		return err;
@@ -118,28 +118,28 @@ static int ide_identify(IDE_DEVICE *dev)
 	}
 
 	/* 读取数据 */
-	for (int i = 0; i < 256; i++)
+	for (int32_t i = 0; i < 256; i++)
 		buffer[i] = in16(base + IDE_REG_DATA);
 
 	/* 解析设备类型 */
 	dev->type = (buffer[0] & 0x8000) ? IDE_DEVICE_CDROM : IDE_DEVICE_HD;
 
 	/* 解析型号 */
-	for (int i = 0; i < 20; i++) {
+	for (int32_t i = 0; i < 20; i++) {
 		dev->model[i * 2] = (buffer[27 + i] >> 8) & 0xFF;
 		dev->model[i * 2 + 1] = buffer[27 + i] & 0xFF;
 	}
 	dev->model[40] = '\0';
 
 	/* 解析序列号 */
-	for (int i = 0; i < 10; i++) {
+	for (int32_t i = 0; i < 10; i++) {
 		dev->serial[i * 2] = (buffer[10 + i] >> 8) & 0xFF;
 		dev->serial[i * 2 + 1] = buffer[10 + i] & 0xFF;
 	}
 	dev->serial[20] = '\0';
 
 	/* 解析固件版本 */
-	for (int i = 0; i < 4; i++) {
+	for (int32_t i = 0; i < 4; i++) {
 		dev->firmware[i * 2] = (buffer[23 + i] >> 8) & 0xFF;
 		dev->firmware[i * 2 + 1] = buffer[23 + i] & 0xFF;
 	}
@@ -170,9 +170,9 @@ static int ide_identify(IDE_DEVICE *dev)
 */
 uint32_t ide_init(void)
 {
-	int count = 0;
+	uint32_t count = 0;
 	
-	for (int i = 0; i < IDE_DEVICE_COUNT; i++) {
+	for (int32_t i = 0; i < IDE_DEVICE_COUNT; i++) {
 		if (ide_identify(&ide_devices[i]) == BD_SUCCESS) {
 			count++;
 			debug("IDE device %d initialized: %s\n", i, ide_devices[i].model);
@@ -187,12 +187,12 @@ uint32_t ide_init(void)
 }
 
 /* 选择 IDE 驱动器 */
-static int ide_select_device(IDE_DEVICE *dev, uint32_t lba)
+static int32_t ide_select_device(IDE_DEVICE *dev, uint32_t lba)
 {
 	uint16_t base = dev->primary ? IDE_PRIMARY_BASE : IDE_SECONDARY_BASE;
 
 	/* 等待设备就绪 */
-	int err = ide_wait_ready(dev->primary);
+	int32_t err = ide_wait_ready(dev->primary);
 	if (err != BD_SUCCESS)
 		return err;
 
@@ -236,7 +236,7 @@ int32_t ide_read_sectors(IDE_DEVICE *dev, uint32_t lba, uint32_t sec_count, uint
 	uint16_t base = dev->primary ? IDE_PRIMARY_BASE : IDE_SECONDARY_BASE;
 
 	/* 选择设备并设置 LBA 地址 */
-	int err = ide_select_device(dev, lba);
+	int32_t err = ide_select_device(dev, lba);
 	if (err != BD_SUCCESS) return err;
 
 	/* 设置扇区计数 */
@@ -252,7 +252,7 @@ int32_t ide_read_sectors(IDE_DEVICE *dev, uint32_t lba, uint32_t sec_count, uint
 		if (err != BD_SUCCESS) return BD_IO_ERROR;
 
 		/* 读取 512 字节 */
-		for (int j = 0; j < HD_SECTOR_SIZE / 2; j++)
+		for (int32_t j = 0; j < HD_SECTOR_SIZE / 2; j++)
 			*buf++ = in16(base + IDE_REG_DATA);
 
 		/* 空读状态寄存器 */
@@ -283,7 +283,7 @@ int32_t ide_write_sectors(IDE_DEVICE *dev, uint32_t lba, uint32_t sec_count, con
 	uint16_t base = dev->primary ? IDE_PRIMARY_BASE : IDE_SECONDARY_BASE;
 
 	/* 选择设备并设置 LBA 地址 */
-	int err = ide_select_device(dev, lba);
+	int32_t err = ide_select_device(dev, lba);
 	if (err != BD_SUCCESS) return err;
 
 	/* 设置扇区计数 */
@@ -299,7 +299,7 @@ int32_t ide_write_sectors(IDE_DEVICE *dev, uint32_t lba, uint32_t sec_count, con
 		if (err != BD_SUCCESS) return BD_IO_ERROR;
 
 		/* 写入 512 字节 */
-		for (int j = 0; j < HD_SECTOR_SIZE / 2; j++)
+		for (int32_t j = 0; j < HD_SECTOR_SIZE / 2; j++)
 			out16(base + IDE_REG_DATA, *buf++);
 
 		/* 空读状态寄存器 */
@@ -323,7 +323,7 @@ int32_t ide_flush_cache(IDE_DEVICE *dev)
 	uint16_t base = dev->primary ? IDE_PRIMARY_BASE : IDE_SECONDARY_BASE;
 
 	/* 等待设备就绪 */
-	int err = ide_wait_ready(dev->primary);
+	int32_t err = ide_wait_ready(dev->primary);
 	if (err != BD_SUCCESS) return err;
 
 	/* 发送刷新缓存命令 */

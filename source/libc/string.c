@@ -67,9 +67,9 @@ inline char *strncat(char *dest, const char *src, size_t count)
 	return dest;
 }
 
-inline int strcmp(const char *s1, const char *s2)
+inline int32_t strcmp(const char *s1, const char *s2)
 {
-	register int _res asm("ax");
+	register int32_t _res asm("ax");
 	asm("    cld              \n"
 		"1:  lodsb            \n"
 		"    scasb            \n"
@@ -87,9 +87,9 @@ inline int strcmp(const char *s1, const char *s2)
 	return _res;
 }
 
-inline int strncmp(const char *s1, const char *s2, size_t count)
+inline int32_t strncmp(const char *s1, const char *s2, size_t count)
 {
-	register int _res asm("ax");
+	register int32_t _res asm("ax");
 	asm("    cld              \n"
 		"1:  decl %3          \n"
 		"    js 2f            \n"
@@ -252,7 +252,7 @@ inline char *strstr(const char *s1, const char *s2)
 
 inline size_t strlen(const char *s)
 {
-	register int _res asm("cx");
+	register int32_t _res asm("cx");
 	asm("cld    \n"
 		"repne  \n"
 		"scasb  \n"
@@ -349,9 +349,9 @@ inline void *memmove(void *dest, void *src, size_t n)
 	return dest;
 }
 
-inline int memcmp(void *s1, void *s2, size_t n)
+inline int32_t memcmp(void *s1, void *s2, size_t n)
 {
-	register int _res asm("ax");
+	register int32_t _res asm("ax");
 	asm("    cld           \n"
 		"    repe          \n"
 		"    cmpsb         \n"
@@ -365,7 +365,7 @@ inline int memcmp(void *s1, void *s2, size_t n)
 	return _res;
 }
 
-inline void *memchr(void *s, unsigned char c, size_t n)
+inline void *memchr(void *s, uint8_t c, size_t n)
 {
 	if (!n) {
 		return NULL;
@@ -383,7 +383,7 @@ inline void *memchr(void *s, unsigned char c, size_t n)
 	return _res;
 }
 
-inline void *memset(void *s, unsigned char c, size_t n)
+inline void *memset(void *s, uint8_t c, size_t n)
 {
 	asm("cld\n"
 		"rep\n"

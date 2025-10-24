@@ -72,12 +72,12 @@ void uart_puts(const char *str)
 	@param format 格式字符串
 	@return 输出的字符数
 */
-int uart_printf(const char *format, ...)
+int32_t uart_printf(const char *format, ...)
 {
 	const size_t max_length = 1024;
 	char buf[max_length];
 
-	int result;
+	int32_t result;
 	va_list va;
 	va_start(va, format);
 

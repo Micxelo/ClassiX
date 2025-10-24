@@ -29,7 +29,7 @@ void fifo_init(FIFO *fifo, size_t size, uint32_t *buf, TASK *task)
 	@param data 要写入的数据
 	@return 如果写入成功，返回 0；如果 FIFO 已满，返回 -1。
 */
-int fifo_push(FIFO *fifo, uint32_t data)
+int32_t fifo_push(FIFO *fifo, uint32_t data)
 {
 	if (fifo->free == 0) 
 		return -1; /* 无空间则溢出 */
@@ -72,7 +72,7 @@ uint32_t fifo_pop(FIFO *fifo)
 	@param fifo FIFO 结构体指针
 	@return FIFO 中的数据数量。
 */
-inline int fifo_status(FIFO *fifo)
+inline int32_t fifo_status(FIFO *fifo)
 {
 	return fifo->size - fifo->free;
 }

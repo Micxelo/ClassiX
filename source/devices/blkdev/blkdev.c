@@ -8,10 +8,10 @@
 
 /* 全局块设备列表 */
 static BLKDEV blkdev_list[16];
-static int blkdev_count = 0;
+static int32_t blkdev_count = 0;
 
 /* 硬盘读 */
-static int hd_read(void *dev, uint32_t lba, uint32_t count, void *buf)
+static int32_t hd_read(void *dev, uint32_t lba, uint32_t count, void *buf)
 {
 	IDE_DEVICE *ide_dev = (IDE_DEVICE *) (((BLKDEV *) dev)->device);
 	
@@ -22,10 +22,10 @@ static int hd_read(void *dev, uint32_t lba, uint32_t count, void *buf)
 }
 
 /* 硬盘写 */
-static int hd_write(void *dev, uint32_t lba, uint32_t count, void *buf)
+static int32_t hd_write(void *dev, uint32_t lba, uint32_t count, void *buf)
 {
 	IDE_DEVICE *ide_dev = (IDE_DEVICE *) (((BLKDEV *) dev)->device);
-	int err;
+	int32_t err;
 	
 	if (ide_dev->type == IDE_DEVICE_NONE)
 		return BD_NOT_EXIST;
@@ -39,14 +39,14 @@ static int hd_write(void *dev, uint32_t lba, uint32_t count, void *buf)
 }
 
 /* 软盘读 (预留) */
-static int fd_read(void *dev, uint32_t lba, uint32_t count, void *buf)
+static int32_t fd_read(void *dev, uint32_t lba, uint32_t count, void *buf)
 {
 	// TODO: 实现软盘读取
 	return BD_NOT_READY;
 }
 
 /* 软盘写 (预留) */
-static int fd_write(void *dev, uint32_t lba, uint32_t count, void *buf)
+static int32_t fd_write(void *dev, uint32_t lba, uint32_t count, void *buf)
 {
 	// TODO: 实现软盘写入
 	return BD_NOT_READY;
@@ -57,7 +57,7 @@ static int fd_write(void *dev, uint32_t lba, uint32_t count, void *buf)
 	@param dev 块设备结构体指针
 	@return 错误码
 */
-static int register_device(BLKDEV *dev)
+static int32_t register_device(BLKDEV *dev)
 {
 	if (blkdev_count >= (signed) (sizeof(blkdev_list) / sizeof(blkdev_list[0])))
 		return BD_INVALID_PARAM;
@@ -73,14 +73,14 @@ static int register_device(BLKDEV *dev)
 	@brief 注册块设备。
 	@return 注册的设备数量
 */
-int register_blkdevs(void)
+int32_t register_blkdevs(void)
 {
-	int count = 0;
+	int32_t count = 0;
 	
 	/* 初始化 IDE 设备 */
 	if (ide_init() > 0) {
 		/* 注册所有检测到的 IDE 设备 */
-		for (int i = 0; i < IDE_DEVICE_COUNT; i++) {
+		for (int32_t i = 0; i < IDE_DEVICE_COUNT; i++) {
 			if (ide_devices[i].type != IDE_DEVICE_NONE) {
 				BLKDEV dev;
 				
@@ -122,7 +122,7 @@ int register_blkdevs(void)
 */
 BLKDEV *get_device(uint32_t dev_id)
 {
-	for (int i = 0; i < blkdev_count; i++) {
+	for (int32_t i = 0; i < blkdev_count; i++) {
 		if (blkdev_list[i].id == dev_id)
 			return &blkdev_list[i];
 	}

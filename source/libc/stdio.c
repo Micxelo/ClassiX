@@ -56,14 +56,14 @@
 
 #define _SPRINTF_MIN 						512 /* 每次回调的字符数 */
 
-typedef char *_SPRINTFCB(const char *buf, void *user, int len);
+typedef char *_SPRINTFCB(const char *buf, void *user, int32_t len);
 
-int vsprintf(char *buf, char const *fmt, va_list va);
-int vsnprintf(char *buf, int count, char const *fmt, va_list va);
-int sprintf(char *buf, char const *fmt, ...) __attribute__((format(printf, 2, 3)));
-int snprintf(char *buf, int count, char const *fmt, ...) __attribute__((format(printf, 3, 4)));
+int32_t vsprintf(char *buf, char const *fmt, va_list va);
+int32_t vsnprintf(char *buf, int32_t count, char const *fmt, va_list va);
+int32_t sprintf(char *buf, char const *fmt, ...) __attribute__((format(printf, 2, 3)));
+int32_t snprintf(char *buf, int32_t count, char const *fmt, ...) __attribute__((format(printf, 3, 4)));
 
-static int _vsprintfcb(_SPRINTFCB *callback, void *user, char *buf, char const *fmt, va_list va);
+static int32_t _vsprintfcb(_SPRINTFCB *callback, void *user, char *buf, char const *fmt, va_list va);
 
 static int32_t _real_to_str(char const **start, uint32_t *len, char *out, int32_t *decimal_pos, double value, uint32_t frac_digits);
 static int32_t _real_to_parts(int64_t *bits, int32_t *expo, double value);
@@ -73,7 +73,7 @@ const char _period = '.';
 const char _comma = ',';
 
 static struct {
-	short temp; /* 使 pair 按 2 字节对齐 */
+	int32_t temp; /* 使 pair 按 2 字节对齐 */
 	char pair[201];
 } _digitpair = {
 	0,
@@ -106,7 +106,7 @@ uint64_t __udivmoddi4(uint64_t dividend, uint64_t divisor, uint64_t *remainder) 
 	uint64_t quotient = 0;
 	uint64_t current_remainder = 0;
 
-	for (int i = 0; i < 64; i++) {
+	for (int32_t i = 0; i < 64; i++) {
 		/* 左移余数并移入被除数的最高位 */
 		current_remainder = (current_remainder << 1) | (dividend >> 63);
 		dividend <<= 1;
@@ -140,10 +140,10 @@ int64_t __divmoddi4(int64_t dividend, int64_t divisor, int64_t *remainder) {
 	}
 
 	/* 计算符号 */
-	const int sign_dividend = (dividend < 0);
-	const int sign_divisor = (divisor < 0);
-	const int sign_quotient = sign_dividend ^ sign_divisor;
-	const int sign_remainder = sign_dividend;
+	const int32_t sign_dividend = (dividend < 0);
+	const int32_t sign_divisor = (divisor < 0);
+	const int32_t sign_quotient = sign_dividend ^ sign_divisor;
+	const int32_t sign_remainder = sign_dividend;
 
 	/* 转换为无符号绝对值 */
 	uint64_t abs_dividend = sign_dividend ? (uint64_t)(-dividend) : (uint64_t)dividend;
@@ -212,13 +212,13 @@ static uint32_t _strlen_limited(char const *s, uint32_t limit)
 	return (uint32_t)(sn - s);
 }
 
-static int _vsprintfcb(_SPRINTFCB *callback, void *user, char *buf, char const *fmt, va_list va)
+static int32_t _vsprintfcb(_SPRINTFCB *callback, void *user, char *buf, char const *fmt, va_list va)
 {
 	static char hex[] = "0123456789abcdefxp";
 	static char hexu[] = "0123456789ABCDEFXP";
 	char *bf;
 	char const *f;
-	int tlen = 0;
+	int32_t tlen = 0;
 
 	bf = buf;
 	f = fmt;
@@ -228,7 +228,7 @@ static int _vsprintfcb(_SPRINTFCB *callback, void *user, char *buf, char const *
 
 /* 用于回调缓冲区的宏 */
 #define _chk_cb_bufL(bytes) {								\
-		int len = (int)(bf - buf);							\
+		int32_t len = (int32_t)(bf - buf);							\
 		if ((len + (bytes)) >= _SPRINTF_MIN) {				\
 			tlen += len;									\
 			if (0 == (bf = buf = callback(buf, user, len)))	\
@@ -246,7 +246,7 @@ static int _vsprintfcb(_SPRINTFCB *callback, void *user, char *buf, char const *
 #define _cb_buf_clamp(cl, v)						\
 	cl = v;											\
 	if (callback) {									\
-		int lg = _SPRINTF_MIN - (int)(bf - buf);	\
+		int32_t lg = _SPRINTF_MIN - (int32_t)(bf - buf);	\
 		if (cl > lg)								\
 			cl = lg;								\
 	}
@@ -276,7 +276,7 @@ static int _vsprintfcb(_SPRINTFCB *callback, void *user, char *buf, char const *
 				if ((v - 0x01010101) & c)
 					goto schk2;
 				if (callback)
-					if ((_SPRINTF_MIN - (int)(bf - buf)) < 4)
+					if ((_SPRINTF_MIN - (int32_t)(bf - buf)) < 4)
 						goto schk1;
 				if (((uintptr_t)bf) & 3) {
 					bf[0] = f[0];
@@ -448,7 +448,7 @@ static int _vsprintfcb(_SPRINTFCB *callback, void *user, char *buf, char const *
 		case 'c':
 			/* 获取字符 */
 			s = num + _NUMSZ - 1;
-			*s = (char)va_arg(va, int);
+			*s = (char)va_arg(va, int32_t);
 			l = 1;
 			lead[0] = 0;
 			tail[0] = 0;
@@ -461,8 +461,8 @@ static int _vsprintfcb(_SPRINTFCB *callback, void *user, char *buf, char const *
 			/* “%n”记录已经打印的字符的数量并将其赋值给相应的变量，而没有输出 */
 			/* 例如，printf("Hello, %nWorld!", &c) */
 			/* 此例将打印“Hello, World!”，并将 c 赋值为 6 */
-			int *d = va_arg(va, int *);
-			*d = tlen + (int)(bf - buf);
+			int32_t *d = va_arg(va, int32_t *);
+			*d = tlen + (int32_t)(bf - buf);
 		}
 		break;
 
@@ -530,8 +530,8 @@ static int _vsprintfcb(_SPRINTFCB *callback, void *user, char *buf, char const *
 				dp /= 10;
 			}
 
-			dp = (int) (s - sn);
-			l = (int) (s - (num + 64));
+			dp = (int32_t) (s - sn);
+			l = (int32_t) (s - (num + 64));
 			s = num + 64;
 			cs = 1 + (3 << 24);
 			goto scopy;
@@ -738,7 +738,7 @@ static int _vsprintfcb(_SPRINTFCB *callback, void *user, char *buf, char const *
 							}
 						}
 					}
-					cs = (int)(s - (num + 64)) + (3 << 24);
+					cs = (int32_t)(s - (num + 64)) + (3 << 24);
 					if (pr)
 					{
 						*s++ = _period;
@@ -758,7 +758,7 @@ static int _vsprintfcb(_SPRINTFCB *callback, void *user, char *buf, char const *
 								break;
 						}
 					}
-					cs = (int)(s - (num + 64)) + (3 << 24);
+					cs = (int32_t)(s - (num + 64)) + (3 << 24);
 					if (pr)
 						*s++ = _period;
 					if ((l - dp) > (uint32_t)pr)
@@ -1173,14 +1173,14 @@ endfmt:
 		_flush_cb();
 
 done:
-	return tlen + (int)(bf - buf);
+	return tlen + (int32_t)(bf - buf);
 }
 
 /* 接口 */
 
-int sprintf(char *buf, char const *fmt, ...)
+int32_t sprintf(char *buf, char const *fmt, ...)
 {
-	int result;
+	int32_t result;
 	va_list va;
 	va_start(va, fmt);
 	result = _vsprintfcb(0, 0, buf, fmt, va);
@@ -1191,12 +1191,12 @@ int sprintf(char *buf, char const *fmt, ...)
 typedef struct _context
 {
 	char *buf;
-	int count;
-	int length;
+	int32_t count;
+	int32_t length;
 	char tmp[_SPRINTF_MIN];
 } _context;
 
-static char *_clamp_callback(const char *buf, void *user, int len)
+static char *_clamp_callback(const char *buf, void *user, int32_t len)
 {
 	_context *c = (_context *)user;
 	c->length += len;
@@ -1224,7 +1224,7 @@ static char *_clamp_callback(const char *buf, void *user, int len)
 	return (c->count >= _SPRINTF_MIN) ? c->buf : c->tmp;
 }
 
-static char *_count_clamp_callback(const char *buf, void *user, int len)
+static char *_count_clamp_callback(const char *buf, void *user, int32_t len)
 {
 	_context *c = (_context *)user;
 	(void)sizeof(buf);
@@ -1233,7 +1233,7 @@ static char *_count_clamp_callback(const char *buf, void *user, int len)
 	return c->tmp;
 }
 
-int vsnprintf(char *buf, int count, char const *fmt, va_list va)
+int32_t vsnprintf(char *buf, int32_t count, char const *fmt, va_list va)
 {
 	_context c;
 
@@ -1242,7 +1242,7 @@ int vsnprintf(char *buf, int count, char const *fmt, va_list va)
 
 		_vsprintfcb(_count_clamp_callback, &c, c.tmp, fmt, va);
 	} else {
-		int l;
+		int32_t l;
 
 		c.buf = buf;
 		c.count = count;
@@ -1250,7 +1250,7 @@ int vsnprintf(char *buf, int count, char const *fmt, va_list va)
 
 		_vsprintfcb(_clamp_callback, &c, _clamp_callback(0, &c, 0), fmt, va);
 
-		l = (int)(c.buf - buf);
+		l = (int32_t)(c.buf - buf);
 		if (l >= count) /* 只能小于等于 */
 			l = count - 1;
 		buf[l] = 0;
@@ -1259,9 +1259,9 @@ int vsnprintf(char *buf, int count, char const *fmt, va_list va)
 	return c.length;
 }
 
-int snprintf(char *buf, int count, char const *fmt, ...)
+int32_t snprintf(char *buf, int32_t count, char const *fmt, ...)
 {
-	int result;
+	int32_t result;
 	va_list va;
 	va_start(va, fmt);
 
@@ -1271,7 +1271,7 @@ int snprintf(char *buf, int count, char const *fmt, ...)
 	return result;
 }
 
-int vsprintf(char *buf, char const *fmt, va_list va)
+int32_t vsprintf(char *buf, char const *fmt, va_list va)
 {
 	return _vsprintfcb(0, 0, buf, fmt, va);
 }
@@ -1279,7 +1279,7 @@ int vsprintf(char *buf, char const *fmt, va_list va)
 /* 浮点数处理函数 */
 
 #define _COPYFP(dest, src) {							\
-		int cn;											\
+		int32_t cn;											\
 		for (cn = 0; cn < 8; cn++)						\
 			((char *)&dest)[cn] = ((char *)&src)[cn];	\
 	}

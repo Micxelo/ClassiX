@@ -23,8 +23,8 @@ typedef struct {
 	uint8_t button;
 } MOUSE_DATA;
 
-void init_mouse(FIFO *fifo, int data0);
-int mouse_decoder(MOUSE_DATA *mouse_data, uint8_t data);
+void init_mouse(FIFO *fifo, int32_t data0);
+int32_t mouse_decoder(MOUSE_DATA *mouse_data, uint8_t data);
 
 #ifdef __cplusplus
 	}

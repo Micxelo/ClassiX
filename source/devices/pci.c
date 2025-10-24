@@ -223,8 +223,8 @@ void pci_scan_devices(void)
 	pci_devices.count = 0;
 	pci_devices.devices = (PCI_DEVICE*) kmalloc(sizeof(PCI_DEVICE) * 256);
 
-	for (int bus = 0; bus < 256; bus++) {
-		for (int device = 0; device < 32; device++) {
+	for (int32_t bus = 0; bus < 256; bus++) {
+		for (int32_t device = 0; device < 32; device++) {
 			/* 检查设备是否存在 (function 0) */
 			uint32_t vendor_device = pci_read_config32(bus, device, 0, PCI_VENDOR_ID);
 			uint16_t vendor_id = vendor_device;
@@ -289,7 +289,7 @@ void pci_scan_devices(void)
 */
 PCI_DEVICE *pci_find_device(PCI_DEVICE_TYPE type)
 {
-	for (int i = 0; i < pci_devices.count; i++)
+	for (int32_t i = 0; i < pci_devices.count; i++)
 		if (pci_devices.devices[i].type == type)
 			return &pci_devices.devices[i];
 

@@ -36,7 +36,7 @@ static gdt_ptr_t gdt_ptr;
 	@param access 访问权限
 	@param gran 粒度
 */
-void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran)
+void gdt_set_gate(int32_t num, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran)
 {
 	gdt_entries[num].limit_low = (limit & 0xffff);
 	gdt_entries[num].base_low = (base & 0xffff);
@@ -55,7 +55,7 @@ void init_gdt(void)
 	gdt_ptr.limit = sizeof(gdt_entries) - 1;
 	gdt_ptr.base = (uint32_t) &gdt_entries;
 
-	for (int i = 0; i < GDT_LIMIT; i++)
+	for (int32_t i = 0; i < GDT_LIMIT; i++)
 		gdt_set_gate(i, 0, 0, 0, 0);
 
 	/* 设置 GDT */	

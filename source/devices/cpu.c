@@ -128,7 +128,7 @@ void get_cpu_vendor(char *buf)
 void get_cpu_brand(char *buf)
 {
 	uint32_t eax, ebx, ecx, edx;
-	for (int i = 0; i < 3; i++) {
+	for (int32_t i = 0; i < 3; i++) {
 		asm volatile("cpuid"
 					 :"=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
 					 :"a"(0x80000002 + i));
@@ -158,7 +158,7 @@ int32_t get_cache_count()
 	uint32_t eax, ebx, ecx, edx;
 	int32_t count = 0;
 	
-	for (int i = 0; i < 256; i++) {
+	for (int32_t i = 0; i < 256; i++) {
 		asm volatile("cpuid"
 					 :"=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
 					 :"a"(4), "c"(i)); /* EAX = 4，ECX = 缓存索引 */

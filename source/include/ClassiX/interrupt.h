@@ -62,7 +62,7 @@ typedef struct {
 	uint32_t eax;
 } ISR_PARAMS;
 
-void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran);
+void gdt_set_gate(int32_t num, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran);
 void idt_set_gate(uint8_t num, uint32_t base, uint16_t selector, uint32_t ar);
 
 void init_gdt(void);

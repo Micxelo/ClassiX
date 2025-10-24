@@ -27,7 +27,7 @@ struct {
 	@param height 帧缓冲高度。
 	@return 成功返回 0，失败返回 -1。
 */
-int layer_init(uint32_t *fb, uint16_t width, uint16_t height)
+int32_t layer_init(uint32_t *fb, uint16_t width, uint16_t height)
 {
 	layer_manager.map = kmalloc(width * height * sizeof(uint8_t));
 	if (!layer_manager.map) {
@@ -41,7 +41,7 @@ int layer_init(uint32_t *fb, uint16_t width, uint16_t height)
 	layer_manager.height = height;
 	layer_manager.top = -1; /* 无图层 */
 
-	for (int i = 0; i < MAX_LAYERS; i++) {
+	for (int32_t i = 0; i < MAX_LAYERS; i++) {
 		layer_manager.layers0[i].flags = LAYER_FREE;
 		layer_manager.layers[i] = NULL;
 	}
@@ -61,7 +61,7 @@ LAYER *layer_alloc(uint16_t width, uint16_t height, bool allow_inv)
 {
 	LAYER *layer;
 
-	for (int i = 0; i < MAX_LAYERS; i++) {
+	for (int32_t i = 0; i < MAX_LAYERS; i++) {
 		if (layer_manager.layers0[i].flags == LAYER_FREE) {
 			layer = &layer_manager.layers0[i];
 			layer->buf = kmalloc(width * height * sizeof(uint32_t));
@@ -85,9 +85,9 @@ LAYER *layer_alloc(uint16_t width, uint16_t height, bool allow_inv)
 	return NULL;
 }
 
-static void layer_refreshmap(int vx0, int vy0, int vx1, int vy1, int z0)
+static void layer_refreshmap(int32_t vx0, int32_t vy0, int32_t vx1, int32_t vy1, int32_t z0)
 {
-	int bx0, by0, bx1, by1;
+	int32_t bx0, by0, bx1, by1;
 	uint8_t id;
 	LAYER *layer;
 
@@ -96,7 +96,7 @@ static void layer_refreshmap(int vx0, int vy0, int vx1, int vy1, int z0)
 	if (vx1 > layer_manager.width) vx1 = layer_manager.width;
 	if (vy1 > layer_manager.height) vy1 = layer_manager.height;
 
-	for (int z = z0; z <= layer_manager.top; z++) {
+	for (int32_t z = z0; z <= layer_manager.top; z++) {
 		layer = layer_manager.layers[z];
 		id = layer - layer_manager.layers0;
 
@@ -112,19 +112,19 @@ static void layer_refreshmap(int vx0, int vy0, int vx1, int vy1, int z0)
 
 		if (!layer->allow_inv) {
 			/* 不使用透明色 */
-			for (int by = by0; by < by1; by++) {
-				int vy = layer->y + by;
-				for (int bx = bx0; bx < bx1; bx++) {
-					int vx = layer->x + bx;
+			for (int32_t by = by0; by < by1; by++) {
+				int32_t vy = layer->y + by;
+				for (int32_t bx = bx0; bx < bx1; bx++) {
+					int32_t vx = layer->x + bx;
 					layer_manager.map[vy * layer_manager.width + vx] = id;
 				}
 			}
 		} else {
 			/* 使用透明色 */
-			for (int by = by0; by < by1; by++) {
-				int vy = layer->y + by;
-				for (int bx = bx0; bx < bx1; bx++) {
-					int vx = layer->x + bx;
+			for (int32_t by = by0; by < by1; by++) {
+				int32_t vy = layer->y + by;
+				for (int32_t bx = bx0; bx < bx1; bx++) {
+					int32_t vx = layer->x + bx;
 					if (GET_PIXEL32(layer->buf, layer->width, bx, by).a == 0xff) {
 						layer_manager.map[vy * layer_manager.width + vx] = id;
 					}
@@ -134,9 +134,9 @@ static void layer_refreshmap(int vx0, int vy0, int vx1, int vy1, int z0)
 	}
 }
 
-static void layer_refreshsub(int vx0, int vy0, int vx1, int vy1, int z0, int z1)
+static void layer_refreshsub(int32_t vx0, int32_t vy0, int32_t vx1, int32_t vy1, int32_t z0, int32_t z1)
 {
-	int bx0, by0, bx1, by1;
+	int32_t bx0, by0, bx1, by1;
 	uint8_t id;
 	LAYER *layer;
 
@@ -146,7 +146,7 @@ static void layer_refreshsub(int vx0, int vy0, int vx1, int vy1, int z0, int z1)
 	if (vx1 > layer_manager.width) vx1 = layer_manager.width;
 	if (vy1 > layer_manager.height) vy1 = layer_manager.height;
 
-	for (int z = z0; z <= z1; z++) {
+	for (int32_t z = z0; z <= z1; z++) {
 		layer = layer_manager.layers[z];
 		id = layer - layer_manager.layers0;
 		
@@ -160,10 +160,10 @@ static void layer_refreshsub(int vx0, int vy0, int vx1, int vy1, int z0, int z1)
 		if (bx1 > layer->width) bx1 = layer->width;
 		if (by1 > layer->height) by1 = layer->height;
 
-		for (int by = by0; by < by1; by++) {
-			int vy = layer->y + by;
-			for (int bx = bx0; bx < bx1; bx++) {
-				int vx = layer->x + bx;
+		for (int32_t by = by0; by < by1; by++) {
+			int32_t vy = layer->y + by;
+			for (int32_t bx = bx0; bx < bx1; bx++) {
+				int32_t vx = layer->x + bx;
 				if (layer_manager.map[vy * layer_manager.width + vx] == id) {
 					COLOR pixel = GET_PIXEL32(layer->buf, layer->width, bx, by);
 					set_pixel(vx, vy, pixel);
@@ -178,9 +178,9 @@ static void layer_refreshsub(int vx0, int vy0, int vx1, int vy1, int z0, int z1)
 	@param layer 目标图层。
 	@param z1 新的 Z 顺序。
 */
-void layer_set_z(LAYER *layer, int z1)
+void layer_set_z(LAYER *layer, int32_t z1)
 {
-	int z0 = layer->z;
+	int32_t z0 = layer->z;
 	if (z0 == z1) return;
 
 	/* 对超出范围的值进行修正 */
@@ -192,7 +192,7 @@ void layer_set_z(LAYER *layer, int z1)
 	if (z0 > z1) {
 		/* 调低 */
 		if (z1 >= 0) {
-			for (int z = z0; z > z1; z--) {
+			for (int32_t z = z0; z > z1; z--) {
 				layer_manager.layers[z] = layer_manager.layers[z - 1];
 				layer_manager.layers[z]->z = z;
 			}
@@ -201,7 +201,7 @@ void layer_set_z(LAYER *layer, int z1)
 			layer_refreshsub(layer->x, layer->y, layer->x + layer->width, layer->y + layer->height, z1 + 1, z0);
 		} else {
 			if (z0 < layer_manager.top) {
-				for (int z = z0; z < layer_manager.top; z++) {
+				for (int32_t z = z0; z < layer_manager.top; z++) {
 					layer_manager.layers[z] = layer_manager.layers[z + 1];
 					layer_manager.layers[z]->z = z;
 				}
@@ -213,13 +213,13 @@ void layer_set_z(LAYER *layer, int z1)
 	} else {
 		/* 调高 */
 		if (z0 > 0) {
-			for (int z = z0; z < z1; z++) {
+			for (int32_t z = z0; z < z1; z++) {
 				layer_manager.layers[z] = layer_manager.layers[z + 1];
 				layer_manager.layers[z]->z = z;
 			}
 			layer_manager.layers[z1] = layer;
 		} else {
-			for (int z = layer_manager.top; z >= z1; z--) {
+			for (int32_t z = layer_manager.top; z >= z1; z--) {
 				layer_manager.layers[z + 1] = layer_manager.layers[z];
 				layer_manager.layers[z + 1]->z = z + 1;
 			}
@@ -239,7 +239,7 @@ void layer_set_z(LAYER *layer, int z1)
 	@param x1 区域右下角 X 坐标。
 	@param y1 区域右下角 Y 坐标。
 */
-void layer_refresh(LAYER *layer, int x0, int y0, int x1, int y1)
+void layer_refresh(LAYER *layer, int32_t x0, int32_t y0, int32_t x1, int32_t y1)
 {
 	if (layer->z >= 0)
 		layer_refreshsub(layer->x + x0, layer->y + y0, layer->x + x1, layer->y + y1, layer->z, layer->z);
@@ -251,9 +251,9 @@ void layer_refresh(LAYER *layer, int x0, int y0, int x1, int y1)
 	@param x 新的 X 坐标。
 	@param y 新的 Y 坐标。
 */
-void layer_move(LAYER *layer, int x, int y)
+void layer_move(LAYER *layer, int32_t x, int32_t y)
 {
-	int x0 = layer->x, y0 = layer->y;
+	int32_t x0 = layer->x, y0 = layer->y;
 	layer->x = x;
 	layer->y = y;
 

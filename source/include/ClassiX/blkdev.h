@@ -40,7 +40,7 @@ typedef struct {
 	blkdev_io write;		/* 写扇区函数指针 */
 } BLKDEV;
 
-int register_blkdevs(void);
+int32_t register_blkdevs(void);
 BLKDEV *get_device(uint32_t dev_id);
 
 #define HD_SECTOR_SIZE						512		/* 硬盘扇区大小 */
@@ -65,8 +65,7 @@ typedef struct {
 	bool lba48_supported;	/* 是否支持 LBA48 */
 } IDE_DEVICE;
 
-/* IDE 设备数量 */
-#define IDE_DEVICE_COUNT					4
+#define IDE_DEVICE_COUNT					4		/* IDE 设备数量 */
 
 /* IDE 设备全局实例 */
 extern IDE_DEVICE ide_devices[IDE_DEVICE_COUNT];
@@ -78,28 +77,8 @@ int32_t ide_write_sectors(IDE_DEVICE *dev, uint32_t lba, uint32_t sec_count, con
 int32_t ide_flush_cache(IDE_DEVICE *dev);
 
 #define FD_SECTOR_SIZE						512		/* 软盘扇区大小 */
-#define FD_CYLINDERS						80		/* 柱面数 */
-#define FD_HEADS							2		/* 磁头数 */
-#define FD_SECTORS_PER_TRACK				18		/* 每磁道扇区数 */
-#define FD_TOTAL_SECTORS					(FD_CYLINDERS * FD_HEADS * FD_SECTORS_PER_TRACK) /* 总扇区数 */
 
-/* 软盘设备 */
-typedef struct {
-	uint8_t id;		/* 设备 ID */
-	uint8_t type;	/* 驱动器类型 */
-	bool present;	/* 是否有软盘 */
-	bool motor;		/* 电机状态 */
-} FD_DEVICE;
-
-/* 软盘设备数量 */
-#define FD_DEVICE_COUNT					4
-
-/* 软盘设备全局实例 */
-extern FD_DEVICE fd_devices[FD_DEVICE_COUNT];
-
-/* 软盘设备操作函数 */
-uint32_t fd_init(void);
-int32_t fd_read_sectors(FD_DEVICE *dev, uint32_t lba, uint32_t count, void *buf);
+#define FD_DEVICE_COUNT						2		/* 软盘设备数量 */
 
 #ifdef __cplusplus
 	}

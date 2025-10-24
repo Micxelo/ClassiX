@@ -118,8 +118,8 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 
 	MOUSE_DATA mouse_data = { }; 	/* 鼠标数据结构 */
 
-	int cursor_x, cursor_y;				/* 光标位置 */
-	int new_cursor_x, new_cursor_y;		/* 光标移动后的位置 */
+	int32_t cursor_x, cursor_y;				/* 光标位置 */
+	int32_t new_cursor_x, new_cursor_y;		/* 光标移动后的位置 */
 	bool cursor_updated = false;		/* 光标是否已更新 */
 
 	/* 检查 Multiboot 启动信息 */
@@ -196,9 +196,9 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	out8(PIC1_IMR,  0b11101111); /* 允许 IRQ12 */
 
 	/* 初始化内嵌资源 */
-	// font_terminus_12n = psf_load(builtin_font_terminus12n);
-	// font_terminus_16n = psf_load(builtin_font_terminus16n);
-	// font_terminus_16b = psf_load(builtin_font_terminus16b);
+	font_terminus_12n = psf_load(builtin_font_terminus12n);
+	font_terminus_16n = psf_load(builtin_font_terminus16n);
+	font_terminus_16b = psf_load(builtin_font_terminus16b);
 
 	/* 初始化图层管理 */
 	init_framebuffer(mbi);
@@ -220,10 +220,10 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	sti();
 
 	/* 扫描 PCI 设备 */
-	// pci_scan_devices();
+	pci_scan_devices();
 
 	/* 注册块设备 */
-	// register_blkdevs();
+	register_blkdevs();
 
 	/* 获取启动设备 */
 	BLKDEV *boot_device = get_device((mbi->boot_device >> 24) & 0xFF);

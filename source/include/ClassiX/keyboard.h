@@ -13,7 +13,7 @@
 #include <ClassiX/interrupt.h>
 #include <ClassiX/typedef.h>
 
-void init_keyboard(FIFO *fifo, int data0);
+void init_keyboard(FIFO *fifo, int32_t data0);
 void wait_kbc_sendready(void);
 
 #define EXPANDED_KEY_PREFIX					(0xe0)

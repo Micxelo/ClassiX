@@ -1,6 +1,6 @@
 # ClassiX
 
-ClassiX 是一个从零开始构建的 32 位操作系统内核，支持基础硬件驱动、图形用户界面和多任务处理。
+ClassiX 是一个从零开始编写的 32 位操作系统内核，支持基础硬件驱动、图形用户界面和多任务处理。
 
 ![ClassiX](https://img.shields.io/badge/OS-ClassiX-blue?style=flat-square)
 [![License: GPL](https://img.shields.io/badge/License-GPL-yellow?style=flat-square)](https://www.gnu.org/licenses/gpl-3.0.txt)

@@ -41,7 +41,7 @@ void cga_hide_cursor(void);
 void cga_show_cursor(void);
 void cga_putchar(char c);
 void cga_puts(const char *str);
-int cga_printf(const char *format, ...)  __attribute__((format(printf, 1, 2)));
+int32_t cga_printf(const char *format, ...)  __attribute__((format(printf, 1, 2)));
 
 #ifdef __cplusplus
 	}

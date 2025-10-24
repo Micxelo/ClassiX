@@ -179,12 +179,12 @@ void cga_puts(const char *str)
 	@brief CGA 80*25 打印字符串。
 	@note 最大长度为 max_length = 1024。
 */
-int cga_printf(const char *format, ...)
+int32_t cga_printf(const char *format, ...)
 {
 	const size_t max_length = 1024;
 	char buf[max_length];
 
-	int result;
+	int32_t result;
 	va_list va;
 	va_start(va, format);
 
