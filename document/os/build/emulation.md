@@ -12,10 +12,6 @@
 dd if=/dev/zero of=disk.img bs=1M count=32
 ```
 
-## 许可
-
-> 文本内容除另有声明外，均在[署名—非商业性使用—相同方式共享 4.0 协议国际版（CC BY-NC-SA 4.0 International）](https://creativecommons.org/licenses/by-nc-sa/4.0/)下提供。
-
 ---
 
 上一节：[编译](./complie.md)

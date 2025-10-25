@@ -78,7 +78,28 @@ int32_t ide_flush_cache(IDE_DEVICE *dev);
 
 #define FD_SECTOR_SIZE						512		/* 软盘扇区大小 */
 
+typedef struct {
+	uint16_t cylinders;			/* 柱面数 */
+	uint8_t heads;				/* 磁头数 */
+	uint8_t sectors_per_track;	/* 每轨扇区数 */
+	uint8_t gap3_length;		/* GAP3 长度 */
+	uint8_t rate;				/* 传输速率 */
+} FLOPPY_SPEC;
+
+typedef struct {
+	uint8_t drive;				/* 软盘驱动器号 */
+	FLOPPY_SPEC *spec;			/* 软盘规格指针 */
+} FD_DEVICE;
+
 #define FD_DEVICE_COUNT						2		/* 软盘设备数量 */
+
+/* 软盘设备全局实例 */
+extern FD_DEVICE fd_devices[FD_DEVICE_COUNT];
+
+/* 软盘设备操作函数 */
+uint32_t fd_init(void);
+int32_t fd_read_sectors(FD_DEVICE *dev, uint32_t lba, uint32_t sec_count, uint8_t *buf);
+int32_t fd_write_sectors(FD_DEVICE *dev, uint32_t lba, uint32_t sec_count, const uint8_t *buf);
 
 #ifdef __cplusplus
 	}

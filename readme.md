@@ -40,5 +40,3 @@ make
 ## 许可
 
 除非另有声明，本项目的源代码均在 [GNU 通用公共许可证（GNU GPL v3）](https://www.gnu.org/licenses/gpl-3.0.txt)下发布。
-
-除非另有声明，本项目的文档均在[署名—非商业性使用—相同方式共享 4.0 协议国际版（CC BY-NC-SA 4.0 International）](https://creativecommons.org/licenses/by-nc-sa/4.0/)下提供。

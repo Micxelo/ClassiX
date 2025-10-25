@@ -38,18 +38,26 @@ static int32_t hd_write(void *dev, uint32_t lba, uint32_t count, void *buf)
 	return ide_flush_cache(ide_dev);
 }
 
-/* 软盘读 (预留) */
+/* 软盘读 */
 static int32_t fd_read(void *dev, uint32_t lba, uint32_t count, void *buf)
 {
-	// TODO: 实现软盘读取
-	return BD_NOT_READY;
+	FD_DEVICE *fd_dev = (FD_DEVICE *) (((BLKDEV *) dev)->device);
+
+	if (fd_dev->spec == NULL)
+		return BD_NOT_EXIST;
+
+	return fd_read_sectors(fd_dev, lba, count, (uint8_t *) buf);		
 }
 
-/* 软盘写 (预留) */
+/* 软盘写 */
 static int32_t fd_write(void *dev, uint32_t lba, uint32_t count, void *buf)
 {
-	// TODO: 实现软盘写入
-	return BD_NOT_READY;
+	FD_DEVICE *fd_dev = (FD_DEVICE *) (((BLKDEV *) dev)->device);
+
+	if (fd_dev->spec == NULL)
+		return BD_NOT_EXIST;
+
+	return fd_write_sectors(fd_dev, lba, count, (const uint8_t *) buf);
 }
 
 /*
@@ -110,7 +118,34 @@ int32_t register_blkdevs(void)
 		}
 	}
 	
-	/* TODO: 未来可以在这里初始化软盘设备 */
+	/* 初始化软盘设备 */
+	if (fd_init() > 0) {
+		/* 注册所有检测到的软盘设备 */
+		for (int32_t i = 0; i < FD_DEVICE_COUNT; i++) {
+			if (fd_devices[i].spec != NULL) {
+				BLKDEV dev;
+				
+				/* 根据驱动器号分配 BIOS 设备号 */
+				uint32_t dev_id = (i == 0) ? BIOS_DEV_FD0 : BIOS_DEV_FD1;
+				
+				dev.id = dev_id;
+				dev.sector_size = FD_SECTOR_SIZE;
+				dev.total_sectors = fd_devices[i].spec->cylinders *
+									fd_devices[i].spec->heads *
+									fd_devices[i].spec->sectors_per_track;
+				dev.read = fd_read;
+				dev.write = fd_write;
+				dev.device = &fd_devices[i]; /* 存储指向软盘设备的指针 */
+				
+				if (register_device(&dev) == BD_SUCCESS) {
+					count++;
+					debug("Registered Floppy device: Drive %d (BIOS: 0x%02X, %u sectors).\n",
+						  fd_devices[i].drive,
+						  dev_id, dev.total_sectors);
+				}
+			}
+		}
+	}
 	
 	return count;
 }

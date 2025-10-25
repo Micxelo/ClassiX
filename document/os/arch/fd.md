@@ -205,7 +205,3 @@ FDC 数据寄存器用于向 FDC 发送控制命令或从 FDC 读取状态。
 |300 kbps|1|Double density (360KB)|
 |250 kbps|2|Single density (180KB)|
 |1 Mbps|3|Extended density (2.88MB)|
-
-## 许可
-
-> 文本内容除另有声明外，均在[署名—非商业性使用—相同方式共享 4.0 协议国际版（CC BY-NC-SA 4.0 International）](https://creativecommons.org/licenses/by-nc-sa/4.0/)下提供。

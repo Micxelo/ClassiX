@@ -3,6 +3,7 @@
 */
 
 #include <ClassiX/blkdev.h>
+#include <ClassiX/cmos.h>
 #include <ClassiX/debug.h>
 #include <ClassiX/io.h>
 #include <ClassiX/pit.h>
@@ -45,14 +46,14 @@
 
 /* 状态寄存器位定义 */
 typedef struct __attribute__((packed)) {
-	uint8_t dab:1;	/* 驱动器 A 忙 */
-	uint8_t dbb:1;	/* 驱动器 B 忙 */
-	uint8_t dcb:1;	/* 驱动器 C 忙 */
-	uint8_t ddb:1;	/* 驱动器 D 忙 */
-	uint8_t cb:1;	/* 控制器忙 */
-	uint8_t ndm:1;	/* DMA 设置 0-DMA */
-	uint8_t dio:1;	/* 传输方向 0-CPU->FDD; 1-FDD->CPU */
-	uint8_t rqm:1;	/* 数据就绪 1-ready */
+	uint8_t dab:1;		/* 驱动器 A 忙 */
+	uint8_t dbb:1;		/* 驱动器 B 忙 */
+	uint8_t dcb:1;		/* 驱动器 C 忙 */
+	uint8_t ddb:1;		/* 驱动器 D 忙 */
+	uint8_t cb:1;		/* 控制器忙 */
+	uint8_t ndm:1;		/* DMA 设置 0-DMA */
+	uint8_t dio:1;		/* 传输方向 0-CPU->FDD; 1-FDD->CPU */
+	uint8_t rqm:1;		/* 数据就绪 1-ready */
 } STATUS;
 
 /* ST0 寄存器位定义 */
@@ -77,6 +78,11 @@ typedef struct __attribute__((packed)) {
 	uint8_t eoc:1;		/* 柱面结束 */
 } ST1;
 
+#define RATE_500KBPS						0x00	/* 500 kbps */
+#define RATE_300KBPS						0x01	/* 300 kbps */
+#define RATE_250KBPS						0x02	/* 250 kbps */
+#define RATE_1MBPS							0x03	/* 1 Mbps */
+
 /* ST2 寄存器位定义 */
 typedef struct __attribute__((packed)) {
 	uint8_t mam:1;		/* 缺少地址标记 */
@@ -86,11 +92,25 @@ typedef struct __attribute__((packed)) {
 	uint8_t wc:1;		/* 错误柱面 (ID 字段 CRC 错误) */
 	uint8_t crc:1;		/* 数据字段 CRC 错误 */
 	uint8_t cm:1;		/* 控制标记 (删除数据标记) */
-	uint8_t resv:1;	/* 保留 */
+	uint8_t resv:1;		/* 保留 */
 } ST2;
 
 #define FD_SPECIFY_LOWER(arg)				(*((uint8_t*) &(arg)))			/* 获取低字节 */
 #define FD_SPECIFY_UPPER(arg)				(*((uint8_t*) (&(arg) + 1)))	/* 获取高字节 */
+
+/* 支持的软盘规格 */
+static const FLOPPY_SPEC floppy_specs[] = {
+	{ 40, 2, 9, 0x1B, RATE_250KBPS },	/* 360KB 5.25" */
+	{ 80, 2, 15, 0x1B, RATE_500KBPS },	/* 1.2MB 5.25" */
+	{ 80, 2, 9, 0x1B, RATE_500KBPS },	/* 720KB 3.5" */
+	{ 80, 2, 18, 0x1B, RATE_500KBPS },	/* 1.44MB 3.5" */
+	{ 80, 2, 36, 0x1B, RATE_1MBPS },	/* 2.88MB 3.5" */
+};
+
+FD_DEVICE fd_devices[FD_DEVICE_COUNT] = {
+	{ .drive = 0, .spec = NULL },	/* 软盘驱动器 A */
+	{ .drive = 1, .spec = NULL }	/* 软盘驱动器 B */
+};
 
 static void fdc_dma_setup(uint8_t *buf, uint32_t count, uint8_t cmd);
 
@@ -190,65 +210,73 @@ static inline void lba_to_chs(uint32_t lba, uint8_t *cylinder, uint8_t *head, ui
 }
 
 /* 读扇区 */
-static int32_t fdc_read_sector(uint8_t drive, uint32_t lba, uint8_t *buffer)
+static int32_t fdc_read_sector(FD_DEVICE *dev, uint32_t lba, uint8_t *buffer)
 {
 	uint8_t cylinder, head, sector;
 	lba_to_chs(lba, &cylinder, &head, &sector);
 
-	if (drive > 3 || cylinder > 79 || head > 1 || sector > 18)
+	if (dev->drive > 3)
+		return BD_INVALID_PARAM; /* 参数无效 */
+	if (cylinder >= dev->spec->cylinders ||
+		head >= dev->spec->heads ||
+		sector == 0 || sector > dev->spec->sectors_per_track)
 		return BD_INVALID_PARAM; /* 参数无效 */
 	
 	/* 重新校正 */
-	fdc_recalibrate(drive);
+	fdc_recalibrate(dev->drive);
 
 	/* 寻道 */
-	fdc_seek(drive, head, cylinder);
+	fdc_seek(dev->drive, head, cylinder);
 
 	/* 设置 DMA */
 	fdc_dma_setup(buffer, 512, FD_READ);
 
 	/* 发送读扇区命令 */
-	fdc_write_byte(FD_READ);		/* 读扇区命令 */
-	fdc_write_byte(drive & 0x03);	/* 驱动器号 */
-	fdc_write_byte(cylinder);		/* 柱面号 */
-	fdc_write_byte(head);			/* 磁头号 */
-	fdc_write_byte(sector);			/* 开始扇区号 */
-	fdc_write_byte(2);				/* 每扇区字节数 512 */
-	fdc_write_byte(18);				/* 每轨扇区数 18 */
-	fdc_write_byte(0x1B);			/* GAP3 长度 */
-	fdc_write_byte(0xFF);			/* 传输长度 */
+	fdc_write_byte(FD_READ);						/* 读扇区命令 */
+	fdc_write_byte(dev->drive & 0x03);				/* 驱动器号 */
+	fdc_write_byte(cylinder);						/* 柱面号 */
+	fdc_write_byte(head);							/* 磁头号 */
+	fdc_write_byte(sector);							/* 开始扇区号 */
+	fdc_write_byte(2);								/* 每扇区字节数 512 */
+	fdc_write_byte(dev->spec->sectors_per_track);	/* 每轨扇区数 */
+	fdc_write_byte(dev->spec->gap3_length);			/* GAP3 长度 */
+	fdc_write_byte(0xFF);							/* 传输长度 */
 
 	return BD_SUCCESS;
 }
 
 /* 写扇区 */
-static int32_t fdc_write_sector(uint8_t drive, uint32_t lba, uint8_t *buffer)
+static int32_t fdc_write_sector(FD_DEVICE *dev, uint32_t lba, uint8_t *buffer)
 {
 	uint8_t cylinder, head, sector;
 	lba_to_chs(lba, &cylinder, &head, &sector);
 
-	if (drive > 3 || cylinder > 79 || head > 1 || sector > 18)
+	if (dev->drive > 3)
+		return BD_INVALID_PARAM; /* 参数无效 */
+	if (cylinder >= dev->spec->cylinders ||
+		head >= dev->spec->heads ||
+		sector == 0 || sector > dev->spec->sectors_per_track)
 		return BD_INVALID_PARAM; /* 参数无效 */
 	
 	/* 重新校正 */
-	fdc_recalibrate(drive);
+	fdc_recalibrate(dev->drive);
 
 	/* 寻道 */
-	fdc_seek(drive, head, cylinder);
+	fdc_seek(dev->drive, head, cylinder);
 
 	/* 设置 DMA */
 	fdc_dma_setup(buffer, 512, FD_WRITE);
 
 	/* 发送写扇区命令 */
-	fdc_write_byte(FD_WRITE);		/* 写扇区命令 */
-	fdc_write_byte(drive & 0x03);	/* 驱动器号 */
-	fdc_write_byte(cylinder);		/* 柱面号 */
-	fdc_write_byte(head);			/* 磁头号 */
-	fdc_write_byte(sector);			/* 开始扇区号 */
-	fdc_write_byte(2);				/* 每扇区字节数 512 */
-	fdc_write_byte(18);				/* 每轨扇区数 18 */
-	fdc_write_byte(0x1B);			/* GAP3 长度 */
-	fdc_write_byte(0xFF);			/* 传输长度 */
+	fdc_write_byte(FD_WRITE);						/* 写扇区命令 */
+	fdc_write_byte(dev->drive & 0x03);				/* 驱动器号 */
+	fdc_write_byte(cylinder);						/* 柱面号 */
+	fdc_write_byte(head);							/* 磁头号 */
+	fdc_write_byte(sector);							/* 开始扇区号 */
+	fdc_write_byte(2);								/* 每扇区字节数 512 */
+	fdc_write_byte(dev->spec->sectors_per_track);	/* 每轨扇区数 */
+	fdc_write_byte(dev->spec->gap3_length);			/* GAP3 长度 */
+	fdc_write_byte(0xFF);							/* 传输长度 */
 
 	return BD_SUCCESS;
 }
@@ -295,4 +323,101 @@ static void fdc_dma_setup(uint8_t *buf, uint32_t count, uint8_t cmd)
 	/* 启动 DMA */
 	immout8_p(0 | 2, 0x0A);						/* 启用通道 2 */
 	sti();
+}
+
+#define FDC_CMOS_NO_DRIVE					0x00	/* 无驱动器 */
+#define FDC_CMOS_DRIVE_360KB				0x01	/* 360KB 5.25" */
+#define FDC_CMOS_DRIVE_1_2MB				0x02	/* 1.2MB 5.25" */
+#define FDC_CMOS_DRIVE_720KB				0x03	/* 720KB 3.5" */
+#define FDC_CMOS_DRIVE_1_44MB				0x04	/* 1.44MB 3.5" */
+#define FDC_CMOS_DRIVE_2_88MB				0x05	/* 2.88MB 3.5" */
+#define FDC_CMOS_UNKNOW_DRIVE				0xFF	/* 未知类型 */
+
+/*
+	@brief 初始化软盘设备。
+	@return 成功初始化的设备数量
+*/
+uint32_t fd_init(void)
+{
+	uint32_t count = 0;
+
+	/* 读取 CMOS 软盘类型 */
+	uint8_t cmos_drive_type = cmos_read(0x10);
+	uint8_t drive0_type = (cmos_drive_type >> 4) & 0x0F;	/* 驱动器 A 类型 */
+	uint8_t drive1_type = cmos_drive_type & 0x0F;			/* 驱动器 B 类型 */
+
+	if (drive0_type != FDC_CMOS_NO_DRIVE && drive0_type != FDC_CMOS_UNKNOW_DRIVE) {
+		fd_devices[0].spec = (FLOPPY_SPEC*) &floppy_specs[drive0_type - 1];
+		debug("Floppy Drive A: %d cylinders, %d heads, %d sectors/track.\n",
+			fd_devices[0].spec->cylinders,
+			fd_devices[0].spec->heads,
+			fd_devices[0].spec->sectors_per_track);
+		count++;
+	} else {
+		debug("Floppy Drive A: No drive found.\n");
+	}
+
+	if (drive1_type != FDC_CMOS_NO_DRIVE && drive1_type != FDC_CMOS_UNKNOW_DRIVE) {
+		fd_devices[1].spec = (FLOPPY_SPEC*) &floppy_specs[drive1_type - 1];
+		debug("Floppy Drive B: %d cylinders, %d heads, %d sectors/track.\n",
+			fd_devices[1].spec->cylinders,
+			fd_devices[1].spec->heads,
+			fd_devices[1].spec->sectors_per_track);
+		count++;
+	} else {
+		debug("Floppy Drive B: No drive found.\n");
+	}
+
+	/* 重置 FDC */
+	fdc_reset(0);
+	fdc_reset(1);
+
+	/* 设定 FDC 参数 */
+	fdc_specify();
+
+	return count;
+}
+
+/*
+	@brief 软盘读扇区。
+	@param dev 目标软盘设备
+	@param lba 起始扇区号
+	@param sec_count 读取扇区数量
+	@param buf 数据缓冲区
+	@return 错误码
+*/
+int32_t fd_read_sectors(FD_DEVICE *dev, uint32_t lba, uint32_t sec_count, uint8_t *buf)
+{
+	if (dev == NULL || dev->spec == NULL)
+		return BD_INVALID_PARAM;
+
+	for (uint32_t i = 0; i < sec_count; i++) {
+		int32_t ret = fdc_read_sector(dev, lba + i, buf + (i * FD_SECTOR_SIZE));
+		if (ret != BD_SUCCESS)
+			return ret;
+	}
+
+	return BD_SUCCESS;
+}
+
+/*
+	@brief 软盘写扇区。
+	@param dev 目标软盘设备
+	@param lba 起始扇区号
+	@param sec_count 写入扇区数量
+	@param buf 数据缓冲区
+	@return 错误码
+*/
+int32_t fd_write_sectors(FD_DEVICE *dev, uint32_t lba, uint32_t sec_count, const uint8_t *buf)
+{
+	if (dev == NULL || dev->spec == NULL)
+		return BD_INVALID_PARAM;
+
+	for (uint32_t i = 0; i < sec_count; i++) {
+		int32_t ret = fdc_write_sector(dev, lba + i, (uint8_t*) (buf + (i * FD_SECTOR_SIZE)));
+		if (ret != BD_SUCCESS)
+			return ret;
+	}
+
+	return BD_SUCCESS;
 }
