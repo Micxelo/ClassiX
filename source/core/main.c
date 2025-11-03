@@ -45,8 +45,8 @@
 
 extern uintptr_t kernel_start_phys;						/* 内核起始物理地址 */
 extern uintptr_t kernel_end_phys;						/* 内核结束物理地址 */
-extern uintptr_t bss_start;								/* BSS 段起始地址 */
-extern uintptr_t bss_end;								/* BSS 段结束地址 */
+extern uintptr_t bss_start_phys;						/* BSS 段起始地址 */
+extern uintptr_t bss_end_phys;							/* BSS 段结束地址 */
 
 BITMAP_FONT font_terminus_12n;
 BITMAP_FONT font_terminus_16n;
@@ -105,7 +105,7 @@ static bool check_boot_info(uint32_t mb_magic, multiboot_info_t *mbi)
 void main(uint32_t mb_magic, multiboot_info_t *mbi)
 {
 	/* 清空 BSS */
-	memset((void*) &bss_start, 0, (size_t) (&bss_end - &bss_start));
+	memset((void*) &bss_start_phys, 0, (size_t) (&bss_end_phys - &bss_start_phys));
 
 	uint32_t kmsg_queue_buf[KMSG_QUEUE_SIZE] = { }; /* 内核消息队列缓冲区 */
 

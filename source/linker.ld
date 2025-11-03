@@ -3,35 +3,65 @@
 	ClassiX Kernel Linking Script
 */
 
+OUTPUT_FORMAT("binary")
 ENTRY(start)
 
-PHYS_BASE = 0x00100000;					/* 1 M */
+PHYS_BASE = 0x00100000;					/* 1 MB */
+
+/* 内存布局 */
+MEMORY {
+    RAM (rwx) : ORIGIN = PHYS_BASE, LENGTH = 1M
+}
 
 SECTIONS {
 	. = PHYS_BASE;
+	load_phys = .;
 
-	_kernel_start_phys = .;				/* 内核物理起始 */
+	_kernel_start_phys = .;			/* 内核物理起始 */
 
-	.text BLOCK(4K) : ALIGN(4K) {
+	/* ClassiX 头 */
+	.classix : ALIGN(1K) {
+		*(classix)
+	} > RAM
+
+	/* Multiboot 头 */
+	.multiboot : ALIGN(1K) {
+		multiboot_header_phys = .;
 		*(.multiboot)
+	} > RAM
+
+	/* 代码段 */
+	.text : ALIGN(1K) {
 		*(.text)
-	}
+        *(.text.*)
+	} > RAM
 
-	.rodata BLOCK(4K) : ALIGN(4K) {
+	/* 只读数据 */
+	.rodata : ALIGN(1K) {
 		*(.rodata)
-	}
+        *(.rodata.*)
+	} > RAM
 
-	.data BLOCK(4K) : ALIGN(4K) {
+	/* 已初始化数据 */
+	.data : ALIGN(1K) {
 		*(.data)
-	}
+        *(.data.*)
+	} > RAM
 
-	.bss BLOCK(4K) : ALIGN(4K) {
-		_bss_start = .;				/* BSS 起始 */
+	load_end_phys = .;
+
+	.bss : ALIGN(4K) {
+		_bss_start_phys = .;			/* BSS 起始 */
+        *(.bss)
+        *(.bss.*)
 		*(COMMON)
-		*(.bss)
-		_bss_end = .;				/* BSS 终止 */
+		_bss_end_phys = .;				/* BSS 终止 */
 	}
 
 	. = ALIGN(4K);
-	_kernel_end_phys = .;			/* 内核物理结束 */
+	_kernel_end_phys = .;				/* 内核物理结束 */
 }
+
+PROVIDE(entry_phys = start);
+PROVIDE(bss_start_phys = _bss_start_phys);
+PROVIDE(bss_end_phys = _bss_end_phys);
