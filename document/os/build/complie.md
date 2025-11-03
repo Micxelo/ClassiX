@@ -70,7 +70,3 @@ make clean
 |`-melf_i386`|生成 i386 架构的 ELF 可执行文件|
 |`-nostdlib`|禁用所有标准库|
 |`-z noexecstack`|强制标记堆栈空间不可执行|
-
----
-
-下一节：[使用虚拟机运行](./emulation.md)

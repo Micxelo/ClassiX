@@ -37,7 +37,7 @@
 
 #define PIT_BASE_FREQ						(1193182)	/* PIT 的基准频率 (1.193182 MHz) */
 
-extern const uint32_t pit_frequency;
+extern uint32_t pit_frequency;
 
 void init_pit(uint32_t frequency);
 uint64_t get_system_ticks(void);

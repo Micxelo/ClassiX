@@ -26,7 +26,7 @@ enum UART_REGISTERS {
 */
 void uart_init(void)
 {
-	out8(COM1_BASE + 1, 0x00);	/* 禁用串口中断 */
+	out8(COM1_BASE + 1, 0x00);		/* 禁用串口中断 */
 
 	out8(COM1_BASE + LCR, 0x80);	/* 启用 DLAB */
 	out8(COM1_BASE + DLL, 0x01);	/* 115200 bps */
@@ -35,10 +35,10 @@ void uart_init(void)
 	/* 设置帧格式: 8 位数据, 无校验, 1 位停止位 */
 	out8(COM1_BASE + LCR, 0x03);
 
-	out8(COM1_BASE + 2, 0xC7);	/* 启用 FIFO */
+	out8(COM1_BASE + 2, 0xC7);		/* 启用 FIFO */
 
 	/* 启用 OUT2 (使能串口工作) */
-	out8(COM1_BASE + 4, 0x08); // MCR 寄存器
+	out8(COM1_BASE + 4, 0x08);		/* MCR 寄存器 */
 }
 
 /*

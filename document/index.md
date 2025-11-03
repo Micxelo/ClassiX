@@ -11,8 +11,7 @@
   - [使用虚拟机运行](./os/build/emulation.md)
 - 架构
   - [启动](./os/arch/boot.md)
-
-
-## 许可
-
-> 文本内容除另有声明外，均在[署名—非商业性使用—相同方式共享 4.0 协议国际版（CC BY-NC-SA 4.0 International）](https://creativecommons.org/licenses/by-nc-sa/4.0/)下提供。
+  - 块设备子系统
+    - [块设备](./os/arch/blkdev/blkdev.md)
+    - [硬盘](./os/arch/blkdev/hd.md)
+    - [软盘](./os/arch/blkdev/fd.md)

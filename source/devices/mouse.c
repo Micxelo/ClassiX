@@ -84,8 +84,6 @@ int32_t mouse_decoder(MOUSE_DATA *mouse_data, uint8_t data)
 
 			/* 完整数据包已接收 */
 			mouse_data->phase = 0; /* 重置阶段 */
-			/* debug("Mouse data: dX=%d, dY=%d, Buttons=0x%x.\n", 
-				mouse_data->dx, mouse_data->dy, mouse_data->button); */
 			return 1;
 			break;
 

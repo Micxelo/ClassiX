@@ -233,7 +233,7 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	else
 		debug("Boot device not found.\n");
 
-	for(;;) {
+	for (;;) {
 		cli();
 		if (fifo_status(&kmsg_queue) == 0) {
 			sti();

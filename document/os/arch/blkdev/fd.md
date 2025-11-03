@@ -1,6 +1,6 @@
 # 软盘 - ClassiX 文档
 
-> 当前位置：os/arch/fd.md
+> 当前位置：os/arch/blkdev/fd.md
 
 ## 概述
 
@@ -205,3 +205,83 @@ FDC 数据寄存器用于向 FDC 发送控制命令或从 FDC 读取状态。
 |300 kbps|1|Double density (360KB)|
 |250 kbps|2|Single density (180KB)|
 |1 Mbps|3|Extended density (2.88MB)|
+
+## 设备初始化
+
+软盘控制器初始化流程：
+
+1. 从 CMOS 获取驱动器类型信息（端口 0x10）
+2. 根据类型设置对应的软盘规格参数
+3. 重置 FDC
+4. 设定 FDC 工作参数
+
+### CMOS 软盘类型编码
+
+|Value|Type|Capacity|Spcefication Index|
+|:-:|:-:|:-:|:-:|
+|0x00|No drive|N/A|N/A|
+|0x01|360KB 5.25"|360KB|0|
+|0x02|1.2MB 5.25"|1.2MB|1|
+|0x03|720KB 3.5"|720KB|2|
+|0x04|1.44MB 3.5"|1.44MB|3|
+|0x05|2.88MB 3.5"|2.88MB|4|
+|0xFF|Unknown|N/A|N/A|
+
+### 软盘规格参数
+
+```c
+typedef struct {
+	uint8_t cylinders;			/* 柱面数 */
+	uint8_t heads;				/* 磁头数 */
+	uint8_t sectors_per_track;	/* 每磁道扇区数 */
+	uint8_t gap3_length;		/* GAP3 长度 */
+	uint8_t data_rate;			/* 数据传输速率 */
+} FLOPPY_SPEC;
+```
+
+### LBA 转 CHS 地址转换
+
+软盘使用 CHS（柱面-磁头-扇区）寻址方式，需要将 LBA（逻辑块地址）转换为物理地址：
+
+```c
+cylinder = lba / (heads * sectors_per_track);
+head = (lba / sectors_per_track) % heads;
+sector = (lba % sectors_per_track) + 1;
+```
+
+### DMA 设置
+
+软盘读写使用 DMA 通道 2，设置流程：
+
+1. 禁用 DMA 通道 2
+2. 清除翻转寄存器
+3. 设置 DMA 模式（读/写）
+4. 设置内存地址（24 位）
+5. 设置传输长度
+6. 启用 DMA 通道
+
+#### DMA 端口映射
+
+|Port|Description|
+|:-:|:-:|
+|0x0A|DMA Mask Register|
+|0x0B|DMA Mode Register|
+|0x0C|DMA Clear Byte Pointer Flip-Flop|
+|0x04|Channel 2 Address Low/Mid Byte|
+|0x05|Channel 2 Count Low/High Byte|
+|0x81|Channel 2 Address High Byte|
+
+#### DMA 命令
+
+|Name|Value|Description|
+|:-:|:-:|:-:|
+|`DMA_READ`|`0x46`|Read from device to memory|
+|`DMA_WRITE`|`0x4A`|Write from memory to device|
+
+## 错误码
+
+|Code|Description|
+|:-:|:-:|
+|`BD_SUCCESS`|Success|
+|`BD_INVALID_PARAM`|Invalid parameter|
+|`BD_TIMEOUT`|Operation timeout|
