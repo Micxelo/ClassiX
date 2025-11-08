@@ -2,24 +2,26 @@
 ;	core/boot.asm
 ;
 
-MBALIGN		equ			1 << 0				; 对齐信息
-MEMINFO		equ			1 << 1				; 内存映射信息
-VIDEOMODE	equ			1 << 2				; 视频信息
-ADDRWORD	equ			1 << 16				; 地址字段
+; Multiboot flags 位定义
+MBALIGN						equ			1 << 0				; 对齐信息
+MEMINFO						equ			1 << 1				; 内存映射信息
+VIDEOMODE					equ			1 << 2				; 视频信息
+ADDRWORD					equ			1 << 16				; 地址字段
 
-MBFLAGS		equ			MBALIGN | MEMINFO | VIDEOMODE | ADDRWORD
-MAGIC		equ			0x1badB002			; Multiboot 魔数
-CHECKSUM	equ			-(MAGIC + MBFLAGS)	; 上述值的校验和
-											; CHECKSUM + MAGIC + MBFLAGS 应等于零
+; Multiboot 常量定义
+MBFLAGS						equ			MBALIGN | MEMINFO | VIDEOMODE | ADDRWORD
+MAGIC						equ			0x1badB002			; Multiboot 魔数
+CHECKSUM					equ			-(MAGIC + MBFLAGS)	; 上述值的校验和
+															; CHECKSUM + MAGIC + MBFLAGS 应等于零
 
 section	.classix
 align 4
 classix:
 	; ClassiX Header
-	.magic:			dd 0xCD59F115
+	.magic:			dd 0xcd59f115
 	.version:		dd 0x00000001
 	.entry:			dd start
-	.reserved:		times 13 dd 0
+	.reserved:		times 12 dd 0
 
 ; GRUB 在内核文件的前 8 KiB（按 32 位边界对齐）中搜索 Header
 section .multiboot
@@ -51,6 +53,7 @@ multiboot:
 
 ; linker.ld 指定 start 为内核入口点
 section .text
+align 4
 global start: function (start.end - start)
 start:
 	; GRUB 已切换至 32 位保护模式、禁用中断和分页
@@ -82,8 +85,3 @@ align 16
 stack_bottom:
 	resb 0x10000			; 保留 1 MiB 栈空间
 stack_top:
-
-bss_start:
-    resb 4
-bss_end:
-    resb 4

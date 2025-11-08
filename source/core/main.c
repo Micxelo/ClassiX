@@ -88,7 +88,7 @@ static bool check_boot_info(uint32_t mb_magic, multiboot_info_t *mbi)
 	}
 
 	if (!(mbi->flags & MULTIBOOT_INFO_FRAMEBUFFER_INFO)) {
-		/* 未传递视频信息 */
+		/* 未传递帧缓冲区信息 */
 		cga_printf("Frame buffer information is unavailable.");
 		return false;
 	}
@@ -116,11 +116,11 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	/* 扩展键盘扫描码的识别阶段 */
 	uint8_t expanded_key_phase = 0;
 
-	MOUSE_DATA mouse_data = { }; 	/* 鼠标数据结构 */
+	MOUSE_DATA mouse_data = { }; 			/* 鼠标数据结构 */
 
 	int32_t cursor_x, cursor_y;				/* 光标位置 */
 	int32_t new_cursor_x, new_cursor_y;		/* 光标移动后的位置 */
-	bool cursor_updated = false;		/* 光标是否已更新 */
+	bool cursor_updated = false;			/* 光标是否已更新 */
 
 	/* 检查 Multiboot 启动信息 */
 	if (!check_boot_info(mb_magic, mbi)) return;
@@ -205,7 +205,7 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	layer_init((uint32_t *) g_fb.addr, g_fb.width, g_fb.height);
 	/* 背景图层 */
 	LAYER *layer_back = layer_alloc(g_fb.width, g_fb.height, false);
-	fill_rectangle(layer_back->buf, layer_back->width, 0, 0, layer_back->width, layer_back->height, COLOR_MIKU);
+	fill_rectangle(layer_back->buf, layer_back->width, 0, 0, layer_back->width, layer_back->height, COLOR_BLACK);
 	layer_move(layer_back, 0, 0);
 	layer_set_z(layer_back, 0);
 	/* 光标图层 */

@@ -2,50 +2,57 @@
 #	Makefile
 #
 
-CC       = "gcc"
-AS       = "nasm"
-CFLAGS   = "-O2 -m32 -std=gnu99 \
-            -Wall -Wextra -Wno-unused-parameter -Wno-unused-function \
-            -ffreestanding -fleading-underscore -fno-pic -fno-stack-protector \
-            -nostartfiles -nostdinc"
-ASFLAGS  = "-f elf32"
-LD       = ld
-LDSCRIPT = linker.ld
-LDFLAGS  = -T $(LDSCRIPT) -melf_i386 -nostdlib -z noexecstack
-MAKE     = make CC=$(CC) CFLAGS=$(CFLAGS) AS=$(AS) ASFLAGS=$(ASFLAGS) --no-print-directory
+CC			= gcc
+AS			= nasm
+LD			= ld
+OBJCOPY		= objcopy
 
-DEPS     = core/boot.obj core/main.obj core/memory.obj core/task.obj \
-           core/interrupt/gdt.obj core/interrupt/idt.obj core/interrupt/isr.obj core/interrupt/pic.obj \
-           devices/cpu.obj devices/keyboard.obj devices/mouse.obj devices/pci.obj devices/pit.obj devices/serial.obj \
-		   devices/blkdev/blkdev.obj devices/blkdev/fd.obj devices/blkdev/hd.obj \
-           libc/string.obj libc/stdio.obj \
-           ui/builtin.obj ui/cga.obj ui/font.obj ui/framebuf.obj ui/graphic.obj ui/layer.obj ui/palette.obj \
-           utilities/fatfs.obj utilities/fifo.obj utilities/rtc.obj utilities/timer.obj
-TARGETS  = ClassiX.sys
+CFLAGS		= -O2 -m32 -std=gnu99 \
+			  -Wall -Wextra -Wno-unused-parameter -Wno-unused-function \
+			  -ffreestanding -fleading-underscore -fno-pic -fno-stack-protector \
+			  -nostartfiles -nostdinc
+ASFLAGS		= -f elf32
+LDSCRIPT	= linker.ld
+LDFLAGS		= -T $(LDSCRIPT) -melf_i386 -nostdlib -z noexecstack
+
+INCPATH		= ./include
+
+# 源文件
+C_SOURCES	= $(shell find . -name "*.c" -not -path "./assets/*")
+ASM_SOURCES	= $(shell find . -name "*.asm" -not -path "./assets/*")
+DEPS		= $(C_SOURCES:.c=.obj) $(ASM_SOURCES:.asm=.obj)
+
+# 资源文件
+ASSET_FILES	= $(shell find assets -type f -not -name Makefile -not -name "*.obj")
+ASSETS_OBJS	= $(ASSET_FILES:%=%.obj)
+
+TARGETS		= ClassiX.sys
 
 .PHONY : default
-default :
-	@$(MAKE) -C core
-	@$(MAKE) -C core/interrupt
-	@$(MAKE) -C devices
-	@$(MAKE) -C devices/blkdev
-	@$(MAKE) -C libc
-	@$(MAKE) -C ui
-	@$(MAKE) -C utilities
-	@$(MAKE) $(TARGETS)
+default : $(TARGETS)
 
-$(TARGETS) : $(DEPS)
+$(TARGETS) : $(DEPS) $(ASSETS_OBJS)
 	@$(LD) $(LDFLAGS) $^ -o $@
 	@echo "\tLD\t$@"
 
-PHONY : clean
+# 编译规则
+%.obj : %.c
+	@$(CC) -c $(CFLAGS) -I $(INCPATH) $< -o $@
+	@echo "\tCC\t$@"
+
+%.obj : %.asm
+	@$(AS) $(ASFLAGS) $< -o $@
+	@echo "\tAS\t$@"
+
+# 资源文件转换规则
+%.obj : %
+	@$(OBJCOPY) -I binary -O elf32-i386 -B i386 \
+		--rename-section .data=.asset,contents,alloc,load,readonly,data \
+		$< $@
+	@echo "\tOBJCOPY\t$@"
+
+.PHONY : clean
 clean:
-	@$(MAKE) -C core            clean
-	@$(MAKE) -C core/interrupt  clean
-	@$(MAKE) -C devices         clean
-	@$(MAKE) -C devices/blkdev  clean
-	@$(MAKE) -C libc            clean
-	@$(MAKE) -C ui              clean
-	@$(MAKE) -C utilities       clean
+	@find . -name "*.obj" -delete
 	@rm -f $(TARGETS)
-	@echo "\tRM\t$@"
+	@echo "\tRM\t$(TARGETS)"

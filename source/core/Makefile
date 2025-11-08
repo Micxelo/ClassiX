@@ -2,27 +2,25 @@
 #	core/Makefile
 #
 
-INCPATH =  ../include/
-CC      =
-AS      =
-CFLAGS  =
-ASFLAGS =
+INCPATH		= ../include
 
-TARGETS = boot.obj main.obj memory.obj task.obj
+# 源文件
+C_SOURCES = $(wildcard *.c)
+ASM_SOURCES = $(wildcard *.asm)
+TARGETS = $(C_SOURCES:.c=.obj) $(ASM_SOURCES:.asm=.obj)
 
 .PHONY : default
-default :
-	@make $(TARGETS)
+default : $(TARGETS)
 
-%.obj : %.c Makefile
+%.obj : %.c
 	@$(CC) -c $(CFLAGS) -I $(INCPATH) $< -o $@
 	@echo "\tCC\t$@"
 
-%.obj : %.asm Makefile
+%.obj : %.asm
 	@$(AS) $(ASFLAGS) $< -o $@
 	@echo "\tAS\t$@"
 
 .PHONY : clean
 clean:
 	@rm -f $(TARGETS)
-	@echo "\tRM\t$@"
+	@echo "\tRM\t$(TARGETS)"

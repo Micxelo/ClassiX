@@ -10,7 +10,7 @@ PHYS_BASE = 0x00100000;					/* 1 MB */
 
 /* 内存布局 */
 MEMORY {
-    RAM (rwx) : ORIGIN = PHYS_BASE, LENGTH = 1M
+	RAM (rwx) : ORIGIN = PHYS_BASE, LENGTH = 1M
 }
 
 SECTIONS {
@@ -33,27 +33,27 @@ SECTIONS {
 	/* 代码段 */
 	.text : ALIGN(1K) {
 		*(.text)
-        *(.text.*)
+		*(.text.*)
 	} > RAM
 
 	/* 只读数据 */
 	.rodata : ALIGN(1K) {
 		*(.rodata)
-        *(.rodata.*)
+		*(.rodata.*)
 	} > RAM
 
 	/* 已初始化数据 */
 	.data : ALIGN(1K) {
 		*(.data)
-        *(.data.*)
+		*(.data.*)
 	} > RAM
 
 	load_end_phys = .;
 
 	.bss : ALIGN(4K) {
 		_bss_start_phys = .;			/* BSS 起始 */
-        *(.bss)
-        *(.bss.*)
+		*(.bss)
+		*(.bss.*)
 		*(COMMON)
 		_bss_end_phys = .;				/* BSS 终止 */
 	}
