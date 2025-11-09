@@ -56,7 +56,7 @@ SECTIONS {
 		*(.bss.*)
 		*(COMMON)
 		_bss_end_phys = .;				/* BSS 终止 */
-	}
+	} > RAM
 
 	. = ALIGN(4K);
 	_kernel_end_phys = .;				/* 内核物理结束 */

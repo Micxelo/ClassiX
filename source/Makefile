@@ -20,18 +20,18 @@ INCPATH		= ./include
 # 源文件
 C_SOURCES	= $(shell find . -name "*.c" -not -path "./assets/*")
 ASM_SOURCES	= $(shell find . -name "*.asm" -not -path "./assets/*")
-DEPS		= $(C_SOURCES:.c=.obj) $(ASM_SOURCES:.asm=.obj)
 
 # 资源文件
 ASSET_FILES	= $(shell find assets -type f -not -name Makefile -not -name "*.obj")
-ASSETS_OBJS	= $(ASSET_FILES:%=%.obj)
+
+DEPS		= $(C_SOURCES:.c=.obj) $(ASM_SOURCES:.asm=.obj) $(ASSET_FILES:%=%.obj)
 
 TARGETS		= ClassiX.sys
 
 .PHONY : default
 default : $(TARGETS)
 
-$(TARGETS) : $(DEPS) $(ASSETS_OBJS)
+$(TARGETS) : $(DEPS)
 	@$(LD) $(LDFLAGS) $^ -o $@
 	@echo "\tLD\t$@"
 

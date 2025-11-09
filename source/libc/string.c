@@ -324,7 +324,7 @@ inline char *strtok(char *s, const char *delim)
 	return _res;
 }
 
-inline void *memcpy(void *dest, void *src, size_t n)
+inline void *memcpy(void *dest, const void *src, size_t n)
 {
 	asm("cld\n"
 		"rep\n"
@@ -333,7 +333,7 @@ inline void *memcpy(void *dest, void *src, size_t n)
 	return dest;
 }
 
-inline void *memmove(void *dest, void *src, size_t n)
+inline void *memmove(void *dest, const void *src, size_t n)
 {
 	if (dest < src) {
 		asm("cld\n"
@@ -349,7 +349,7 @@ inline void *memmove(void *dest, void *src, size_t n)
 	return dest;
 }
 
-inline int32_t memcmp(void *s1, void *s2, size_t n)
+inline int32_t memcmp(const void *s1, const void *s2, size_t n)
 {
 	register int32_t _res asm("ax");
 	asm("    cld           \n"

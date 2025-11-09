@@ -321,20 +321,23 @@ void bit_blit(const uint32_t *src, uint16_t src_bx, uint16_t src_x, uint16_t src
 			SET_PIXEL32(dst, dst_bx, dst_x + x, dst_y + y, GET_PIXEL32(src, src_bx, src_x + x, src_y + y));
 }
 
-static void draw_ascii_font(uint32_t *buf, uint16_t bx, uint16_t x, uint16_t y, COLOR color, uint16_t height, const uint8_t *font)
+/* 绘制单个字形 */
+static void draw_font_char(uint32_t *buf, uint16_t bx, uint16_t x, uint16_t y, COLOR color, 
+						   const uint8_t *font_data, uint16_t width, uint16_t height)
 {
-	uint32_t i; /* 行 */
-	for (i = 0; i < height; i++) {
-		if (font[i] & 0x80) SET_PIXEL32(buf, bx, x + 0, y + i, color);
-		if (font[i] & 0x40) SET_PIXEL32(buf, bx, x + 1, y + i, color);
-		if (font[i] & 0x20) SET_PIXEL32(buf, bx, x + 2, y + i, color);
-		if (font[i] & 0x10) SET_PIXEL32(buf, bx, x + 3, y + i, color);
-		if (font[i] & 0x08) SET_PIXEL32(buf, bx, x + 4, y + i, color);
-		if (font[i] & 0x04) SET_PIXEL32(buf, bx, x + 5, y + i, color);
-		if (font[i] & 0x02) SET_PIXEL32(buf, bx, x + 6, y + i, color);
-		if (font[i] & 0x01) SET_PIXEL32(buf, bx, x + 7, y + i, color);
+	uint32_t bytes_per_row = (width + 7) / 8;
+
+	for (uint32_t row = 0; row < height; row++) {
+		const uint8_t *row_data = font_data + row * bytes_per_row;
+		
+		for (uint32_t col = 0; col < width; col++) {
+			uint32_t byte_index = col / 8;
+			uint32_t bit_index = 7 - (col % 8);  /* PSF 格式是高位在前 */
+			
+			if (row_data[byte_index] & (1 << bit_index))
+				SET_PIXEL32(buf, bx, x + col, y + row, color);
+		}
 	}
-	return;
 }
 
 /*
@@ -346,13 +349,75 @@ static void draw_ascii_font(uint32_t *buf, uint16_t bx, uint16_t x, uint16_t y, 
 	@param color 字符颜色
 	@param str 字符串内容
 	@param font 使用的 PSF 字体
-	@note 仅支持单行、ASCII 字符集，字体宽度不超过 8。
+	@note 仅支持单行、ASCII 字符集。
 */
-void draw_ascii_string(uint32_t *buf, uint16_t bx, uint16_t x, uint16_t y, COLOR color, const char *str, BITMAP_FONT font)
+void draw_ascii_string(uint32_t *buf, uint16_t bx, uint16_t x, uint16_t y, COLOR color, const char *str, const BITMAP_FONT *font)
 {
-	for (; *str != 0x00; str++) {
-		draw_ascii_font(buf, bx, x, y, color, font.height, font.buf + (*str) * font.charsize);
-		x += font.width;
+	for (; *str != 0; str++) {
+		uint32_t char_index = psf_find_char_index(font, (uint8_t) *str);
+		const uint8_t *char_data = font->buf + char_index * font->charsize;
+		draw_font_char(buf, bx, x, y, color, char_data, font->width, font->height);
+		x += font->width;
 	}
-	return;
+}
+
+/*
+	@brief 使用 PSF 字体绘制 Unicode 字符串。
+	@param buf 绘图缓冲区
+	@param bx 绘图缓冲区的宽度
+	@param x X 坐标
+	@param y Y 坐标
+	@param color 字符颜色
+	@param str 字符串内容
+	@param font 使用的 PSF 字体
+*/
+void draw_unicode_string(uint32_t *buf, uint16_t bx, uint16_t x, uint16_t y, COLOR color, const char *str, const BITMAP_FONT *font)
+{
+	uint16_t current_x = x;
+
+	while (*str != 0x00) {
+		uint32_t unicode = 0;
+		uint8_t first_byte = (uint8_t)*str;
+		int bytes_to_skip = 1;
+		
+		/* 解码 UTF-8 */
+		if ((first_byte & 0x80) == 0) {
+			/* 单字节 UTF-8 (ASCII) */
+			unicode = first_byte;
+		} else if ((first_byte & 0xE0) == 0xC0) {
+			/* 双字节 UTF-8 */
+			if ((str[1] & 0xC0) == 0x80) {
+				unicode = ((first_byte & 0x1F) << 6) | (str[1] & 0x3F);
+				bytes_to_skip = 2;
+			}
+		} else if ((first_byte & 0xF0) == 0xE0) {
+			/* 三字节 UTF-8 */
+			if ((str[1] & 0xC0) == 0x80 && (str[2] & 0xC0) == 0x80) {
+				unicode = ((first_byte & 0x0F) << 12) | ((str[1] & 0x3F) << 6) | (str[2] & 0x3F);
+				bytes_to_skip = 3;
+			}
+		} else if ((first_byte & 0xF8) == 0xF0) {
+			/* 四字节 UTF-8 */
+			if ((str[1] & 0xC0) == 0x80 && (str[2] & 0xC0) == 0x80 && (str[3] & 0xC0) == 0x80) {
+				unicode = ((first_byte & 0x07) << 18) | ((str[1] & 0x3F) << 12) | ((str[2] & 0x3F) << 6) | (str[3] & 0x3F);
+				bytes_to_skip = 4;
+			}
+		}
+		
+		if (unicode == 0) {
+			/* 无效的 UTF-8，跳过当前字节 */
+			str++;
+			continue;
+		}
+		
+		/* 查找字符索引 */
+		uint32_t char_index = psf_find_char_index(font, unicode);
+		
+		/* 绘制字符 */
+		const uint8_t *char_data = font->buf + char_index * font->charsize;
+		draw_font_char(buf, bx, current_x, y, color, char_data, font->width, font->height);
+		
+		current_x += font->width;
+		str += bytes_to_skip;
+	}
 }

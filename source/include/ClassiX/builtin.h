@@ -15,10 +15,6 @@
 #define MINOR
 #define PATCH
 
-extern const uint8_t builtin_font_terminus12n[];
-extern const uint8_t builtin_font_terminus16n[];
-extern const uint8_t builtin_font_terminus16b[];
-
 #define CURSOR_WIDTH						16
 #define CURSOR_HEIGHT						16
 extern const uint32_t builtin_cursor_arrow[];

@@ -2,6 +2,7 @@
 	core/main.c
 */
 
+#include <ClassiX/assets.h>
 #include <ClassiX/blkdev.h>
 #include <ClassiX/builtin.h>
 #include <ClassiX/cga.h>
@@ -51,6 +52,7 @@ extern uintptr_t bss_end_phys;							/* BSS 段结束地址 */
 BITMAP_FONT font_terminus_12n;
 BITMAP_FONT font_terminus_16n;
 BITMAP_FONT font_terminus_16b;
+BITMAP_FONT font_unifont;
 
 #define KMSG_QUEUE_SIZE						(128)		/* 内核消息队列大小 */
 
@@ -196,9 +198,9 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	out8(PIC1_IMR,  0b11101111); /* 允许 IRQ12 */
 
 	/* 初始化内嵌资源 */
-	font_terminus_12n = psf_load(builtin_font_terminus12n);
-	font_terminus_16n = psf_load(builtin_font_terminus16n);
-	font_terminus_16b = psf_load(builtin_font_terminus16b);
+	font_terminus_12n = psf_load(ASSET_DATA(fonts, terminus12n_psf), ASSET_SIZE(fonts, terminus12n_psf));
+	font_terminus_16n = psf_load(ASSET_DATA(fonts, terminus16n_psf), ASSET_SIZE(fonts, terminus16n_psf));
+	font_terminus_16b = psf_load(ASSET_DATA(fonts, terminus16b_psf), ASSET_SIZE(fonts, terminus16b_psf));
 
 	/* 初始化图层管理 */
 	init_framebuffer(mbi);
