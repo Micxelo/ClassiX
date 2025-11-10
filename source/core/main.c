@@ -4,7 +4,6 @@
 
 #include <ClassiX/assets.h>
 #include <ClassiX/blkdev.h>
-#include <ClassiX/builtin.h>
 #include <ClassiX/cga.h>
 #include <ClassiX/cpu.h>
 #include <ClassiX/debug.h>
@@ -26,6 +25,7 @@
 #include <ClassiX/task.h>
 #include <ClassiX/timer.h>
 #include <ClassiX/typedef.h>
+#include <ClassiX/widgets.h>
 
 #include <string.h>
 
@@ -138,10 +138,9 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	debug("Available memory size: %d KiB\n", mbi->mem_lower + mbi->mem_upper);
 	for (mmap = (multiboot_memory_map_t *) mbi->mmap_addr;
 			(uintptr_t) mmap < (mbi->mmap_addr + mbi->mmap_length);
-			mmap = (multiboot_memory_map_t *) ((uintptr_t) mmap + mmap->size + sizeof(mmap->size))) {
+			mmap = (multiboot_memory_map_t *) ((uintptr_t) mmap + mmap->size + sizeof(mmap->size)))
 		debug("  Size: 0x%x, Base: 0x%016llx, Length: 0x%016llx, Type: %d\n",
 			mmap->size, mmap->addr, mmap->len, mmap->type);
-	}
 
 	/* 启动设备信息 */
 	debug("\nBoot device: %08x\n", mbi->boot_device);
@@ -197,7 +196,7 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	out8(PIC0_IMR,  0b11111000); /* 允许 IRQ0、IRQ1 和 IRQ2 */
 	out8(PIC1_IMR,  0b11101111); /* 允许 IRQ12 */
 
-	/* 初始化内嵌资源 */
+	/* 初始化内建字体 */
 	font_terminus_12n = psf_load(ASSET_DATA(fonts, terminus12n_psf), ASSET_SIZE(fonts, terminus12n_psf));
 	font_terminus_16n = psf_load(ASSET_DATA(fonts, terminus16n_psf), ASSET_SIZE(fonts, terminus16n_psf));
 	font_terminus_16b = psf_load(ASSET_DATA(fonts, terminus16b_psf), ASSET_SIZE(fonts, terminus16b_psf));
@@ -207,15 +206,13 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	layer_init((uint32_t *) g_fb.addr, g_fb.width, g_fb.height);
 	/* 背景图层 */
 	LAYER *layer_back = layer_alloc(g_fb.width, g_fb.height, false);
-	fill_rectangle(layer_back->buf, layer_back->width, 0, 0, layer_back->width, layer_back->height, COLOR_BLACK);
+	fill_rectangle(layer_back->buf, layer_back->width, 0, 0, layer_back->width, layer_back->height, COLOR_MIKU);
 	layer_move(layer_back, 0, 0);
 	layer_set_z(layer_back, 0);
 	/* 光标图层 */
-	cursor_x = (g_fb.width - CURSOR_WIDTH) / 2;
-	cursor_y = (g_fb.height - CURSOR_HEIGHT) / 2;
-	LAYER *layer_cursor = layer_alloc(CURSOR_WIDTH, CURSOR_HEIGHT, true);
-	bit_blit(builtin_cursor_arrow, CURSOR_WIDTH, 0, 0, CURSOR_WIDTH, CURSOR_HEIGHT, 
-		layer_cursor->buf, layer_cursor->width, 0, 0);
+	LAYER *layer_cursor = cursor_init();
+	cursor_x = (g_fb.width - layer_cursor->width) / 2;
+	cursor_y = (g_fb.height - layer_cursor->height) / 2;
 	layer_move(layer_cursor, cursor_x, cursor_y);
 	layer_set_z(layer_cursor, 1);
 

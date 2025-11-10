@@ -160,16 +160,28 @@ static void layer_refreshsub(int32_t vx0, int32_t vy0, int32_t vx1, int32_t vy1,
 		if (bx1 > layer->width) bx1 = layer->width;
 		if (by1 > layer->height) by1 = layer->height;
 
-		for (int32_t by = by0; by < by1; by++) {
-			int32_t vy = layer->y + by;
-			for (int32_t bx = bx0; bx < bx1; bx++) {
-				int32_t vx = layer->x + bx;
-				if (layer_manager.map[vy * layer_manager.width + vx] == id) {
-					COLOR pixel = GET_PIXEL32(layer->buf, layer->width, bx, by);
-					set_pixel(vx, vy, pixel);
+		if (g_fb.argb_format)
+			for (int32_t by = by0; by < by1; by++) {
+				int32_t vy = layer->y + by;
+				for (int32_t bx = bx0; bx < bx1; bx++) {
+					int32_t vx = layer->x + bx;
+					if (layer_manager.map[vy * layer_manager.width + vx] == id) {
+						COLOR pixel = GET_PIXEL32(layer->buf, layer->width, bx, by);
+						SET_PIXEL32(layer_manager.fb, layer_manager.width, vx, vy, pixel);
+					}
 				}
 			}
-		}
+		else
+			for (int32_t by = by0; by < by1; by++) {
+				int32_t vy = layer->y + by;
+				for (int32_t bx = bx0; bx < bx1; bx++) {
+					int32_t vx = layer->x + bx;
+					if (layer_manager.map[vy * layer_manager.width + vx] == id) {
+						COLOR pixel = GET_PIXEL32(layer->buf, layer->width, bx, by);
+						set_pixel(vx, vy, pixel);
+					}
+				}
+			}
 	}
 }
 

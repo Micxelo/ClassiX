@@ -54,10 +54,12 @@ int32_t init_framebuffer(multiboot_info_t *mbi)
 		/* 32位 ARGB 颜色 */
 		get_pixel_ptr = get_pixel_argb;
 		set_pixel_ptr = set_pixel_argb;
+		g_fb.argb_format = true;
 		debug("Global framebuffer initialized for ARGB color channel.\n");
 	} else {
 		get_pixel_ptr = get_pixel_universal;
 		set_pixel_ptr = set_pixel_universal;
+		g_fb.argb_format = false;
 		debug("Global framebuffer initialized for universal color channel.\n");
 	}
 
@@ -84,7 +86,7 @@ static inline uint8_t expand_to_8bit(uint32_t value, uint8_t src_bits)
 	if (src_bits >= 8)
 		return (value >> (src_bits - 8)) & 0xff;
 
-	/* 线性扩展：value * 255 / (2^src_bits - 1) */
+	/* 线性扩展：value * 255 / (2 ^ src_bits - 1) */
 	if (src_bits > 0) {
 		uint32_t max_val = (1 << src_bits) - 1;
 		return (value * 255 + max_val / 2) / max_val;
@@ -159,7 +161,7 @@ static inline void set_pixel_universal(uint16_t x, uint16_t y, COLOR color)
 			uint32_t g_val = (g >> (8 - g_fb.green_mask_size)) << g_fb.green_field_position;
 			uint32_t b_val = (b >> (8 - g_fb.blue_mask_size)) << g_fb.blue_field_position;
 
-			/* 组合为16位像素值 */
+			/* 组合为 16 位像素值 */
 			uint16_t pixel = (uint16_t) (r_val | g_val | b_val);
 			*((uint16_t *) (pixel_address + x * 2)) = pixel;
 		}

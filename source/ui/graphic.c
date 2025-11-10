@@ -314,7 +314,8 @@ void fill_ellipse(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t
 	@param dst_x 目标缓冲区左上角 x 坐标
 	@param dst_y 目标缓冲区左上角 y 坐标
 */
-void bit_blit(const uint32_t *src, uint16_t src_bx, uint16_t src_x, uint16_t src_y, uint16_t width, uint16_t height, uint32_t *dst, uint16_t dst_bx, uint16_t dst_x, uint16_t dst_y)
+void bit_blit(const uint32_t *src, uint16_t src_bx, uint16_t src_x, uint16_t src_y, uint16_t width, uint16_t height,
+	uint32_t *dst, uint16_t dst_bx, uint16_t dst_x, uint16_t dst_y)
 {
 	for (uint16_t y = 0; y < height; y++)
 		for (uint16_t x = 0; x < width; x++)

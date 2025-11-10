@@ -25,6 +25,7 @@ typedef struct {
 	uint8_t green_mask_size;		/* G 掩码大小 */
 	uint8_t blue_field_position;	/* B 字段位置 */
 	uint8_t blue_mask_size;			/* B 掩码大小 */
+	bool argb_format;				/* 标准 ARGB 颜色格式 */
 } FRAMEBUFFER;
 
 extern FRAMEBUFFER g_fb;			/* 全局帧缓冲区 */

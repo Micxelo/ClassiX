@@ -18,11 +18,12 @@
 /* 声明资源文件 */
 #define DECLARE_ASSET(type, name) \
 	extern const uint8_t binary_assets_##type##_##name##_start[];	\
-	extern const uint8_t binary_assets_##type##_##name##_end[];	\
+	extern const uint8_t binary_assets_##type##_##name##_end[];		\
 	extern const uint8_t binary_assets_##type##_##name##_size[];
 
 /* 光标文件 */
 DECLARE_ASSET(cursors, arrow_csr);
+DECLARE_ASSET(cursors, beam_csr);
 DECLARE_ASSET(cursors, busy_csr);
 DECLARE_ASSET(cursors, link_csr);
 

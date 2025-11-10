@@ -1,9 +1,9 @@
 /*
-	include/ClassiX/widget.h
+	include/ClassiX/widgets.h
 */
 
-#ifndef _CLASSIX_WIDGET_H_
-#define _CLASSIX_WIDGET_H_
+#ifndef _CLASSIX_WIDGETS_H_
+#define _CLASSIX_WIDGETS_H_
 
 #ifdef __cplusplus
 	extern "C" {
@@ -12,6 +12,16 @@
 #include <ClassiX/fifo.h>
 #include <ClassiX/layer.h>
 #include <ClassiX/typedef.h>
+
+typedef enum {
+	CURSOR_ARROW = 0,
+	CURSOR_BEAM,
+	CURSOR_BUSY,
+	CURSOR_LINK
+} CURSOR;
+
+LAYER *cursor_init(void);
+void cursor_set(CURSOR type);
 
 typedef enum {
 	WIDGET_TYPE_WIDGET  = 0x85f91ed0,
