@@ -3,7 +3,6 @@
 */
 
 #include <ClassiX/assets.h>
-#include <ClassiX/debug.h>
 #include <ClassiX/graphic.h>
 #include <ClassiX/layer.h>
 #include <ClassiX/palette.h>

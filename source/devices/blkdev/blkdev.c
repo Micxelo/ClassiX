@@ -22,7 +22,7 @@ static int32_t hd_read(void *dev, uint32_t lba, uint32_t count, void *buf)
 }
 
 /* 硬盘写 */
-static int32_t hd_write(void *dev, uint32_t lba, uint32_t count, void *buf)
+static int32_t hd_write(void *dev, uint32_t lba, uint32_t count, const void *buf)
 {
 	IDE_DEVICE *ide_dev = (IDE_DEVICE *) (((BLKDEV *) dev)->device);
 	int32_t err;
@@ -50,7 +50,7 @@ static int32_t fd_read(void *dev, uint32_t lba, uint32_t count, void *buf)
 }
 
 /* 软盘写 */
-static int32_t fd_write(void *dev, uint32_t lba, uint32_t count, void *buf)
+static int32_t fd_write(void *dev, uint32_t lba, uint32_t count, const void *buf)
 {
 	FD_DEVICE *fd_dev = (FD_DEVICE *) (((BLKDEV *) dev)->device);
 
@@ -109,7 +109,7 @@ int32_t register_blkdevs(void)
 				
 				if (register_device(&dev) == BD_SUCCESS) {
 					count++;
-					debug("Registered IDE device: %s %s (BIOS: 0x%02X, %llu sectors).\n",
+					debug("BLKDEV: Registered IDE device: %s %s (BIOS: 0x%02X, %llu sectors).\n",
 						  ide_devices[i].primary ? "primary" : "secondary",
 						  ide_devices[i].master ? "master" : "slave",
 						  dev_id, ide_devices[i].sectors);
@@ -139,7 +139,7 @@ int32_t register_blkdevs(void)
 				
 				if (register_device(&dev) == BD_SUCCESS) {
 					count++;
-					debug("Registered Floppy device: Drive %d (BIOS: 0x%02X, %u sectors).\n",
+					debug("BLKDEV: Registered Floppy device: Drive %d (BIOS: 0x%02X, %u sectors).\n",
 						  fd_devices[i].drive,
 						  dev_id, dev.total_sectors);
 				}

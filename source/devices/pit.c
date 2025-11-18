@@ -27,7 +27,7 @@ void init_pit(uint32_t frequency)
 	if (divisor == 0) {
 		divisor = 1;		/* 最低分频值*/
 		pit_frequency = PIT_BASE_FREQ;
-		debug("PIT frequency too high, setting to max frequency.\n");
+		debug("PIT: PIT frequency too high, setting to max frequency.\n");
 	}
 
 	/* 配置 PIT 通道 0：模式 3（方波），先低字节后高字节 */
@@ -40,7 +40,7 @@ void init_pit(uint32_t frequency)
 	/* 注册 IRQ */
 	extern void asm_isr_pit(void);
 	idt_set_gate(INT_NUM_PIT, (uint32_t) asm_isr_pit, 0x08, AR_INTGATE32);
-	debug("PIT initialized at %d Hz (divisor: %d).\n", frequency, divisor);
+	debug("PIT: PIT initialized at %d Hz (divisor: %d).\n", frequency, divisor);
 }
 
 void isr_pit(ISR_PARAMS params)

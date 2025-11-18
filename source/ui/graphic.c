@@ -379,7 +379,7 @@ void draw_unicode_string(uint32_t *buf, uint16_t bx, uint16_t x, uint16_t y, COL
 	while (*str != 0x00) {
 		uint32_t unicode = 0;
 		uint8_t first_byte = (uint8_t)*str;
-		int bytes_to_skip = 1;
+		int32_t bytes_to_skip = 1;
 		
 		/* 解码 UTF-8 */
 		if ((first_byte & 0x80) == 0) {

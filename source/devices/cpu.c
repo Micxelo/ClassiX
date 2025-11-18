@@ -201,3 +201,27 @@ int32_t get_cache_info(int32_t index, cache_info_t *buf)
 	buf->line_size = line_size;
 	return 0;
 }
+
+/*
+	@brief 生成一个随机数。
+	@param rand 指向存储随机数的变量
+	@return true - 成功，false - 失败
+*/
+bool generate_random(uint32_t *rand)
+{
+	unsigned char res;
+	asm volatile("rdrand %0; setc %1" : "=r"(*rand), "=qm"(res));
+	return  res;
+}
+
+/*
+	@brief 生成一个随机种子。
+	@param seed 指向存储随机种子的变量
+	@return true - 成功，false - 失败
+*/
+bool generate_seed(uint32_t *seed)
+{
+	unsigned char res;
+	asm volatile("rdseed %0; setc %1" : "=r" (*seed), "=qm" (res));
+	return res;
+}

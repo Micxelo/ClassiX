@@ -63,5 +63,6 @@ SECTIONS {
 }
 
 PROVIDE(entry_phys = start);
+PROVIDE(kernel_size = _kernel_end_phys - _kernel_start_phys);
 PROVIDE(bss_start_phys = _bss_start_phys);
 PROVIDE(bss_end_phys = _bss_end_phys);

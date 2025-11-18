@@ -30,7 +30,7 @@ static inline void set_pixel_universal(uint16_t x, uint16_t y, COLOR color);
 int32_t init_framebuffer(multiboot_info_t *mbi)
 {
 	if (!(mbi && mbi->flags & MULTIBOOT_INFO_FRAMEBUFFER_INFO)) {
-		debug("Failed to initialize global framebuffer.\n");
+		debug("FRAMEBUF: Failed to initialize global framebuffer.\n");
 		return -1; /* 未提供帧缓冲信息 */
 	}
 
@@ -55,12 +55,12 @@ int32_t init_framebuffer(multiboot_info_t *mbi)
 		get_pixel_ptr = get_pixel_argb;
 		set_pixel_ptr = set_pixel_argb;
 		g_fb.argb_format = true;
-		debug("Global framebuffer initialized for ARGB color channel.\n");
+		debug("FRAMEBUF: Global framebuffer initialized for ARGB color channel.\n");
 	} else {
 		get_pixel_ptr = get_pixel_universal;
 		set_pixel_ptr = set_pixel_universal;
 		g_fb.argb_format = false;
-		debug("Global framebuffer initialized for universal color channel.\n");
+		debug("FRAMEBUF: Global framebuffer initialized for universal color channel.\n");
 	}
 
 	return 0; /* 成功初始化帧缓冲 */

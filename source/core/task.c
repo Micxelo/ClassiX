@@ -67,7 +67,7 @@ TASK *init_multitasking(void)
 	ticks_per_priority_unit = (pit_frequency * TIME_SLICE_BASE_PER_PRIORITY_MS) / 1000;
 	next_schedule_tick = get_system_ticks() + ktask->priority * ticks_per_priority_unit;
 
-	debug("Multitasking initialized.\n");
+	debug("TASK: Multitasking initialized.\n");
 	return ktask;
 }
 
@@ -97,12 +97,12 @@ TASK *task_alloc(void)
 			task->tss.gs = 0;
 			task->tss.ldtr = 0;
 			task->tss.iomap = 0x40000000;
-			debug("Allocated task %p.\n", task);
+			debug("TASK: Allocated task %p.\n", task);
 			return task;
 		}
 	}
 	
-	debug("Failed to allocate free task.\n");
+	debug("TASK: Failed to allocate free task.\n");
 	return NULL; /* 无空闲任务 */
 }
 

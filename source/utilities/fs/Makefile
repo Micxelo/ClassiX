@@ -1,8 +1,8 @@
 #
-#	libc/Makefile
+#	utilities/fs/Makefile
 #
 
-INCPATH		= ../include
+INCPATH		= ../../include
 
 # 源文件
 C_SOURCES = $(wildcard *.c)

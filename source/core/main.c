@@ -7,6 +7,7 @@
 #include <ClassiX/cga.h>
 #include <ClassiX/cpu.h>
 #include <ClassiX/debug.h>
+#include <ClassiX/fatfs.h>
 #include <ClassiX/fifo.h>
 #include <ClassiX/font.h>
 #include <ClassiX/framebuf.h>
@@ -231,6 +232,10 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 			boot_device->id, boot_device->sector_size, boot_device->total_sectors);
 	else
 		debug("Boot device not found.\n");
+
+	int32_t fat12_init(FATFS *fs, BLKDEV *device);
+	FATFS fatfs;
+	fat12_init(&fatfs, get_device(BIOS_DEV_FD0));
 
 	for (;;) {
 		cli();

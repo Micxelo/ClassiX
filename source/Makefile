@@ -8,7 +8,7 @@ LD			= ld
 OBJCOPY		= objcopy
 
 CFLAGS		= -O2 -m32 -std=gnu99 \
-			  -Wall -Wextra -Wno-unused-parameter -Wno-unused-function \
+			  -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Werror=parentheses \
 			  -ffreestanding -fleading-underscore -fno-pic -fno-stack-protector \
 			  -nostartfiles -nostdinc
 ASFLAGS		= -f elf32

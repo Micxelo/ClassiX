@@ -26,6 +26,8 @@ void get_cpu_brand(char *buf);
 uint32_t get_apic_id();
 int32_t get_cache_count();
 int32_t get_cache_info(int32_t index, cache_info_t *buf);
+bool generate_random(uint32_t *rand);
+bool generate_seed(uint32_t *seed);
 
 #ifdef __cplusplus
 	}

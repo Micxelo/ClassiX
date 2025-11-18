@@ -38,7 +38,7 @@ void init_mouse(FIFO *fifo, int32_t data0)
 	wait_kbc_sendready();
 	out8(PORT_MOUSE_DATA, MOUSECMD_ENABLE);
 
-	debug("Mouse initialized.\n");
+	debug("MOUSE: Mouse initialized.\n");
 }
 
 /*
@@ -88,7 +88,7 @@ int32_t mouse_decoder(MOUSE_DATA *mouse_data, uint8_t data)
 			break;
 
 		default:
-			debug("Unknown mouse phase: %d.\n", mouse_data->phase);
+			debug("MOUSE: Unknown mouse phase: %d.\n", mouse_data->phase);
 			mouse_data->phase = 0; /* 重置阶段 */
 			return 0;
 	}

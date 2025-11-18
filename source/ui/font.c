@@ -2,7 +2,6 @@
 	ui/font.c
 */
 
-#include <ClassiX/debug.h>
 #include <ClassiX/font.h>
 #include <ClassiX/memory.h>
 #include <ClassiX/typedef.h>

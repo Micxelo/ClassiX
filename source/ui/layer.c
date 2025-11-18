@@ -31,7 +31,7 @@ int32_t layer_init(uint32_t *fb, uint16_t width, uint16_t height)
 {
 	layer_manager.map = kmalloc(width * height * sizeof(uint8_t));
 	if (!layer_manager.map) {
-		debug("Failed to allocate memory for layer manager.\n");
+		debug("LAYER: Failed to allocate memory for layer manager.\n");
 		return -1; /* 内存分配失败 */
 	}
 
@@ -46,7 +46,7 @@ int32_t layer_init(uint32_t *fb, uint16_t width, uint16_t height)
 		layer_manager.layers[i] = NULL;
 	}
 
-	debug("Layer manager initialized.\n");
+	debug("LAYER: Layer manager initialized.\n");
 	return 0;
 }
 
@@ -66,7 +66,7 @@ LAYER *layer_alloc(uint16_t width, uint16_t height, bool allow_inv)
 			layer = &layer_manager.layers0[i];
 			layer->buf = kmalloc(width * height * sizeof(uint32_t));
 			if (!layer->buf) {
-				debug("Failed to allocate memory for new layer.\n");
+				debug("LAYER: Failed to allocate memory for new layer.\n");
 				return NULL;
 			}
 
@@ -76,12 +76,12 @@ LAYER *layer_alloc(uint16_t width, uint16_t height, bool allow_inv)
 			layer->z = -1; /* 隐藏 */
 			layer->allow_inv = allow_inv;
 
-			debug("Layer created at %p, size %dx%d.\n", layer, width, height);
+			debug("LAYER: Layer created at %p, size %dx%d.\n", layer, width, height);
 			return layer;
 		}
 	}
 
-	debug("Failed to allocate free layer.\n");
+	debug("LAYER: Failed to allocate free layer.\n");
 	return NULL;
 }
 

@@ -40,13 +40,13 @@ static void timer_lock_release(void)
 TIMER *timer_create(TIMER_CALLBACK callback, void *arg)
 {
 	if (callback == NULL) {
-		debug("Invalid timer parameters.\n");
+		debug("TIMER: Invalid timer parameters.\n");
 		return 0; /* 无效参数 */
 	}
 	
 	TIMER *new_timer = (TIMER *) kmalloc(sizeof(TIMER));
 	if (!new_timer) {
-		debug("Failed to allocate memory for new timer.\n");
+		debug("TIMER: Failed to allocate memory for new timer.\n");
 		return NULL; /* 内存分配失败 */
 	}
 
@@ -70,7 +70,7 @@ TIMER *timer_create(TIMER_CALLBACK callback, void *arg)
 	}
 	
 	timer_lock_release();
-	debug("Created timer %p.\n", new_timer);
+	debug("TIMER: Created timer %p.\n", new_timer);
 	return new_timer;
 }
 
@@ -89,7 +89,7 @@ int32_t timer_start(TIMER *timer, uint64_t interval, int32_t repetition)
 	while (current) {
 		if (current == timer) {
 			if (current->state == TIMER_ACTIVE) {
-				debug("Timer %p is already active.\n", timer);
+				debug("TIMER: Timer %p is already active.\n", timer);
 				timer_lock_release();
 				return -1; /* 定时器已激活 */
 			}
@@ -98,7 +98,7 @@ int32_t timer_start(TIMER *timer, uint64_t interval, int32_t repetition)
 			current->expire_tick = get_system_ticks() + interval;
 			current->state = TIMER_ACTIVE;
 			timer_lock_release();
-			debug("Started timer %p, interval %llu ticks, expires at tick %llu, repeats %d times.\n",
+			debug("TIMER: Started timer %p, interval %llu ticks, expires at tick %llu, repeats %d times.\n",
 				current, current->interval, current->expire_tick, repetition);
 			return 0; /* 成功启动定时器 */
 		}
@@ -106,7 +106,7 @@ int32_t timer_start(TIMER *timer, uint64_t interval, int32_t repetition)
 	}
 
 	timer_lock_release();
-	debug("Timer %p not found.\n", timer);
+	debug("TIMER: Timer %p not found.\n", timer);
 	return -1; /* 未找到定时器 */
 }
 
@@ -123,20 +123,20 @@ int32_t timer_stop(TIMER *timer)
 	while (current) {
 		if (current == timer) {
 			if (current->state != TIMER_ACTIVE) {
-				debug("Timer %p is not active.\n", timer);
+				debug("TIMER: Timer %p is not active.\n", timer);
 				timer_lock_release();
 				return -1; /* 定时器未激活 */
 			}
 			current->state = TIMER_INACTIVE;
 			timer_lock_release();
-			debug("Stopped timer %p.\n", timer);
+			debug("TIMER: Stopped timer %p.\n", timer);
 			return 0; /* 成功停止定时器 */
 		}
 		current = current->next;
 	}
 
 	timer_lock_release();
-	debug("Timer %p not found.\n", timer);
+	debug("TIMER: Timer %p not found.\n", timer);
 	return -1; /* 未找到定时器 */
 }
 
@@ -159,7 +159,7 @@ int32_t timer_delete(TIMER *timer)
 				timer_head = current->next;
 			kfree(current);
 			timer_lock_release();
-			debug("Deleted timer %p.\n", timer);
+			debug("TIMER: Deleted timer %p.\n", timer);
 			return 0; /* 成功删除定时器 */
 		}
 		prev = current;
@@ -167,7 +167,7 @@ int32_t timer_delete(TIMER *timer)
 	}
 
 	timer_lock_release();
-	debug("Timer %p not found.\n", timer);
+	debug("TIMER: Timer %p not found.\n", timer);
 	return -1; /* 未找到定时器 */
 }
 
@@ -184,7 +184,7 @@ void timer_process(void)
 		if (current->state == TIMER_ACTIVE && current->expire_tick <= current_tick) {
 			/* 定时器到期，调用回调函数 */
 			current->state = TIMER_EXPIRED;
-			debug("Timer %p expired at tick %llu, invoking callback.\n", current, current_tick);
+			debug("TIMER: Timer %p expired at tick %llu, invoking callback.\n", current, current_tick);
 			
 			/* 执行回调 */
 			TIMER_CALLBACK callback = current->callback;
@@ -199,10 +199,10 @@ void timer_process(void)
 				if (current->repetition < 0 || current->repetition-- > 0) {
 					current->expire_tick = current_tick + current->interval;
 					current->state = TIMER_ACTIVE;
-					debug("Reactivated periodic timer %p to expire at tick %llu.\n", current, current->expire_tick);
+					debug("TIMER: Reactivated periodic timer %p to expire at tick %llu.\n", current, current->expire_tick);
 				}else {
 					current->state = TIMER_INACTIVE;
-					debug("Timer %p set to inactive.\n", current);
+					debug("TIMER: Timer %p set to inactive.\n", current);
 				}
 			}
 		}
@@ -238,7 +238,7 @@ void timer_cleanup(void)
 				timer_head = current->next;
 			kfree(current);
 			removed_count++;
-			debug("Cleaned up inactive timer %p.\n", current);
+			debug("TIMER: Cleaned up inactive timer %p.\n", current);
 			if (prev)
 				current = prev->next;
 			else
@@ -251,7 +251,7 @@ void timer_cleanup(void)
 
 	timer_lock_release();
 	if (removed_count > 0)
-		debug("Cleaned up %d inactive timers.\n", removed_count);
+		debug("TIMER: Cleaned up %d inactive timers.\n", removed_count);
 }
 
 /*

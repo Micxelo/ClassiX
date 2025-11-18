@@ -2,6 +2,10 @@
 ;	core/boot.asm
 ;
 
+; ClassiX Kernel 签名
+CLASSIX						equ			0xcd59f115			; 魔数
+VERSION						equ			0x00000001			; 版本
+
 ; Multiboot flags 位定义
 MBALIGN						equ			1 << 0				; 对齐信息
 MEMINFO						equ			1 << 1				; 内存映射信息
@@ -18,9 +22,12 @@ section	.classix
 align 4
 classix:
 	; ClassiX Header
-	.magic:			dd 0xcd59f115
-	.version:		dd 0x00000001
-	.entry:			dd start
+	extern kernel_size
+
+	.magic:			dd CLASSIX					; 签名
+	.version:		dd VERSION					; 版本信息
+	.entry:			dd start					; 入口点
+	.size			dd kernel_size				; 内核大小
 	.reserved:		times 12 dd 0
 
 ; GRUB 在内核文件的前 8 KiB（按 32 位边界对齐）中搜索 Header
@@ -46,10 +53,10 @@ multiboot:
 	.entry_phys:	dd entry_phys				; 入口点
 
 	; 视频模式
-	dd 0
-	dd 0
-	dd 0
-	dd 0
+	dd 0										; 线性帧缓冲区
+	dd 0										; 宽度（默认）
+	dd 0										; 高度（默认）
+	dd 0										; 色深（默认）
 
 ; linker.ld 指定 start 为内核入口点
 section .text

@@ -348,24 +348,24 @@ uint32_t fd_init(void)
 
 	if (drive0_type != FDC_CMOS_NO_DRIVE && drive0_type != FDC_CMOS_UNKNOW_DRIVE) {
 		fd_devices[0].spec = (FLOPPY_SPEC*) &floppy_specs[drive0_type - 1];
-		debug("Floppy Drive A: %d cylinders, %d heads, %d sectors/track.\n",
+		debug("FD: Floppy Drive A: %d cylinders, %d heads, %d sectors/track.\n",
 			fd_devices[0].spec->cylinders,
 			fd_devices[0].spec->heads,
 			fd_devices[0].spec->sectors_per_track);
 		count++;
 	} else {
-		debug("Floppy Drive A: No drive found.\n");
+		debug("FD: Floppy Drive A: No drive found.\n");
 	}
 
 	if (drive1_type != FDC_CMOS_NO_DRIVE && drive1_type != FDC_CMOS_UNKNOW_DRIVE) {
 		fd_devices[1].spec = (FLOPPY_SPEC*) &floppy_specs[drive1_type - 1];
-		debug("Floppy Drive B: %d cylinders, %d heads, %d sectors/track.\n",
+		debug("FD: Floppy Drive B: %d cylinders, %d heads, %d sectors/track.\n",
 			fd_devices[1].spec->cylinders,
 			fd_devices[1].spec->heads,
 			fd_devices[1].spec->sectors_per_track);
 		count++;
 	} else {
-		debug("Floppy Drive B: No drive found.\n");
+		debug("FD: Floppy Drive B: No drive found.\n");
 	}
 
 	/* 重置 FDC */

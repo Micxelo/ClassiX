@@ -274,7 +274,7 @@ void pci_scan_devices(void)
 				dev->interrupt_pin = interrupt_reg >> 8;
 				dev->interrupt_line = interrupt_reg ;
 
-				debug("PCI %02x:%02x.%x: Vendor=%04x Device=%04x Class=%02x Subclass=%02x Type=%d\n",
+				debug("PCI: PCI %02x:%02x.%x: Vendor=%04x Device=%04x Class=%02x Subclass=%02x Type=%d\n",
 						bus, device, function, vendor_id, dev->device_id,
 						dev->class_code, dev->subclass, dev->type);
 			}

@@ -1,5 +1,5 @@
 /*
-	libc/stdio/stdio.c
+	utilities/format.c
 */
 
 /*

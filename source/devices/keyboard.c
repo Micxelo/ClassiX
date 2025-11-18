@@ -39,7 +39,7 @@ void init_keyboard(FIFO *fifo, int32_t data0)
 	wait_kbc_sendready();
 	out8(PORT_KEYBOARD_DATA, KBC_MODE);
 	
-	debug("Keyboard initialized.\n");
+	debug("KEYBOARD: Keyboard initialized.\n");
 }
 
 /*
@@ -59,7 +59,7 @@ void isr_keyboard(ISR_PARAMS params)
 	out8(PIC0_OCW2, 0x20); /* 主 PIC EOI */
 	data = in8(PORT_KEYBOARD_DATA);
 	fifo_push(keyboard_fifo, data + keydata0);
-	debug("Keyboard data: 0x%02x.\n", data);
+	debug("KEYBOARD: Keyboard data: 0x%02x.\n", data);
 	return;
 }
 

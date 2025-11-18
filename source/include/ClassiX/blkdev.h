@@ -17,7 +17,8 @@
 #define BIOS_DEV_HD0						0x80	/* 第一张硬盘（主盘） */
 #define BIOS_DEV_HD1						0x81	/* 第二张硬盘（从盘） */
 
-typedef int32_t (*blkdev_io)(void *dev, uint32_t lba, uint32_t count, void *buf);
+typedef int32_t (*blkdev_read)(void *dev, uint32_t lba, uint32_t count, void *buf);
+typedef int32_t (*blkdev_write)(void *dev, uint32_t lba, uint32_t count, const void *buf);
 
 /* 块设备操作错误码 */
 enum {
@@ -36,8 +37,8 @@ typedef struct {
 	uint32_t sector_size;	/* 扇区大小 */
 	uint32_t total_sectors;	/* 总扇区数 */
 	void *device;			/* 设备指针 */
-	blkdev_io read;			/* 读扇区函数指针 */
-	blkdev_io write;		/* 写扇区函数指针 */
+	blkdev_read read;		/* 读扇区函数指针 */
+	blkdev_write write;		/* 写扇区函数指针 */
 } BLKDEV;
 
 int32_t register_blkdevs(void);
