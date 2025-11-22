@@ -66,7 +66,7 @@ static FIFO kmsg_queue = { };							/* 内核消息队列 */
 	@brief 检查 Multiboot 启动信息。
 	@param mb_magic Multiboot 魔数
 	@param mbi Multiboot 信息结构体指针
-	@return 如果检查通过，返回 true；否则返回 false。
+	@return 如果检查通过，返回 true；否则返回 false
 */
 static bool check_boot_info(uint32_t mb_magic, multiboot_info_t *mbi)
 {
@@ -131,7 +131,7 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	uart_init();
 
 	debug("\nKernel PHYS: 0x%x - 0x%x\n", (uint32_t) &kernel_start_phys, (uint32_t) &kernel_end_phys);
-	
+
 	debug("\nMultiboot Bootloader Information\n\n");
 
 	/* 内存信息 */
@@ -169,7 +169,7 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	/* 启动参数 */
 	if (mbi->flags & MULTIBOOT_INFO_CMDLINE)
 		debug("Boot comand line: %s\n\n", mbi->cmdline);
-	
+
 	/* 初始化内存管理 */
 	uintptr_t mem_start = (uintptr_t) &kernel_end_phys;
 	size_t mem_size = (size_t) (mbi->mem_upper * 1024 - (&kernel_end_phys - &kernel_start_phys));
@@ -233,10 +233,6 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	else
 		debug("Boot device not found.\n");
 
-	int32_t fat12_init(FATFS *fs, BLKDEV *device);
-	FATFS fatfs;
-	fat12_init(&fatfs, get_device(BIOS_DEV_FD0));
-
 	for (;;) {
 		cli();
 		if (fifo_status(&kmsg_queue) == 0) {
@@ -271,7 +267,7 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 					new_cursor_x = cursor_x;
 					new_cursor_y = cursor_y;
 					cursor_updated = true;
-					
+
 					if (mouse_data.button) {
 						/* 按下鼠标 */
 						if (mouse_data.button & MOUSE_LBUTTON) {

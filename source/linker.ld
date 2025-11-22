@@ -6,7 +6,7 @@
 OUTPUT_FORMAT("binary")
 ENTRY(start)
 
-PHYS_BASE = 0x00100000;					/* 1 MB */
+PHYS_BASE = 0x00100000;				/* 1 MB */
 
 /* 内存布局 */
 MEMORY {
@@ -51,15 +51,15 @@ SECTIONS {
 	load_end_phys = .;
 
 	.bss : ALIGN(4K) {
-		_bss_start_phys = .;			/* BSS 起始 */
+		_bss_start_phys = .;		/* BSS 起始 */
 		*(.bss)
 		*(.bss.*)
 		*(COMMON)
-		_bss_end_phys = .;				/* BSS 终止 */
+		_bss_end_phys = .;			/* BSS 终止 */
 	} > RAM
 
 	. = ALIGN(4K);
-	_kernel_end_phys = .;				/* 内核物理结束 */
+	_kernel_end_phys = .;			/* 内核物理结束 */
 }
 
 PROVIDE(entry_phys = start);

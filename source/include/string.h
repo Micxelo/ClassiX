@@ -18,388 +18,229 @@
 
 static inline char *strcpy(char *dest, const char *src)
 {
-	asm("cld                 \n"
-		"1:  lodsb           \n"
-		"    stosb           \n"
-		"    testb %%al, %%al\n"
-		"    jne 1b            "
-		::"S"(src), "D"(dest)
-		:"ax");
-	return dest;
+	char *tmp = dest;
+	while ((*dest++ = *src++) != '\0') { }
+	return tmp;
 }
 
 static inline char *strncpy(char *dest, const char *src, size_t count)
 {
-	asm("cld\n"
-		"1:  decl %2         \n"
-		"    js 2f           \n"
-		"    lodsb           \n"
-		"    stosb           \n"
-		"    testb %%al, %%al\n"
-		"    jne 1b          \n"
-		"    rep             \n"
-		"    stosb           \n"
-		"2:                    "
-		::"S"(src), "D"(dest), "c"(count)
-		:"ax");
+	char *tmp = dest;
+
+	while (count) {
+		if ((*tmp = *src) != 0)
+			src++;
+		tmp++;
+		count--;
+	}
+
 	return dest;
 }
 
 static inline char *strcat(char *dest, const char *src)
 {
-	asm("    cld             \n"
-		"    repne           \n"
-		"    scasb           \n"
-		"    decl %1         \n"
-		"1:  lodsb           \n"
-		"    stosb           \n"
-		"    testb %%al, %%al\n"
-		"    jne 1b            "
-		::"S" (src), "D" (dest), "a" (0), "c" (0xffffffff));
-	return dest;
+	char *tmp = dest;
+
+	while (*dest)
+		dest++;
+	while ((*dest++ = *src++) != '\0') { }
+
+	return tmp;
 }
 
 static inline char *strncat(char *dest, const char *src, size_t count)
 {
-	asm("    cld             \n"
-		"    repne           \n"
-		"    scasb           \n"
-		"    decl %1         \n"
-		"    movl %4, %3     \n"
-		"1:  decl %3         \n"
-		"    js 2f           \n"
-		"    lodsb           \n"
-		"    stosb           \n"
-		"    testb %%al, %%al\n"
-		"    jne 1b          \n"
-		"2:  xorl %2, %2     \n"
-		"    stosb             "
-		::"S"(src), "D"(dest), "a"(0), "c"(0xffffffff), "g"(count));
-	return dest;
+	char *tmp = dest;
+
+	if (count) {
+		while (*dest)
+			dest++;
+		while ((*dest++ = *src++) != 0) {
+			if (--count == 0) {
+				*dest = '\0';
+				break;
+			}
+		}
+	}
+
+	return tmp;
 }
 
-static inline int32_t strcmp(const char *s1, const char *s2)
+static inline int32_t strcmp(const char *cs, const char *ct)
 {
-	register int32_t _res asm("ax");
-	asm("    cld              \n"
-		"1:  lodsb            \n"
-		"    scasb            \n"
-		"    jne 2f           \n"
-		"    testb %%al, %%al \n"
-		"    jne 1b           \n"
-		"    xorl %%eax, %%eax\n"
-		"    jmp 3f           \n"
-		"2:  movl $1, %%eax   \n"
-		"    jl 3f            \n"
-		"    negl %%eax       \n"
-		"3:                     "
-		:"=a"(_res)
-		:"D"(s1), "S"(s2));
-	return _res;
+	char c1, c2;
+
+	while (1) {
+		c1 = *cs++;
+		c2 = *ct++;
+		if (c1 != c2)
+			return c1 < c2 ? -1 : 1;
+		if (!c1)
+			break;
+	}
+
+	return 0;
 }
 
-static inline int32_t strncmp(const char *s1, const char *s2, size_t count)
+static inline int32_t strncmp(const char *cs, const char *ct, size_t count)
 {
-	register int32_t _res asm("ax");
-	asm("    cld              \n"
-		"1:  decl %3          \n"
-		"    js 2f            \n"
-		"    lodsb            \n"
-		"    scasb            \n"
-		"    jne 3f           \n"
-		"    testb %%al, %%al \n"
-		"    jne 1b           \n"
-		"2:  xorl %%eax, %%eax\n"
-		"    jmp 4f           \n"
-		"3:  movl $1, %%eax   \n"
-		"    jl 4f            \n"
-		"    negl %%eax       \n"
-		"4:                     "
-		:"=a"(_res)
-		:"D"(s1), "S"(s2), "c"(count));
-	return _res;
+	unsigned char c1, c2;
+
+	while (count) {
+		c1 = *cs++;
+		c2 = *ct++;
+		if (c1 != c2)
+			return c1 < c2 ? -1 : 1;
+		if (!c1)
+			break;
+		count--;
+	}
+
+	return 0;
 }
 
 static inline char *strchr(const char *s, char c)
 {
-	register char *_res asm("ax");
-	asm("    cld             \n"
-		"    movb %%al, %%ah \n"
-		"1:  lodsb           \n"
-		"    cmpb %%ah, %%al \n"
-		"    je 2f           \n"
-		"    testb %%al, %%al\n"
-		"    jne 1b          \n"
-		"    movl $1, %1     \n"
-		"2:  movl %1 ,%0     \n"
-		"    decl %0           "
-		:"=a"(_res)
-		:"S"(s), "0"(c));
-	return _res;
+	for (; *s != c; ++s)
+		if (*s == '\0')
+			return NULL;
+
+	return (char *) s;
 }
 
 static inline char *strrchr(const char *s, char c)
 {
-	register char *_res asm("dx");
-	asm("    cld             \n"
-		"    movb %%al, %%ah \n"
-		"1:  lodsb           \n"
-		"    cmpb %%ah, %%al \n"
-		"    jne 2f          \n"
-		"    movl %%esi, %0  \n"
-		"    decl %0         \n"
-		"2:  testb %%al, %%al\n"
-		"    jne 1b            "
-		:"=d"(_res)
-		:"0"(0), "S"(s), "a"(c));
-	return _res;
-}
+	const char *last = NULL;
 
-static inline size_t strspn(const char *s, const char *accept)
-{
-	register char *_res asm("si");
-	asm("    cld              \n"
-		"    movl %4, %%edi   \n"
-		"    repne            \n"
-		"    scasb            \n"
-		"    notl %%ecx       \n"
-		"    decl %%ecx       \n"
-		"    movl %%ecx, %%edx\n"
-		"1:  lodsb            \n"
-		"    testb %%al, %%al \n"
-		"    je 2f            \n"
-		"    movl %4, %%edi   \n"
-		"    movl %%edx, %%ecx\n"
-		"    repne            \n"
-		"    scasb            \n"
-		"    je 1b            \n"
-		"2:  decl %0            "
-		:"=S"(_res)
-		:"a"(0), "c"(0xffffffff), "0"(s), "g"(accept)
-		:"dx", "di");
-	return (size_t) ( _res - s);
-}
+	do {
+		if (*s == c)
+			last = s;
+	} while (*s++);
 
-static inline size_t strcspn(const char *s, const char *accept)
-{
-	register char *_res asm("si");
-	asm("    cld              \n"
-		"    movl %4, %%edi   \n"
-		"    repne            \n"
-		"    scasb            \n"
-		"    notl %%ecx       \n"
-		"    decl %%ecx       \n"
-		"    movl %%ecx, %%edx\n"
-		"1:  lodsb            \n"
-		"    testb %%al, %%al \n"
-		"    je 2f            \n"
-		"    movl %4, %%edi   \n"
-		"    movl %%edx, %%ecx\n"
-		"    repne            \n"
-		"    scasb            \n"
-		"    jne 1b           \n"
-		"2:  decl %0            "
-		:"=S"(_res)
-		:"a"(0), "c"(0xffffffff), "0"(s), "g"(accept)
-		:"dx", "di");
-	return (size_t) (_res - s);
-}
-
-static inline char *strpbrk(const char *s, const char *accept)
-{
-	register char *_res asm("si");
-	asm("    cld              \n"
-		"    movl %4, %%edi   \n"
-		"    repne            \n"
-		"    scasb            \n"
-		"    notl %%ecx       \n"
-		"    decl %%ecx       \n"
-		"    movl %%ecx, %%edx\n"
-		"1:  lodsb            \n"
-		"    testb %%al, %%al \n"
-		"    je 2f            \n"
-		"    movl %4, %%edi   \n"
-		"    movl %%edx, %%ecx\n"
-		"    repne            \n"
-		"    scasb            \n"
-		"    jne 1b           \n"
-		"    decl %0          \n"
-		"    jmp 3f           \n"
-		"2:  xorl %0, %0      \n"
-		"3:                     "
-	:"=S"(_res)
-	:"a"(0), "c"(0xffffffff), "0"(s), "g"(accept)
-	:"dx", "di");
-	return _res;
-}
-
-static inline char *strstr(const char *s1, const char *s2)
-{
-	register char *_res asm("ax");
-	asm("    cld               \n"
-		"    movl %4, %%edi    \n"
-		"    repne             \n"
-		"    scasb             \n"
-		"    notl %%ecx        \n"
-		"    decl %%ecx        \n"
-		"    movl %%ecx, %%edx \n"
-		"1:  movl %4, %%edi    \n"
-		"    movl %%esi, %%eax \n"
-		"    movl %%edx, %%ecx \n"
-		"    repe              \n"
-		"    cmpsb             \n"
-		"    je 2f             \n"
-		"    xchgl %%eax, %%esi\n"
-		"    incl %%esi        \n"
-		"    cmpb $0, -1(%%eax)\n"
-		"    jne 1b            \n"
-		"    xorl %%eax, %%eax \n"
-		"2:                      "
-		:"=a"(_res)
-		:"0"(0), "c"(0xffffffff), "S"(s1), "g"(s2)
-		:"dx", "di");
-	return _res;
+	return (char *) last;
 }
 
 static inline size_t strlen(const char *s)
 {
-	register int32_t _res asm("cx");
-	asm("cld    \n"
-		"repne  \n"
-		"scasb  \n"
-		"notl %0\n"
-		"decl %0"
-		:"=c"(_res)
-		:"D"(s), "a"(0), "0"(0xffffffff));
-	return _res;
+	const char *sc;
+	for (sc = s; *sc != '\0'; ++sc) { }
+	return sc - s;
 }
 
-static char *_strtok;
-
-static inline char *strtok(char *s, const char *delim)
+static inline int32_t memcmp(const void *cs, const void *ct, size_t count)
 {
-	register char *_res asm("si");
-	asm("    testl %1, %1     \n"
-		"    jne 1f           \n"
-		"    testl %0, %0     \n"
-		"    je 7f            \n"
-		"    movl %0, %1      \n"
-		"1:  xorl %0, %0      \n"
-		"    movl $-1, %%ecx  \n"
-		"    xorl %%eax, %%eax\n"
-		"    cld              \n"
-		"    movl %4, %%edi   \n"
-		"    repne            \n"
-		"    scasb            \n"
-		"    notl %%ecx       \n"
-		"    decl %%ecx       \n"
-		"    je 6f            \n"
-		"    movl %%ecx, %%edx\n"
-		"2:  lodsb            \n"
-		"    testb %%al, %%al \n"
-		"    je 6f            \n"
-		"    movl %4, %%edi   \n"
-		"    movl %%edx, %%ecx\n"
-		"    repne            \n"
-		"    scasb            \n"
-		"    je 2b            \n"
-		"    decl %1          \n"
-		"    cmpb $0, (%1)    \n"
-		"    je 6f            \n"
-		"    movl %1, %0      \n"
-		"3:  lodsb            \n"
-		"    testb %%al, %%al \n"
-		"    je 4f            \n"
-		"    movl %4, %%edi   \n"
-		"    movl %%edx, %%ecx\n"
-		"    repne            \n"
-		"    scasb            \n"
-		"    jne 3b           \n"
-		"    decl %1          \n"
-		"    cmpb $0, (%1)    \n"
-		"    je 4f            \n"
-		"    movb $0, (%1)    \n"
-		"    incl %1          \n"
-		"    jmp 5f           \n"
-		"4:  xorl %1, %1      \n"
-		"5:  cmpb $0, (%0)    \n"
-		"    jne 6f           \n"
-		"    xorl %0, %0      \n"
-		"6:  testl %0, %0     \n"
-		"    jne 7f           \n"
-		"    movl %0, %1      \n"
-		"7:                     "
-		:"=b"(_res), "=S"(_strtok)
-		:"0"(_strtok), "1"(s), "g"(delim)
-		:"ax", "cx", "dx", "di");
-	return _res;
+	const unsigned char *su1, *su2;
+	int res = 0;
+
+	for (su1 = cs, su2 = ct; 0 < count; ++su1, ++su2, count--)
+		if ((res = *su1 - *su2) != 0)
+			break;
+
+	return res;
 }
 
-static inline void *memcpy(void *dest, const void *src, size_t n)
+static inline size_t strspn(const char *s, const char *accept)
 {
-	asm("cld\n"
-		"rep\n"
-		"movsb"
-		::"c"(n), "S"(src), "D" (dest));
-	return dest;
+	const char *p;
+
+	for (p = s; *p != '\0'; ++p)
+		if (!strchr(accept, *p))
+			break;
+
+	return p - s;
 }
 
-static inline void *memmove(void *dest, const void *src, size_t n)
+static inline size_t strcspn(const char *s, const char *reject)
 {
-	if (dest < src) {
-		asm("cld\n"
-			"rep\n"
-			"movsb"
-			::"c"(n), "S"(src), "D"(dest));
-	} else {
-		asm("std\n"
-			"rep\n"
-			"movsb"
-			::"c"(n), "S"(src + n - 1), "D"(dest + n - 1));
+	const char *p;
+
+	for (p = s; *p != '\0'; ++p)
+		if (strchr(reject, *p))
+			break;
+
+	return p - s;
+}
+
+static inline char *strpbrk(const char *cs, const char *ct)
+{
+	const char *sc;
+
+	for (sc = cs; *sc != '\0'; ++sc)
+		if (strchr(ct, *sc))
+			return (char *)sc;
+
+	return NULL;
+}
+
+static inline char *strstr(const char *s1, const char *s2)
+{
+	size_t l1, l2;
+
+	l2 = strlen(s2);
+	if (!l2)
+		return (char *) s1;
+	l1 = strlen(s1);
+	while (l1 >= l2) {
+		l1--;
+		if (!memcmp(s1, s2, l2))
+			return (char *) s1;
+		s1++;
 	}
+
+	return NULL;
+}
+
+static inline void *memcpy(void *dest, const void *src, size_t count)
+{
+	char *tmp = dest;
+	const char *s = src;
+
+	while (count--)
+		*tmp++ = *s++;
+
 	return dest;
 }
 
-static inline int32_t memcmp(const void *s1, const void *s2, size_t n)
+static inline void *memmove(void *dest, const void *src, size_t count)
 {
-	register int32_t _res asm("ax");
-	asm("    cld           \n"
-		"    repe          \n"
-		"    cmpsb         \n"
-		"    je 1f         \n"
-		"    movl $1, %%eax\n"
-		"    jl 1f         \n"
-		"    negl %%eax    \n"
-		"1:                  "
-		:"=a"(_res)
-		:"0"(0), "D"(s1), "S"(s2), "c"(n));
-	return _res;
+	char *tmp;
+	const char *s;
+
+	if (dest <= src) {
+		tmp = dest;
+		s = src;
+		while (count--)
+			*tmp++ = *s++;
+	} else {
+		tmp = dest;
+		tmp += count;
+		s = src;
+		s += count;
+		while (count--)
+			*--tmp = *--s;
+	}
+
+	return dest;
 }
 
 static inline void *memchr(void *s, uint8_t c, size_t n)
 {
-	if (!n) {
-		return NULL;
-	}
+	const unsigned char *p = s;
 
-	register void *_res asm("di");
-	asm("    cld        \n"
-		"    repne      \n"
-		"    scasb      \n"
-		"    je 1f      \n"
-		"    movl $1, %0\n"
-		"1:  decl %0      "
-		:"=D"(_res)
-		:"a"(c), "D"(s), "c"(n));
-	return _res;
+	while (n-- != 0)
+		if (c == *p++)
+			return (void *) (p - 1);
+		
+	return NULL;
 }
 
-static inline void *memset(void *s, uint8_t c, size_t n)
+static inline void *memset(void *s, uint8_t c, size_t count)
 {
-	asm("cld\n"
-		"rep\n"
-		"stosb"
-		::"a"(c), "D"(s), "c"(n));
+	char *xs = s;
+
+	while (count--)
+		*xs++ = c;
+
 	return s;
 }
 

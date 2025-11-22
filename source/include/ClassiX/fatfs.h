@@ -103,7 +103,7 @@ typedef struct __attribute__((packed)) {
 	uint16_t last_write_date;			/* 最后修改日期（年/月/日） */
 	uint16_t first_cluster_low;			/* 起始簇号低 16 位 */
 	uint32_t file_size;					/* 文件大小 */
-} DIRENTRY;
+} FAT_DIRENTRY;
 
 /* FAT 类型枚举 */
 typedef enum {
@@ -111,15 +111,6 @@ typedef enum {
 	FAT_TYPE_12,
 	FAT_TYPE_16
 } FAT_TYPE;
-
-/* 通用目录项结构 */
-typedef struct {
-	char filename[FAT_EXT_LEN + 1];			/* 文件名 */
-	char ext[FAT_EXT_LEN + 1];				/* 扩展名 */
-	uint8_t attributes;						/* 文件属性 */
-	uint16_t first_cluster;					/* 第一个所在簇 */
-	size_t size;							/* 文件大小 */
-} FAT_DIR_ENTRY;
 
 /* 文件系统上下文 */
 typedef struct {
@@ -136,7 +127,7 @@ typedef struct {
 /* 文件句柄 */
 typedef struct {
 	FATFS *fs;								/* 文件系统上下文 */
-	DIRENTRY *entry;						/* 文件目录项 */
+	FAT_DIRENTRY *entry;						/* 文件目录项 */
 	char path[FAT_MAX_PATH];				/* 文件路径 */
 	bool is_open;							/* 是否打开 */
 	uint32_t current_pos;					/* 当前读写位置 */
@@ -144,17 +135,39 @@ typedef struct {
 
 /* FATFS 错误码 */
 enum {
-	FATFS_SUCCESS = 0,			/* 成功 */
-	FATFS_INVALID_PARAM,		/* 非法参数 */
-	FATFS_READ_FAILED,			/* 读失败 */
-	FATFS_WRITE_FAILED,			/* 写失败 */
-	FATFS_INVALID_SIGNATURE,	/* 非法签名 */
-	FATFS_INVALID_MBR,			/* 非法 MBR 参数 */
-	FATFS_INVALID_BPB,			/* 非法 BPB 参数 */
-	FATFS_NO_PARTITION,			/* 无指定分区 */
-	FATFS_MEMORY_ALLOC,			/* 内存分配失败 */
-	FATFS_NO_FREE_CLUSTER		/* 无可用簇 */
+	FATFS_SUCCESS = 0,						/* 成功 */
+	FATFS_INVALID_PARAM,					/* 非法参数 */
+	FATFS_READ_FAILED,						/* 读失败 */
+	FATFS_WRITE_FAILED,						/* 写失败 */
+	FATFS_INVALID_SIGNATURE,				/* 非法签名 */
+	FATFS_INVALID_MBR,						/* 非法 MBR 参数 */
+	FATFS_INVALID_BPB,						/* 非法 BPB 参数 */
+	FATFS_NO_PARTITION,						/* 无指定分区 */
+	FATFS_MEMORY_ALLOC,						/* 内存分配失败 */
+	FATFS_NO_FREE_CLUSTER,					/* 无可用簇 */
+	FATFS_ENTRY_EXISTS,						/* 条目已存在 */
+	FATFS_ENTRY_NOT_FOUND,					/* 条目未找到 */
+	FATFS_DIR_FULL,							/* 目录已满 */
+	FATFS_IS_DIRECTORY,						/* 指定条目为目录 */
+	FATFS_DIR_NOT_EMPTY						/* 目录不为空 */
 };
+
+void fatfs_convert_to_83(const char *filename, char *short_name, char *extension);
+void fatfs_convert_from_83(const char *short_name, const char *extension, char *filename);
+int32_t fatfs_init(FATFS *fs, BLKDEV *device, FAT_TYPE type);
+int32_t fatfs_close(FATFS *fs);
+int32_t fatfs_open_file(FAT_FILE *file, FATFS *fs, const char *path);
+int32_t fatfs_create_file(FAT_FILE *file, FATFS *fs, const char *path);
+int32_t fatfs_read_file(FAT_FILE *file, void *buffer, uint32_t size, uint32_t *bytes_read);
+int32_t fatfs_write_file(FAT_FILE *file, const void *buffer, uint32_t size, bool append, uint32_t *bytes_written);
+int32_t fatfs_close_file(FAT_FILE *file);
+int32_t fatfs_delete_file(FATFS *fs, const char *path);
+int32_t fatfs_create_directory(FATFS *fs, const char *path);
+int32_t fatfs_delete_directory(FATFS *fs, const char *path);
+int32_t fatfs_get_directory_entries(FATFS *fs, const char *path, FAT_DIRENTRY *entries, int32_t max_entries, int32_t *entries_read);
+const char *fatfs_get_type_name(FAT_TYPE type);
+void fatfs_get_attribute_names(uint8_t attributes, char *buffer, size_t size);
+int32_t fatfs_get_fs_info(FATFS *fs, uint32_t *total_clusters, uint32_t *free_clusters, uint32_t *bytes_per_cluster);
 
 #ifdef __cplusplus
 	}

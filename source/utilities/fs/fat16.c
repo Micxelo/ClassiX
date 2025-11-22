@@ -1,5 +1,5 @@
 /*
-	utilities/fs/fat12.c
+	utilities/fs/fat16.c
 */
 
 #include <ClassiX/debug.h>
@@ -10,8 +10,8 @@
 
 #include <string.h>
 
-#define ROOT_DIR_ENTRY_COUNT				224		/* 根目录项数 */
-#define FAT_ENTRY_SIZE						3		/* 单个 FAT 项占用 1.5 字节 */
+#define ROOT_DIR_ENTRY_COUNT				512		/* 根目录项数，FAT16 通常更大 */
+#define FAT_ENTRY_SIZE						2		/* 单个 FAT 项占用 2 字节 */
 
 static char *strtok_r(char *str, const char *delim, char **saveptr)
 {
@@ -88,109 +88,111 @@ static uint32_t calculate_total_clusters(const FAT_BPB *bpb)
 	return data_sectors / bpb->sectors_per_cluster;
 }
 
-/* 验证 FAT12 BPB 的合法性 */
-static int32_t validate_fat12_bpb(const FAT_BPB *bpb)
+/* 验证 FAT16 BPB 的合法性 */
+static int32_t validate_fat16_bpb(const FAT_BPB *bpb)
 {
 	uint32_t total_clusters;
 	bool valid_fs_type = false;
 
 	/* 检查签名 */
 	if (bpb->signature != MBR_SIGNATURE) {
-		debug("FAT12: Invalid BPB signature: 0x%04x.\n", bpb->signature);
+		debug("FAT16: Invalid BPB signature: 0x%04x.\n", bpb->signature);
 		return FATFS_INVALID_SIGNATURE;
 	}
 
 	/* 检查每扇区字节数 */
 	if (bpb->bytes_per_sector != 512) {
-		debug("FAT12: Unsupported bytes per sector: %u.\n", bpb->bytes_per_sector);
+		debug("FAT16: Unsupported bytes per sector: %u.\n", bpb->bytes_per_sector);
 		return FATFS_INVALID_BPB;
 	}
 
 	/* 检查每簇扇区数 */
 	if (bpb->sectors_per_cluster == 0 || (bpb->sectors_per_cluster & (bpb->sectors_per_cluster - 1)) != 0) {
-		debug("FAT12: Invalid sectors per cluster: %u.\n", bpb->sectors_per_cluster);
+		debug("FAT16: Invalid sectors per cluster: %u.\n", bpb->sectors_per_cluster);
 		return FATFS_INVALID_BPB;
 	}
 
 	/* 检查 FAT 表数量 */
 	if (bpb->fat_count == 0) {
-		debug("FAT12: Invalid FAT count: %u.\n", bpb->fat_count);
+		debug("FAT16: Invalid FAT count: %u.\n", bpb->fat_count);
 		return FATFS_INVALID_BPB;
 	}
 
 	/* 检查根目录条目数 */
 	if (bpb->root_entries == 0) {
-		debug("FAT12: Invalid root entries: %u.\n", bpb->root_entries);
+		debug("FAT16: Invalid root entries: %u.\n", bpb->root_entries);
 		return FATFS_INVALID_BPB;
 	}
 
 	/* 检查文件系统类型字符串 */
-	const char fat12_fs_types[][9] = {"FAT12", "FAT12   ", "FAT", ""};
+	const char fat16_fs_types[][9] = { "FAT16", "FAT16   ", "FAT", "" };
 	for (int32_t i = 0; i < 4; i++) {
-		if (strncmp(fat12_fs_types[i], (const char *) bpb->fs_type, strlen(fat12_fs_types[i])) == 0) {
+		if (strncmp(fat16_fs_types[i], (const char *) bpb->fs_type, strlen(fat16_fs_types[i])) == 0) {
 			valid_fs_type = true;
 			break;
 		}
 	}
 
 	if (!valid_fs_type)
-		debug("FAT12: Warning - unexpected filesystem type: \'%.8s\'.\n", bpb->fs_type);
+		debug("FAT16: Warning - unexpected filesystem type: \'%.8s\'.\n", bpb->fs_type);
 
-	/* 计算总簇数并验证是否为 FAT12 */
+	/* 计算总簇数并验证是否为 FAT16 */
 	total_clusters = calculate_total_clusters(bpb);
 
-	/* FAT12 的簇数应该小于 4085 */
-	if (total_clusters >= 4085) {
-		debug("FAT12: Not a FAT12 volume (total clusters: %u, expected < 4085).\n", total_clusters);
+	/* FAT16 的簇数应该在 4085 到 65525 之间 */
+	if (total_clusters < 4085 || total_clusters >= 65525) {
+		debug("FAT16: Not a FAT16 volume (total clusters: %u, expected 4085-65524).\n", total_clusters);
 		return FATFS_INVALID_BPB;
 	}
 
-	debug("FAT12: Valid FAT12 BPB found - OEM: %.8s, FS type: %.8s, Clusters: %u.\n",
+	debug("FAT16: Valid FAT16 BPB found - OEM: %.8s, FS type: %.8s, Clusters: %u.\n",
 		bpb->oem_name, bpb->fs_type, total_clusters);
 
 	return FATFS_SUCCESS;
 }
 
-/* 从 MBR 中查找 FAT12 分区 */
-static int32_t find_fat12_partition(BLKDEV *device, uint32_t *partition_start)
+/* 从 MBR 中查找 FAT16 分区 */
+static int32_t find_fat16_partition(BLKDEV *device, uint32_t *partition_start)
 {
 	MBR mbr;
 	int32_t i;
 
 	/* 读取 MBR */
 	if (device->read(device, 0, 1, (uint8_t *) &mbr) != BD_SUCCESS) {
-		debug("FAT12: Failed to read MBR.\n");
+		debug("FAT16: Failed to read MBR.\n");
 		return FATFS_READ_FAILED;
 	}
 
 	/* 验证 MBR 签名 */
 	if (mbr.signature != MBR_SIGNATURE) {
-		debug("FAT12: Invalid MBR signature: 0x%04x.\n", mbr.signature);
+		debug("FAT16: Invalid MBR signature: 0x%04x.\n", mbr.signature);
 		return FATFS_INVALID_MBR;
 	}
 
-	/* 遍历分区表查找 FAT12 分区 */
+	/* 遍历分区表查找 FAT16 分区 */
 	for (i = 0; i < 4; i++) {
-		if (mbr.partitions[i].type == PART_TYPE_FAT12 &&
+		if ((mbr.partitions[i].type == PART_TYPE_FAT16 ||
+			 mbr.partitions[i].type == PART_TYPE_FAT16B ||
+			 mbr.partitions[i].type == PART_TYPE_FAT16_LBA) &&
 			mbr.partitions[i].sector_count > 0) {
 			*partition_start = mbr.partitions[i].start_lba;
-			debug("FAT12: Found FAT12 partition at LBA %u.\n", *partition_start);
+			debug("FAT16: Found FAT16 partition at LBA %u.\n", *partition_start);
 			return FATFS_SUCCESS;
 		}
 	}
 
-	debug("FAT12: No FAT12 partition found in MBR.\n");
+	debug("FAT16: No FAT16 partition found in MBR.\n");
 	return FATFS_NO_PARTITION;
 }
 
 /*
-	@brief 初始化 FAT12 文件系统。
+	@brief 初始化 FAT16 文件系统。
 	@param fs 文件系统上下文
 	@param device 文件系统所在物理块设备
 	@param fs_sector 文件系统起始扇区
 	@return 错误码
 */
-int32_t fat12_init(FATFS *fs, BLKDEV *device)
+int32_t fat16_init(FATFS *fs, BLKDEV *device)
 {
 	FAT_BPB bpb;
 	uint32_t root_dir_sectors;
@@ -200,43 +202,43 @@ int32_t fat12_init(FATFS *fs, BLKDEV *device)
 
 	/* 初始化文件系统上下文 */
 	fs->device = device;
-	fs->type = FAT_TYPE_12;
+	fs->type = FAT_TYPE_16;
 	fs->fat = NULL;
 	fs->fs_sector = 0;
 
-	debug("FAT12: Initializing FAT12 filesystem.\n");
+	debug("FAT16: Initializing FAT16 filesystem.\n");
 
 	/* 尝试读取第 0 扇区作为 BPB */
 	if (device->read(device, 0, 1, (uint8_t *) &bpb) != BD_SUCCESS) {
-		debug("FAT12: Failed to read sector 0.\n");
+		debug("FAT16: Failed to read sector 0.\n");
 		return FATFS_READ_FAILED;
 	}
 
 	/* 验证 BPB */
-	ret = validate_fat12_bpb(&bpb);
+	ret = validate_fat16_bpb(&bpb);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Sector 0 is not a valid FAT12 BPB, checking for MBR.\n");
+		debug("FAT16: Sector 0 is not a valid FAT16 BPB, checking for MBR.\n");
 
-		/* 不是有效的 BPB，则查找 MBR 中的 FAT12 分区 */
-		ret = find_fat12_partition(device, &fs->fs_sector);
+		/* 不是有效的 BPB，则查找 MBR 中的 FAT16 分区 */
+		ret = find_fat16_partition(device, &fs->fs_sector);
 		if (ret != FATFS_SUCCESS) {
 			return ret;
 		}
 
 		/* 读取分区起始扇区的 BPB */
 		if (device->read(device, fs->fs_sector, 1, (uint8_t *) &bpb) != BD_SUCCESS) {
-			debug("FAT12: Failed to read partition BPB at LBA %u.\n", fs->fs_sector);
+			debug("FAT16: Failed to read partition BPB at LBA %u.\n", fs->fs_sector);
 			return FATFS_READ_FAILED;
 		}
 
 		/* 再次验证 BPB */
-		ret = validate_fat12_bpb(&bpb);
+		ret = validate_fat16_bpb(&bpb);
 		if (ret != FATFS_SUCCESS) {
-			debug("FAT12: Partition BPB is invalid.\n");
+			debug("FAT16: Partition BPB is invalid.\n");
 			return ret;
 		}
 	} else {
-		debug("FAT12: Using BPB from sector 0 (no MBR).\n");
+		debug("FAT16: Using BPB from sector 0 (no MBR).\n");
 	}
 
 	/* 复制 BPB 数据 */
@@ -248,7 +250,7 @@ int32_t fat12_init(FATFS *fs, BLKDEV *device)
 	else
 		total_sectors = fs->bpb.total_sectors_long;
 
-	debug("FAT12: Total sectors: %u, FAT count: %u, Sectors per FAT: %u.\n",
+	debug("FAT16: Total sectors: %u, FAT count: %u, Sectors per FAT: %u.\n",
 		total_sectors, fs->bpb.fat_count, fs->bpb.sectors_per_fat);
 
 	/* 计算根目录起始扇区 */
@@ -260,13 +262,13 @@ int32_t fat12_init(FATFS *fs, BLKDEV *device)
 	/* 计算数据区起始扇区 */
 	fs->data_sector = fs->root_sector + root_dir_sectors;
 
-	debug("FAT12: Root sector: %u, Data sector: %u.\n", fs->root_sector, fs->data_sector);
+	debug("FAT16: Root sector: %u, Data sector: %u.\n", fs->root_sector, fs->data_sector);
 
 	/* 分配 FAT 表内存 */
 	fat_size = fs->bpb.sectors_per_fat * fs->bpb.bytes_per_sector;
 	fs->fat = (uint8_t *) kmalloc(fat_size);
 	if (fs->fat == NULL) {
-		debug("FAT12: Failed to allocate memory for FAT table (%u bytes).\n", fat_size);
+		debug("FAT16: Failed to allocate memory for FAT table (%u bytes).\n", fat_size);
 		return FATFS_MEMORY_ALLOC;
 	}
 
@@ -274,20 +276,20 @@ int32_t fat12_init(FATFS *fs, BLKDEV *device)
 
 	/* 读取第一个 FAT 表 */
 	if (read_sector(fs, fs->bpb.reserved_sectors, fs->fat) != BD_SUCCESS) {
-		debug("FAT12: Failed to read FAT table.\n");
+		debug("FAT16: Failed to read FAT table.\n");
 		kfree(fs->fat);
 		fs->fat = NULL;
 		return FATFS_READ_FAILED;
 	}
 
-	debug("FAT12: FAT12 filesystem initialized successfully.\n");
-	debug("FAT12: Volume label: %.11s, FS type: %.8s.\n", fs->bpb.volume_label, fs->bpb.fs_type);
+	debug("FAT16: FAT16 filesystem initialized successfully.\n");
+	debug("FAT16: Volume label: %.11s, FS type: %.8s.\n", fs->bpb.volume_label, fs->bpb.fs_type);
 
 	return FATFS_SUCCESS;
 }
 
 /* 写回 FAT 表 */
-static int32_t fat12_write_fat(FATFS *fs)
+static int32_t fat16_write_fat(FATFS *fs)
 {
 	int32_t ret = FATFS_SUCCESS;
 
@@ -304,11 +306,11 @@ static int32_t fat12_write_fat(FATFS *fs)
 			/* 计算当前 FAT 表的起始扇区 */
 			uint32_t current_fat_sector = fat_start_sector + (i * fs->bpb.sectors_per_fat);
 
-			debug("FAT12: Writing back FAT table %u at sector %u.\n", i, current_fat_sector);
+			debug("FAT16: Writing back FAT table %u at sector %u.\n", i, current_fat_sector);
 
 			/* 写入当前 FAT 表 */
 			if (write_sector(fs, current_fat_sector, fs->fat) != BD_SUCCESS) {
-				debug("FAT12: Failed to write FAT table %u.\n", i);
+				debug("FAT16: Failed to write FAT table %u.\n", i);
 				ret = FATFS_WRITE_FAILED;
 				/* 继续尝试写回其他 FAT 表 */
 			}
@@ -319,11 +321,11 @@ static int32_t fat12_write_fat(FATFS *fs)
 }
 
 /*
-	@brief 关闭 FAT12 文件系统。
+	@brief 关闭 FAT16 文件系统。
 	@param fs 文件系统上下文
 	@return 错误码
 */
-int32_t fat12_close(FATFS *fs)
+int32_t fat16_close(FATFS *fs)
 {
 	int32_t ret = FATFS_SUCCESS;
 
@@ -331,7 +333,7 @@ int32_t fat12_close(FATFS *fs)
 		return FATFS_INVALID_PARAM;
 
 	/* 写回 FAT 表 */
-	if (fat12_write_fat(fs) == FATFS_SUCCESS) {
+	if (fat16_write_fat(fs) == FATFS_SUCCESS) {
 		/* 释放 FAT 表内存 */
 		kfree(fs->fat);
 		fs->fat = NULL;
@@ -349,9 +351,9 @@ int32_t fat12_close(FATFS *fs)
 	memset(&fs->bpb, 0, sizeof(FAT_BPB));
 
 	if (ret == FATFS_SUCCESS)
-		debug("FAT12: Filesystem closed successfully.\n");
+		debug("FAT16: Filesystem closed successfully.\n");
 	else
-		debug("FAT12: Filesystem closed with errors.\n");
+		debug("FAT16: Filesystem closed with errors.\n");
 
 	return ret;
 }
@@ -363,51 +365,46 @@ int32_t fat12_close(FATFS *fs)
 	@param next_cluster 返回的下一个簇号
 	@return 错误码
 */
-int32_t fat12_get_next_cluster(FATFS *fs, uint16_t cluster, uint16_t *next_cluster)
+int32_t fat16_get_next_cluster(FATFS *fs, uint16_t cluster, uint16_t *next_cluster)
 {
 	uint32_t fat_offset;
 	uint16_t value;
 
 	/* 参数检查 */
 	if (fs == NULL || next_cluster == NULL) {
-		debug("FAT12: Invalid parameters in fat12_get_next_cluster.\n");
+		debug("FAT16: Invalid parameters in fat16_get_next_cluster.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	if (fs->fat == NULL) {
-		debug("FAT12: FAT table not loaded.\n");
+		debug("FAT16: FAT table not loaded.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	/* 簇号有效性检查 */
 	if (cluster < 2) {
-		debug("FAT12: Invalid cluster number: %u.\n", cluster);
+		debug("FAT16: Invalid cluster number: %u.\n", cluster);
 		return FATFS_INVALID_PARAM;
 	}
 
 	/* 计算 FAT 表中的偏移量 */
-	fat_offset = cluster * 3 / 2;
+	fat_offset = cluster * 2;
 
 	/* 检查偏移量是否超出 FAT 表边界 */
 	if (fat_offset + 1 >= fs->fat_size) {
-		debug("FAT12: Cluster %u exceeds FAT table boundaries.\n", cluster);
+		debug("FAT16: Cluster %u exceeds FAT table boundaries.\n", cluster);
 		return FATFS_INVALID_PARAM;
 	}
 
-	/* 根据簇号的奇偶性读取 12 位 FAT 项 */
-	if (cluster % 2 == 0)
-		/* 偶数簇号：取低 12 位 */
-		value = fs->fat[fat_offset] | ((fs->fat[fat_offset + 1] & 0x0F) << 8);
-	else
-		/* 奇数簇号：取高 12 位 */
-		value = ((fs->fat[fat_offset] & 0xF0) >> 4) | (fs->fat[fat_offset + 1] << 4);
+	/* 读取 16 位 FAT 项 */
+	value = *((uint16_t *)(fs->fat + fat_offset));
 
-	/* 不超过 12 位 */
-	value &= 0x0FFF;
+	/* FAT16 使用完整的 16 位，但高 4 位保留 */
+	value &= 0xFFFF;
 
 	*next_cluster = value;
 
-	debug("FAT12: Next cluster for %u is %u.\n", cluster, value);
+	debug("FAT16: Next cluster for %u is %u.\n", cluster, value);
 
 	return FATFS_SUCCESS;
 }
@@ -419,57 +416,43 @@ int32_t fat12_get_next_cluster(FATFS *fs, uint16_t cluster, uint16_t *next_clust
 	@param value 要设置的下一个簇号值
 	@return 错误码
 */
-static int32_t fat12_set_next_cluster(FATFS *fs, uint16_t cluster, uint16_t value)
+static int32_t fat16_set_next_cluster(FATFS *fs, uint16_t cluster, uint16_t value)
 {
 	uint32_t fat_offset;
 
 	/* 参数检查 */
 	if (fs == NULL) {
-		debug("FAT12: Invalid parameters in set_next_cluster.\n");
+		debug("FAT16: Invalid parameters in set_next_cluster.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	if (fs->fat == NULL) {
-		debug("FAT12: FAT table not loaded.\n");
+		debug("FAT16: FAT table not loaded.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	/* 簇号有效性检查 */
 	if (cluster < 2) {
-		debug("FAT12: Invalid cluster number: %u.\n", cluster);
-		return FATFS_INVALID_PARAM;
-	}
-
-	/* 值有效性检查 */
-	if (value > 0x0FFF) {
-		debug("FAT12: Invalid next cluster value: 0x%03X.\n", value);
+		debug("FAT16: Invalid cluster number: %u.\n", cluster);
 		return FATFS_INVALID_PARAM;
 	}
 
 	/* 计算 FAT 表中的偏移量 */
-	fat_offset = cluster * 3 / 2;
+	fat_offset = cluster * 2;
 
 	/* 检查偏移量是否超出 FAT 表边界 */
 	if (fat_offset + 1 >= fs->fat_size) {
-		debug("FAT12: Cluster %u exceeds FAT table boundaries.\n", cluster);
+		debug("FAT16: Cluster %u exceeds FAT table boundaries.\n", cluster);
 		return FATFS_INVALID_PARAM;
 	}
 
-	/* 根据簇号的奇偶性设置 12 位 FAT 项 */
-	if (cluster % 2 == 0) {
-		/* 偶数簇号：设置低 12 位 */
-		fs->fat[fat_offset] = value & 0xFF;
-		fs->fat[fat_offset + 1] = (fs->fat[fat_offset + 1] & 0xF0) | ((value >> 8) & 0x0F);
-	} else {
-		/* 奇数簇号：设置高 12 位 */
-		fs->fat[fat_offset] = (fs->fat[fat_offset] & 0x0F) | ((value << 4) & 0xF0);
-		fs->fat[fat_offset + 1] = (value >> 4) & 0xFF;
-	}
+	/* 设置 16 位 FAT 项 */
+	*((uint16_t *)(fs->fat + fat_offset)) = value;
 
-	debug("FAT12: Set next cluster for %u to %u.\n", cluster, value);
+	debug("FAT16: Set next cluster for %u to %u.\n", cluster, value);
 
 	/* 写回 FAT 表 */
-	return fat12_write_fat(fs);
+	return fat16_write_fat(fs);
 }
 
 /*
@@ -478,7 +461,7 @@ static int32_t fat12_set_next_cluster(FATFS *fs, uint16_t cluster, uint16_t valu
 	@param allocated_cluster 返回分配的簇号
 	@return 错误码
 */
-static int32_t fat12_allocate_cluster(FATFS *fs, uint16_t *allocated_cluster)
+static int32_t fat16_allocate_cluster(FATFS *fs, uint16_t *allocated_cluster)
 {
 	uint16_t cluster;
 	uint16_t next_cluster;
@@ -486,44 +469,44 @@ static int32_t fat12_allocate_cluster(FATFS *fs, uint16_t *allocated_cluster)
 
 	/* 参数检查 */
 	if (fs == NULL || allocated_cluster == NULL) {
-		debug("FAT12: Invalid parameters in allocate_cluster.\n");
+		debug("FAT16: Invalid parameters in allocate_cluster.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	/* 计算最大簇号 */
 	uint32_t total_clusters = calculate_total_clusters(&fs->bpb);
-	uint16_t max_cluster = (total_clusters + 1) & 0x0FFF; /* 不超过 12 位 */
+	uint16_t max_cluster = (total_clusters + 1) & 0xFFFF;
 
-	if (max_cluster > 0xFF5)
-		max_cluster = 0xFF5; /* FAT12 最大簇号为 4085 (0xFF5) */
+	if (max_cluster > 0xFFF5)
+		max_cluster = 0xFFF5; /* FAT16 最大簇号为 65525 (0xFFF5) */
 
-	debug("FAT12: Searching for free cluster from 2 to %u (0x%03X).\n", max_cluster, max_cluster);
+	debug("FAT16: Searching for free cluster from 2 to %u (0x%04X).\n", max_cluster, max_cluster);
 
 	/* 遍历簇号查找空闲簇 */
 	for (cluster = 2; cluster <= max_cluster; cluster++) {
 		/* 获取当前簇的下一个簇号 */
-		ret = fat12_get_next_cluster(fs, cluster, &next_cluster);
+		ret = fat16_get_next_cluster(fs, cluster, &next_cluster);
 		if (ret != FATFS_SUCCESS)
 			/* 跳过错误簇，继续查找 */
 			continue;
 
 		/* 检查是否为空闲簇 */
-		if (next_cluster == 0x000) {
+		if (next_cluster == 0x0000) {
 			/* 找到空闲簇，标记为已使用 */
-			ret = fat12_set_next_cluster(fs, cluster, 0xFFF);
+			ret = fat16_set_next_cluster(fs, cluster, 0xFFFF);
 			if (ret == FATFS_SUCCESS) {
 				*allocated_cluster = cluster;
-				debug("FAT12: Allocated cluster %u (0x%03X).\n", cluster, cluster);
+				debug("FAT16: Allocated cluster %u (0x%04X).\n", cluster, cluster);
 				return FATFS_SUCCESS;
 			} else {
-				debug("FAT12: Failed to mark cluster %u as allocated.\n", cluster);
+				debug("FAT16: Failed to mark cluster %u as allocated.\n", cluster);
 				return ret;
 			}
 		}
 	}
 
 	/* 没有找到可用簇 */
-	debug("FAT12: No free clusters available.\n");
+	debug("FAT16: No free clusters available.\n");
 	*allocated_cluster = 0;
 	return FATFS_NO_FREE_CLUSTER;
 }
@@ -534,7 +517,7 @@ static int32_t fat12_allocate_cluster(FATFS *fs, uint16_t *allocated_cluster)
 	@param start_cluster 簇链的起始簇号
 	@return 错误码
 */
-static int32_t fat12_free_clusters(FATFS *fs, uint16_t start_cluster)
+static int32_t fat16_free_clusters(FATFS *fs, uint16_t start_cluster)
 {
 	uint16_t current_cluster = start_cluster;
 	uint16_t next_cluster;
@@ -542,39 +525,39 @@ static int32_t fat12_free_clusters(FATFS *fs, uint16_t start_cluster)
 
 	/* 参数检查 */
 	if (fs == NULL) {
-		debug("FAT12: Invalid parameters in free_clusters.\n");
+		debug("FAT16: Invalid parameters in free_clusters.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	/* 起始簇号有效性检查 */
 	if (start_cluster < 2) {
-		debug("FAT12: Invalid start cluster: %u.\n", start_cluster);
+		debug("FAT16: Invalid start cluster: %u.\n", start_cluster);
 		return FATFS_INVALID_PARAM;
 	}
 
-	debug("FAT12: Freeing cluster chain starting at %u.\n", start_cluster);
+	debug("FAT16: Freeing cluster chain starting at %u.\n", start_cluster);
 
 	/* 遍历簇链并释放每个簇 */
-	while (current_cluster >= 2 && current_cluster < 0xFF8) {
+	while (current_cluster >= 2 && current_cluster < 0xFFF8) {
 		/* 获取下一个簇号 */
-		ret = fat12_get_next_cluster(fs, current_cluster, &next_cluster);
+		ret = fat16_get_next_cluster(fs, current_cluster, &next_cluster);
 		if (ret != FATFS_SUCCESS) {
-			debug("FAT12: Failed to get next cluster for %u.\n", current_cluster);
+			debug("FAT16: Failed to get next cluster for %u.\n", current_cluster);
 			return ret;
 		}
 
 		/* 释放当前簇 */
-		ret = fat12_set_next_cluster(fs, current_cluster, 0x000);
+		ret = fat16_set_next_cluster(fs, current_cluster, 0x0000);
 		if (ret != FATFS_SUCCESS) {
-			debug("FAT12: Failed to free cluster %u.\n", current_cluster);
+			debug("FAT16: Failed to free cluster %u.\n", current_cluster);
 			return ret;
 		}
 
-		debug("FAT12: Freed cluster %u.\n", current_cluster);
+		debug("FAT16: Freed cluster %u.\n", current_cluster);
 		current_cluster = next_cluster;
 	}
 
-	debug("FAT12: Successfully freed cluster chain.\n");
+	debug("FAT16: Successfully freed cluster chain.\n");
 	return FATFS_SUCCESS;
 }
 
@@ -585,7 +568,7 @@ static int32_t fat12_free_clusters(FATFS *fs, uint16_t start_cluster)
 	@param buffer 数据缓冲区
 	@return 错误码
 */
-static int32_t fat12_read_cluster(FATFS *fs, uint16_t cluster, uint8_t *buffer)
+static int32_t fat16_read_cluster(FATFS *fs, uint16_t cluster, uint8_t *buffer)
 {
 	uint32_t sector;
 	uint32_t bytes_per_sector;
@@ -595,13 +578,13 @@ static int32_t fat12_read_cluster(FATFS *fs, uint16_t cluster, uint8_t *buffer)
 
 	/* 参数检查 */
 	if (fs == NULL || buffer == NULL) {
-		debug("FAT12: Invalid parameters in read_cluster.\n");
+		debug("FAT16: Invalid parameters in read_cluster.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	/* 簇号有效性检查 */
-	if (cluster < 2 || cluster >= 0xFF8) {
-		debug("FAT12: Invalid cluster number: %u.\n", cluster);
+	if (cluster < 2 || cluster >= 0xFFF8) {
+		debug("FAT16: Invalid cluster number: %u.\n", cluster);
 		return FATFS_INVALID_PARAM;
 	}
 
@@ -611,18 +594,18 @@ static int32_t fat12_read_cluster(FATFS *fs, uint16_t cluster, uint8_t *buffer)
 	/* 计算簇对应的起始扇区 */
 	sector = fs->data_sector + (cluster - 2) * sectors_per_cluster;
 
-	debug("FAT12: Reading cluster %u from sector %u.\n", cluster, sector);
+	debug("FAT16: Reading cluster %u from sector %u.\n", cluster, sector);
 
 	/* 读取簇的所有扇区 */
 	for (i = 0; i < sectors_per_cluster; i++) {
 		ret = read_sector(fs, sector + i, buffer + i * bytes_per_sector);
 		if (ret != BD_SUCCESS) {
-			debug("FAT12: Failed to read sector %u for cluster %u.\n", sector + i, cluster);
+			debug("FAT16: Failed to read sector %u for cluster %u.\n", sector + i, cluster);
 			return FATFS_READ_FAILED;
 		}
 	}
 
-	debug("FAT12: Successfully read cluster %u.\n", cluster);
+	debug("FAT16: Successfully read cluster %u.\n", cluster);
 	return FATFS_SUCCESS;
 }
 
@@ -633,7 +616,7 @@ static int32_t fat12_read_cluster(FATFS *fs, uint16_t cluster, uint8_t *buffer)
 	@param buffer 数据缓冲区
 	@return 错误码
 */
-static int32_t fat12_write_cluster(FATFS *fs, uint16_t cluster, const uint8_t *buffer)
+static int32_t fat16_write_cluster(FATFS *fs, uint16_t cluster, const uint8_t *buffer)
 {
 	uint32_t sector;
 	uint32_t bytes_per_sector;
@@ -643,13 +626,13 @@ static int32_t fat12_write_cluster(FATFS *fs, uint16_t cluster, const uint8_t *b
 
 	/* 参数检查 */
 	if (fs == NULL || buffer == NULL) {
-		debug("FAT12: Invalid parameters in write_cluster.\n");
+		debug("FAT16: Invalid parameters in write_cluster.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	/* 簇号有效性检查 */
-	if (cluster < 2 || cluster >= 0xFF8) {
-		debug("FAT12: Invalid cluster number: %u.\n", cluster);
+	if (cluster < 2 || cluster >= 0xFFF8) {
+		debug("FAT16: Invalid cluster number: %u.\n", cluster);
 		return FATFS_INVALID_PARAM;
 	}
 
@@ -659,18 +642,18 @@ static int32_t fat12_write_cluster(FATFS *fs, uint16_t cluster, const uint8_t *b
 	/* 计算簇对应的起始扇区 */
 	sector = fs->data_sector + (cluster - 2) * sectors_per_cluster;
 
-	debug("FAT12: Writing cluster %u to sector %u.\n", cluster, sector);
+	debug("FAT16: Writing cluster %u to sector %u.\n", cluster, sector);
 
 	/* 写入簇的所有扇区 */
 	for (i = 0; i < sectors_per_cluster; i++) {
 		ret = write_sector(fs, sector + i, buffer + i * bytes_per_sector);
 		if (ret != BD_SUCCESS) {
-			debug("FAT12: Failed to write sector %u for cluster %u.\n", sector + i, cluster);
+			debug("FAT16: Failed to write sector %u for cluster %u.\n", sector + i, cluster);
 			return FATFS_WRITE_FAILED;
 		}
 	}
 
-	debug("FAT12: Successfully wrote cluster %u.\n", cluster);
+	debug("FAT16: Successfully wrote cluster %u.\n", cluster);
 	return FATFS_SUCCESS;
 }
 
@@ -682,7 +665,7 @@ static int32_t fat12_write_cluster(FATFS *fs, uint16_t cluster, const uint8_t *b
 	@param entry 返回的目录项
 	@return 错误码
 */
-static int32_t fat12_read_directory_entry(FATFS *fs, uint16_t dir_cluster, int32_t entry_num, FAT_DIRENTRY *entry)
+static int32_t fat16_read_directory_entry(FATFS *fs, uint16_t dir_cluster, int32_t entry_num, FAT_DIRENTRY *entry)
 {
 	uint8_t buffer[512];
 	int32_t entries_per_sector = fs->bpb.bytes_per_sector / sizeof(FAT_DIRENTRY);
@@ -691,14 +674,14 @@ static int32_t fat12_read_directory_entry(FATFS *fs, uint16_t dir_cluster, int32
 
 	/* 参数检查 */
 	if (fs == NULL || entry == NULL) {
-		debug("FAT12: Invalid parameters in read_directory_entry.\n");
+		debug("FAT16: Invalid parameters in read_directory_entry.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	if (dir_cluster == 0) {
 		/* 根目录 */
 		if (entry_num >= fs->bpb.root_entries) {
-			debug("FAT12: Directory entry %d out of root directory bounds.\n", entry_num);
+			debug("FAT16: Directory entry %d out of root directory bounds.\n", entry_num);
 			return FATFS_INVALID_PARAM;
 		}
 
@@ -714,13 +697,13 @@ static int32_t fat12_read_directory_entry(FATFS *fs, uint16_t dir_cluster, int32
 		/* 遍历簇链找到目标簇 */
 		for (int32_t i = 0; i < cluster_num; i++) {
 			uint16_t next_cluster;
-			ret = fat12_get_next_cluster(fs, current_cluster, &next_cluster);
+			ret = fat16_get_next_cluster(fs, current_cluster, &next_cluster);
 			if (ret != FATFS_SUCCESS)
 				return ret;
 
-			if (next_cluster >= 0xFF8) {
+			if (next_cluster >= 0xFFF8) {
 				/* 未找到目标簇 */
-				debug("FAT12: End of cluster chain reached while searching for entry %d.\n", entry_num);
+				debug("FAT16: End of cluster chain reached while searching for entry %d.\n", entry_num);
 				return FATFS_READ_FAILED;
 			}
 			current_cluster = next_cluster;
@@ -735,13 +718,13 @@ static int32_t fat12_read_directory_entry(FATFS *fs, uint16_t dir_cluster, int32
 	/* 读取扇区并获取目录项 */
 	ret = read_sector(fs, sector_num, buffer);
 	if (ret != BD_SUCCESS) {
-		debug("FAT12: Failed to read sector %d for directory entry.\n", sector_num);
+		debug("FAT16: Failed to read sector %d for directory entry.\n", sector_num);
 		return FATFS_READ_FAILED;
 	}
 
 	memcpy(entry, &buffer[sector_offset * sizeof(FAT_DIRENTRY)], sizeof(FAT_DIRENTRY));
 
-	debug("FAT12: Read directory entry %d from sector %d, offset %d.\n", entry_num, sector_num, sector_offset);
+	debug("FAT16: Read directory entry %d from sector %d, offset %d.\n", entry_num, sector_num, sector_offset);
 
 	return FATFS_SUCCESS;
 }
@@ -754,7 +737,7 @@ static int32_t fat12_read_directory_entry(FATFS *fs, uint16_t dir_cluster, int32
 	@param entry 要写入的目录项
 	@return 错误码
 */
-static int32_t fat12_write_directory_entry(FATFS *fs, uint16_t dir_cluster, int32_t entry_num, const FAT_DIRENTRY *entry)
+static int32_t fat16_write_directory_entry(FATFS *fs, uint16_t dir_cluster, int32_t entry_num, const FAT_DIRENTRY *entry)
 {
 	uint8_t buffer[512];
 	int32_t entries_per_sector = fs->bpb.bytes_per_sector / sizeof(FAT_DIRENTRY);
@@ -763,14 +746,14 @@ static int32_t fat12_write_directory_entry(FATFS *fs, uint16_t dir_cluster, int3
 
 	/* 参数检查 */
 	if (fs == NULL || entry == NULL) {
-		debug("FAT12: Invalid parameters in write_directory_entry.\n");
+		debug("FAT16: Invalid parameters in write_directory_entry.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	if (dir_cluster == 0) {
 		/* 根目录 */
 		if (entry_num >= fs->bpb.root_entries) {
-			debug("FAT12: Directory entry %d out of root directory bounds.\n", entry_num);
+			debug("FAT16: Directory entry %d out of root directory bounds.\n", entry_num);
 			return FATFS_INVALID_PARAM;
 		}
 
@@ -786,29 +769,29 @@ static int32_t fat12_write_directory_entry(FATFS *fs, uint16_t dir_cluster, int3
 
 		/* 遍历簇链找到目标簇 */
 		for (int32_t i = 0; i < cluster_num; i++) {
-			ret = fat12_get_next_cluster(fs, current_cluster, &next_cluster);
+			ret = fat16_get_next_cluster(fs, current_cluster, &next_cluster);
 			if (ret != FATFS_SUCCESS)
 				return ret;
 
-			if (next_cluster >= 0xFF8) {
+			if (next_cluster >= 0xFFF8) {
 				/* 未找到目标簇，分配新簇 */
 				uint16_t new_cluster;
-				ret = fat12_allocate_cluster(fs, &new_cluster);
+				ret = fat16_allocate_cluster(fs, &new_cluster);
 				if (ret != FATFS_SUCCESS) {
-					debug("FAT12: Failed to allocate new cluster for directory expansion.\n");
+					debug("FAT16: Failed to allocate new cluster for directory expansion.\n");
 					return ret;
 				}
 
 				/* 设置当前簇指向新簇，新簇标记为结束 */
-				ret = fat12_set_next_cluster(fs, current_cluster, new_cluster);
+				ret = fat16_set_next_cluster(fs, current_cluster, new_cluster);
 				if (ret != FATFS_SUCCESS) {
-					debug("FAT12: Failed to set next cluster for directory expansion.\n");
+					debug("FAT16: Failed to set next cluster for directory expansion.\n");
 					return ret;
 				}
 
-				ret = fat12_set_next_cluster(fs, new_cluster, 0xFFF);
+				ret = fat16_set_next_cluster(fs, new_cluster, 0xFFFF);
 				if (ret != FATFS_SUCCESS) {
-					debug("FAT12: Failed to mark new cluster as end of chain.\n");
+					debug("FAT16: Failed to mark new cluster as end of chain.\n");
 					return ret;
 				}
 
@@ -827,7 +810,7 @@ static int32_t fat12_write_directory_entry(FATFS *fs, uint16_t dir_cluster, int3
 	/* 更新目录项 */
 	ret = read_sector(fs, sector_num, buffer);
 	if (ret != BD_SUCCESS) {
-		debug("FAT12: Failed to read sector %d for directory entry update.\n", sector_num);
+		debug("FAT16: Failed to read sector %d for directory entry update.\n", sector_num);
 		return FATFS_READ_FAILED;
 	}
 
@@ -835,11 +818,11 @@ static int32_t fat12_write_directory_entry(FATFS *fs, uint16_t dir_cluster, int3
 
 	ret = write_sector(fs, sector_num, buffer);
 	if (ret != BD_SUCCESS) {
-		debug("FAT12: Failed to write sector %d with updated directory entry.\n", sector_num);
+		debug("FAT16: Failed to write sector %d with updated directory entry.\n", sector_num);
 		return FATFS_WRITE_FAILED;
 	}
 
-	debug("FAT12: Wrote directory entry %d to sector %d, offset %d.\n", entry_num, sector_num, sector_offset);
+	debug("FAT16: Wrote directory entry %d to sector %d, offset %d.\n", entry_num, sector_num, sector_offset);
 
 	return FATFS_SUCCESS;
 }
@@ -853,7 +836,7 @@ static int32_t fat12_write_directory_entry(FATFS *fs, uint16_t dir_cluster, int3
 	@param entry_index 返回目录项索引
 	@return 错误码
 */
-static int32_t fat12_find_entry(FATFS *fs, uint16_t dir_cluster, const char *filename, FAT_DIRENTRY *entry, int32_t *entry_index)
+static int32_t fat16_find_entry(FATFS *fs, uint16_t dir_cluster, const char *filename, FAT_DIRENTRY *entry, int32_t *entry_index)
 {
 	char short_name[FAT_FILENAME_LEN + 1];
 	char ext[FAT_EXT_LEN + 1];
@@ -862,7 +845,7 @@ static int32_t fat12_find_entry(FATFS *fs, uint16_t dir_cluster, const char *fil
 
 	/* 参数检查 */
 	if (fs == NULL || filename == NULL) {
-		debug("FAT12: Invalid parameters in find_entry.\n");
+		debug("FAT16: Invalid parameters in find_entry.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
@@ -879,10 +862,10 @@ static int32_t fat12_find_entry(FATFS *fs, uint16_t dir_cluster, const char *fil
 		uint16_t current_cluster = dir_cluster;
 		uint16_t next_cluster;
 
-		while (current_cluster >= 2 && current_cluster < 0xFF8) {
+		while (current_cluster >= 2 && current_cluster < 0xFFF8) {
 			max_entries += (fs->bpb.bytes_per_sector * fs->bpb.sectors_per_cluster) / sizeof(FAT_DIRENTRY);
 
-			ret = fat12_get_next_cluster(fs, current_cluster, &next_cluster);
+			ret = fat16_get_next_cluster(fs, current_cluster, &next_cluster);
 			if (ret != FATFS_SUCCESS)
 				break;
 
@@ -890,14 +873,14 @@ static int32_t fat12_find_entry(FATFS *fs, uint16_t dir_cluster, const char *fil
 		}
 	}
 
-	debug("FAT12: Searching for \'%.8s.%.3s\' in directory cluster %u (max entries: %d).\n",
+	debug("FAT16: Searching for \'%.8s.%.3s\' in directory cluster %u (max entries: %d).\n",
 		short_name, ext, dir_cluster, max_entries);
 
 	/* 搜索目录项 */
 	for (int32_t i = 0; i < max_entries; i++) {
 		FAT_DIRENTRY temp_entry;
 
-		ret = fat12_read_directory_entry(fs, dir_cluster, i, &temp_entry);
+		ret = fat16_read_directory_entry(fs, dir_cluster, i, &temp_entry);
 		if (ret != FATFS_SUCCESS)
 			continue;
 
@@ -919,12 +902,12 @@ static int32_t fat12_find_entry(FATFS *fs, uint16_t dir_cluster, const char *fil
 			if (entry_index != NULL)
 				*entry_index = i;
 
-			debug("FAT12: Found entry at index %d.\n", i);
+			debug("FAT16: Found entry at index %d.\n", i);
 			return FATFS_SUCCESS;
 		}
 	}
 
-	debug("FAT12: Entry not found.\n");
+	debug("FAT16: Entry not found.\n");
 	return FATFS_ENTRY_NOT_FOUND;
 }
 
@@ -939,7 +922,7 @@ static int32_t fat12_find_entry(FATFS *fs, uint16_t dir_cluster, const char *fil
 	@param new_entry 返回新创建的目录项
 	@return 错误码
 */
-static int32_t fat12_create_entry(FATFS *fs, uint16_t dir_cluster, const char *filename, uint8_t attributes, uint16_t start_cluster, uint32_t file_size, FAT_DIRENTRY *new_entry)
+static int32_t fat16_create_entry(FATFS *fs, uint16_t dir_cluster, const char *filename, uint8_t attributes, uint16_t start_cluster, uint32_t file_size, FAT_DIRENTRY *new_entry)
 {
 	char short_name[FAT_FILENAME_LEN + 1];
 	char ext[FAT_EXT_LEN + 1];
@@ -950,7 +933,7 @@ static int32_t fat12_create_entry(FATFS *fs, uint16_t dir_cluster, const char *f
 
 	/* 参数检查 */
 	if (fs == NULL || filename == NULL) {
-		debug("FAT12: Invalid parameters in create_entry.\n");
+		debug("FAT16: Invalid parameters in create_entry.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
@@ -958,9 +941,9 @@ static int32_t fat12_create_entry(FATFS *fs, uint16_t dir_cluster, const char *f
 	fatfs_convert_to_83(filename, short_name, ext);
 
 	/* 检查是否已存在同名条目 */
-	ret = fat12_find_entry(fs, dir_cluster, filename, NULL, NULL);
+	ret = fat16_find_entry(fs, dir_cluster, filename, NULL, NULL);
 	if (ret == FATFS_SUCCESS) {
-		debug("FAT12: Entry \'%.8s.%.3s\' already exists.\n", short_name, ext);
+		debug("FAT16: Entry \'%.8s.%.3s\' already exists.\n", short_name, ext);
 		return FATFS_ENTRY_EXISTS;
 	}
 
@@ -974,10 +957,10 @@ static int32_t fat12_create_entry(FATFS *fs, uint16_t dir_cluster, const char *f
 		uint16_t current_cluster = dir_cluster;
 		uint16_t next_cluster;
 
-		while (current_cluster >= 2 && current_cluster < 0xFF8) {
+		while (current_cluster >= 2 && current_cluster < 0xFFF8) {
 			max_entries += (fs->bpb.bytes_per_sector * fs->bpb.sectors_per_cluster) / sizeof(FAT_DIRENTRY);
 
-			ret = fat12_get_next_cluster(fs, current_cluster, &next_cluster);
+			ret = fat16_get_next_cluster(fs, current_cluster, &next_cluster);
 			if (ret != FATFS_SUCCESS)
 				break;
 
@@ -985,12 +968,12 @@ static int32_t fat12_create_entry(FATFS *fs, uint16_t dir_cluster, const char *f
 		}
 	}
 
-	debug("FAT12: Looking for free entry in directory cluster %u (max entries: %d).\n",
+	debug("FAT16: Looking for free entry in directory cluster %u (max entries: %d).\n",
 		dir_cluster, max_entries);
 
 	/* 查找空闲条目 */
 	for (int32_t i = 0; i < max_entries; i++) {
-		ret = fat12_read_directory_entry(fs, dir_cluster, i, &entry);
+		ret = fat16_read_directory_entry(fs, dir_cluster, i, &entry);
 		if (ret != FATFS_SUCCESS)
 			continue;
 
@@ -1003,7 +986,7 @@ static int32_t fat12_create_entry(FATFS *fs, uint16_t dir_cluster, const char *f
 
 	/* 没有找到空闲条目，返回错误 */
 	if (free_entry_index == -1) {
-		debug("FAT12: No free entries available in directory.\n");
+		debug("FAT16: No free entries available in directory.\n");
 		return FATFS_DIR_FULL;
 	}
 
@@ -1037,9 +1020,9 @@ static int32_t fat12_create_entry(FATFS *fs, uint16_t dir_cluster, const char *f
 	entry.file_size = file_size;
 
 	/* 写入新目录项 */
-	ret = fat12_write_directory_entry(fs, dir_cluster, free_entry_index, &entry);
+	ret = fat16_write_directory_entry(fs, dir_cluster, free_entry_index, &entry);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Failed to write new directory entry.\n");
+		debug("FAT16: Failed to write new directory entry.\n");
 		return ret;
 	}
 
@@ -1047,7 +1030,7 @@ static int32_t fat12_create_entry(FATFS *fs, uint16_t dir_cluster, const char *f
 	if (new_entry != NULL)
 		memcpy(new_entry, &entry, sizeof(FAT_DIRENTRY));
 
-	debug("FAT12: Created new entry \'%.8s.%.3s\' at index %d.\n", short_name, ext, free_entry_index);
+	debug("FAT16: Created new entry \'%.8s.%.3s\' at index %d.\n", short_name, ext, free_entry_index);
 
 	return FATFS_SUCCESS;
 }
@@ -1059,7 +1042,7 @@ static int32_t fat12_create_entry(FATFS *fs, uint16_t dir_cluster, const char *f
 	@param filename 要删除的文件名
 	@return 错误码
 */
-static int32_t fat12_delete_entry(FATFS *fs, uint16_t dir_cluster, const char *filename)
+static int32_t fat16_delete_entry(FATFS *fs, uint16_t dir_cluster, const char *filename)
 {
 	FAT_DIRENTRY entry;
 	int32_t entry_index;
@@ -1067,14 +1050,14 @@ static int32_t fat12_delete_entry(FATFS *fs, uint16_t dir_cluster, const char *f
 
 	/* 参数检查 */
 	if (fs == NULL || filename == NULL) {
-		debug("FAT12: Invalid parameters in delete_entry.\n");
+		debug("FAT16: Invalid parameters in delete_entry.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	/* 查找目录项 */
-	ret = fat12_find_entry(fs, dir_cluster, filename, &entry, &entry_index);
+	ret = fat16_find_entry(fs, dir_cluster, filename, &entry, &entry_index);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Entry not found for deletion.\n");
+		debug("FAT16: Entry not found for deletion.\n");
 		return FATFS_ENTRY_NOT_FOUND;
 	}
 
@@ -1082,20 +1065,20 @@ static int32_t fat12_delete_entry(FATFS *fs, uint16_t dir_cluster, const char *f
 	entry.filename[0] = 0xE5;
 
 	/* 写回修改后的目录项 */
-	ret = fat12_write_directory_entry(fs, dir_cluster, entry_index, &entry);
+	ret = fat16_write_directory_entry(fs, dir_cluster, entry_index, &entry);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Failed to mark entry as deleted.\n");
+		debug("FAT16: Failed to mark entry as deleted.\n");
 		return ret;
 	}
 
 	/* 释放文件或目录的簇链 */
 	if (!(entry.attributes & FAT_ATTR_VOLUME_ID) && entry.first_cluster_low != 0) {
-		ret = fat12_free_clusters(fs, entry.first_cluster_low);
+		ret = fat16_free_clusters(fs, entry.first_cluster_low);
 		if (ret != FATFS_SUCCESS)
-			debug("FAT12: Failed to free clusters for deleted entry.\n");
+			debug("FAT16: Failed to free clusters for deleted entry.\n");
 	}
 
-	debug("FAT12: Deleted entry \'%s\' at index %d.\n", filename, entry_index);
+	debug("FAT16: Deleted entry \'%s\' at index %d.\n", filename, entry_index);
 
 	return FATFS_SUCCESS;
 }
@@ -1109,7 +1092,7 @@ static int32_t fat12_delete_entry(FATFS *fs, uint16_t dir_cluster, const char *f
 	@param count 保存实际读取的目录项数
 	@return 错误码
 */
-static int32_t fat12_read_directory(FATFS *fs, uint16_t dir_cluster, FAT_DIRENTRY *entries, int32_t max_entries, int32_t *count)
+static int32_t fat16_read_directory(FATFS *fs, uint16_t dir_cluster, FAT_DIRENTRY *entries, int32_t max_entries, int32_t *count)
 {
 	int32_t num = 0;
 	int32_t max_dir_entries;
@@ -1117,7 +1100,7 @@ static int32_t fat12_read_directory(FATFS *fs, uint16_t dir_cluster, FAT_DIRENTR
 
 	/* 参数检查 */
 	if (fs == NULL || entries == NULL || max_entries <= 0) {
-		debug("FAT12: Invalid parameters in read_directory.\n");
+		debug("FAT16: Invalid parameters in read_directory.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
@@ -1131,10 +1114,10 @@ static int32_t fat12_read_directory(FATFS *fs, uint16_t dir_cluster, FAT_DIRENTR
 		uint16_t current_cluster = dir_cluster;
 		uint16_t next_cluster;
 
-		while (current_cluster >= 2 && current_cluster < 0xFF8) {
+		while (current_cluster >= 2 && current_cluster < 0xFFF8) {
 			max_dir_entries += (fs->bpb.bytes_per_sector * fs->bpb.sectors_per_cluster) / sizeof(FAT_DIRENTRY);
 
-			ret = fat12_get_next_cluster(fs, current_cluster, &next_cluster);
+			ret = fat16_get_next_cluster(fs, current_cluster, &next_cluster);
 			if (ret != FATFS_SUCCESS)
 				break;
 
@@ -1142,13 +1125,13 @@ static int32_t fat12_read_directory(FATFS *fs, uint16_t dir_cluster, FAT_DIRENTR
 		}
 	}
 
-	debug("FAT12: Reading directory cluster %u (max entries: %d).\n", dir_cluster, max_dir_entries);
+	debug("FAT16: Reading directory cluster %u (max entries: %d).\n", dir_cluster, max_dir_entries);
 
 	/* 读取目录项 */
 	for (int32_t i = 0; i < max_dir_entries && num < max_entries; i++) {
 		FAT_DIRENTRY entry;
 
-		ret = fat12_read_directory_entry(fs, dir_cluster, i, &entry);
+		ret = fat16_read_directory_entry(fs, dir_cluster, i, &entry);
 		if (ret != FATFS_SUCCESS)
 			continue;
 
@@ -1173,7 +1156,7 @@ static int32_t fat12_read_directory(FATFS *fs, uint16_t dir_cluster, FAT_DIRENTR
 		num++;
 	}
 
-	debug("FAT12: Read %d entries from directory cluster %u.\n", num, dir_cluster);
+	debug("FAT16: Read %d entries from directory cluster %u.\n", num, dir_cluster);
 	*count = num;
 	return FATFS_SUCCESS;
 }
@@ -1187,7 +1170,7 @@ static int32_t fat12_read_directory(FATFS *fs, uint16_t dir_cluster, FAT_DIRENTR
 	@param parent_cluster 返回父目录的簇号
 	@return 错误码
 */
-static int32_t fat12_parse_path(FATFS *fs, const char *path, FAT_DIRENTRY *parent_dir, char *filename, uint16_t *parent_cluster)
+static int32_t fat16_parse_path(FATFS *fs, const char *path, FAT_DIRENTRY *parent_dir, char *filename, uint16_t *parent_cluster)
 {
 	char temp_path[FAT_MAX_PATH];
 	char *token;
@@ -1197,7 +1180,7 @@ static int32_t fat12_parse_path(FATFS *fs, const char *path, FAT_DIRENTRY *paren
 
 	/* 参数检查 */
 	if (fs == NULL || path == NULL || filename == NULL || parent_cluster == NULL) {
-		debug("FAT12: Invalid parameters in parse_path.\n");
+		debug("FAT16: Invalid parameters in parse_path.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
@@ -1205,7 +1188,7 @@ static int32_t fat12_parse_path(FATFS *fs, const char *path, FAT_DIRENTRY *paren
 	strncpy(temp_path, path, FAT_MAX_PATH - 1);
 	temp_path[FAT_MAX_PATH - 1] = '\0';
 
-	debug("FAT12: Parsing path: \'%s\'.\n", path);
+	debug("FAT16: Parsing path: \'%s\'.\n", path);
 
 	/* 路径以斜杠开头，从根目录开始 */
 	if (temp_path[0] == '/')
@@ -1221,7 +1204,7 @@ static int32_t fat12_parse_path(FATFS *fs, const char *path, FAT_DIRENTRY *paren
 		if (parent_dir != NULL)
 			memset(parent_dir, 0, sizeof(FAT_DIRENTRY));
 
-		debug("FAT12: Path refers to root directory.\n");
+		debug("FAT16: Path refers to root directory.\n");
 		return FATFS_SUCCESS;
 	}
 
@@ -1239,10 +1222,10 @@ static int32_t fat12_parse_path(FATFS *fs, const char *path, FAT_DIRENTRY *paren
 			if (parent_dir != NULL && current_cluster != 0) {
 				/* 查找当前目录的目录项 */
 				FAT_DIRENTRY dir_entry;
-				ret = fat12_find_entry(fs, *parent_cluster, "..", &dir_entry, NULL);
+				ret = fat16_find_entry(fs, *parent_cluster, "..", &dir_entry, NULL);
 				if (ret == FATFS_SUCCESS) {
 					/* 获取父目录的实际目录项 */
-					ret = fat12_find_entry(fs, dir_entry.first_cluster_low, ".", parent_dir, NULL);
+					ret = fat16_find_entry(fs, dir_entry.first_cluster_low, ".", parent_dir, NULL);
 					if (ret != FATFS_SUCCESS)
 						memset(parent_dir, 0, sizeof(FAT_DIRENTRY));
 				} else {
@@ -1254,21 +1237,21 @@ static int32_t fat12_parse_path(FATFS *fs, const char *path, FAT_DIRENTRY *paren
 				parent_dir->attributes = FAT_ATTR_DIRECTORY;
 			}
 
-			debug("FAT12: Parsed path - parent cluster: %u, filename: \'%s\'.\n", *parent_cluster, filename);
+			debug("FAT16: Parsed path - parent cluster: %u, filename: \'%s\'.\n", *parent_cluster, filename);
 			return FATFS_SUCCESS;
 		}
 
 		/* 否则，查找下一级目录 */
 		FAT_DIRENTRY dir_entry;
-		ret = fat12_find_entry(fs, current_cluster, token, &dir_entry, NULL);
+		ret = fat16_find_entry(fs, current_cluster, token, &dir_entry, NULL);
 		if (ret != FATFS_SUCCESS) {
-			debug("FAT12: Directory \'%s\' not found in cluster %u.\n", token, current_cluster);
+			debug("FAT16: Directory \'%s\' not found in cluster %u.\n", token, current_cluster);
 			return FATFS_ENTRY_NOT_FOUND;
 		}
 
 		/* 检查是否为目录 */
 		if (!(dir_entry.attributes & FAT_ATTR_DIRECTORY)) {
-			debug("FAT12: \'%s\' is not a directory.\n", token);
+			debug("FAT16: \'%s\' is not a directory.\n", token);
 			return FATFS_INVALID_PARAM;
 		}
 
@@ -1285,7 +1268,7 @@ static int32_t fat12_parse_path(FATFS *fs, const char *path, FAT_DIRENTRY *paren
 	@param update_access 是否更新访问时间
 	@param update_write 是否更新写入时间
 */
-static void fat12_update_file_timestamp(FAT_DIRENTRY *entry, bool update_create, bool update_access, bool update_write)
+static void fat16_update_file_timestamp(FAT_DIRENTRY *entry, bool update_create, bool update_access, bool update_write)
 {
 	uint32_t year = get_year();
 	uint32_t month = get_month();
@@ -1322,22 +1305,22 @@ static void fat12_update_file_timestamp(FAT_DIRENTRY *entry, bool update_create,
 	@param entry 新的目录项数据
 	@return 错误码
 */
-static int32_t fat12_update_directory_entry(FATFS *fs, uint16_t parent_cluster, const char *filename, FAT_DIRENTRY *entry)
+static int32_t fat16_update_directory_entry(FATFS *fs, uint16_t parent_cluster, const char *filename, FAT_DIRENTRY *entry)
 {
 	int32_t entry_index;
 	int32_t ret;
 
 	/* 查找目录项索引 */
-	ret = fat12_find_entry(fs, parent_cluster, filename, NULL, &entry_index);
+	ret = fat16_find_entry(fs, parent_cluster, filename, NULL, &entry_index);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Failed to find directory entry for update.\n");
+		debug("FAT16: Failed to find directory entry for update.\n");
 		return ret;
 	}
 
 	/* 写入更新后的目录项 */
-	ret = fat12_write_directory_entry(fs, parent_cluster, entry_index, entry);
+	ret = fat16_write_directory_entry(fs, parent_cluster, entry_index, entry);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Failed to write updated directory entry.\n");
+		debug("FAT16: Failed to write updated directory entry.\n");
 		return ret;
 	}
 
@@ -1351,7 +1334,7 @@ static int32_t fat12_update_directory_entry(FATFS *fs, uint16_t parent_cluster, 
 	@param path 文件路径
 	@return 错误码
 */
-int32_t fat12_open_file(FAT_FILE *file, FATFS *fs, const char *path)
+int32_t fat16_open_file(FAT_FILE *file, FATFS *fs, const char *path)
 {
 	char filename[FAT_MAX_PATH];
 	uint16_t parent_cluster;
@@ -1360,7 +1343,7 @@ int32_t fat12_open_file(FAT_FILE *file, FATFS *fs, const char *path)
 
 	/* 参数检查 */
 	if (file == NULL || fs == NULL || path == NULL) {
-		debug("FAT12: Invalid parameters in open.\n");
+		debug("FAT16: Invalid parameters in open.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
@@ -1371,28 +1354,28 @@ int32_t fat12_open_file(FAT_FILE *file, FATFS *fs, const char *path)
 	file->path[FAT_MAX_PATH - 1] = '\0';
 
 	/* 解析路径 */
-	ret = fat12_parse_path(fs, path, NULL, filename, &parent_cluster);
+	ret = fat16_parse_path(fs, path, NULL, filename, &parent_cluster);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Failed to parse path: \'%s\'.\n", path);
+		debug("FAT16: Failed to parse path: \'%s\'.\n", path);
 		return ret;
 	}
 
 	/* 文件名为空（目录） */
 	if (filename[0] == '\0') {
-		debug("FAT12: Cannot open directory as file: \'%s\'.\n", path);
+		debug("FAT16: Cannot open directory as file: \'%s\'.\n", path);
 		return FATFS_INVALID_PARAM;
 	}
 
 	/* 查找文件 */
 	file->entry = (FAT_DIRENTRY *) kmalloc(sizeof(FAT_DIRENTRY));
 	if (file->entry == NULL) {
-		debug("FAT12: Failed to allocate memory for directory entry.\n");
+		debug("FAT16: Failed to allocate memory for directory entry.\n");
 		return FATFS_MEMORY_ALLOC;
 	}
 
-	ret = fat12_find_entry(fs, parent_cluster, filename, file->entry, &entry_index);
+	ret = fat16_find_entry(fs, parent_cluster, filename, file->entry, &entry_index);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: File not found: \'%s\'.\n", filename);
+		debug("FAT16: File not found: \'%s\'.\n", filename);
 		kfree(file->entry);
 		file->entry = NULL;
 		return FATFS_ENTRY_NOT_FOUND;
@@ -1400,7 +1383,7 @@ int32_t fat12_open_file(FAT_FILE *file, FATFS *fs, const char *path)
 
 	/* 检查是否为文件 */
 	if (file->entry->attributes & FAT_ATTR_DIRECTORY) {
-		debug("FAT12: Path is a directory, not a file: \'%s\'.\n", path);
+		debug("FAT16: Path is a directory, not a file: \'%s\'.\n", path);
 		kfree(file->entry);
 		file->entry = NULL;
 		return FATFS_IS_DIRECTORY;
@@ -1410,7 +1393,7 @@ int32_t fat12_open_file(FAT_FILE *file, FATFS *fs, const char *path)
 	file->current_pos = 0;
 	file->is_open = true;
 
-	debug("FAT12: Opened file \'%s\' (size: %u bytes, start cluster: %u).\n",
+	debug("FAT16: Opened file \'%s\' (size: %u bytes, start cluster: %u).\n",
 		path, file->entry->file_size, file->entry->first_cluster_low);
 
 	return FATFS_SUCCESS;
@@ -1423,7 +1406,7 @@ int32_t fat12_open_file(FAT_FILE *file, FATFS *fs, const char *path)
 	@param file 返回的文件句柄
 	@return 错误码
 */
-int32_t fat12_create_file(FAT_FILE *file, FATFS *fs, const char *path)
+int32_t fat16_create_file(FAT_FILE *file, FATFS *fs, const char *path)
 {
 	char filename[FAT_MAX_PATH];
 	uint16_t parent_cluster;
@@ -1434,55 +1417,55 @@ int32_t fat12_create_file(FAT_FILE *file, FATFS *fs, const char *path)
 
 	/* 参数检查 */
 	if (fs == NULL || path == NULL) {
-		debug("FAT12: Invalid parameters in create_file.\n");
+		debug("FAT16: Invalid parameters in create_file.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
-	debug("FAT12: Creating file: \'%s\'.\n", path);
+	debug("FAT16: Creating file: \'%s\'.\n", path);
 
 	/* 解析路径 */
-	ret = fat12_parse_path(fs, path, NULL, filename, &parent_cluster);
+	ret = fat16_parse_path(fs, path, NULL, filename, &parent_cluster);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Failed to parse path: \'%s\'.\n", path);
+		debug("FAT16: Failed to parse path: \'%s\'.\n", path);
 		return ret;
 	}
 
 	/* 检查文件名是否为空 */
 	if (filename[0] == '\0') {
-		debug("FAT12: Cannot create file with empty name.\n");
+		debug("FAT16: Cannot create file with empty name.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	/* 检查文件是否已存在 */
-	ret = fat12_find_entry(fs, parent_cluster, filename, NULL, NULL);
+	ret = fat16_find_entry(fs, parent_cluster, filename, NULL, NULL);
 	if (ret == FATFS_SUCCESS) {
-		debug("FAT12: File already exists: \'%s\'.\n", path);
+		debug("FAT16: File already exists: \'%s\'.\n", path);
 		return FATFS_ENTRY_EXISTS;
 	}
 
 	/* 分配初始簇 */
-	ret = fat12_allocate_cluster(fs, &start_cluster);
+	ret = fat16_allocate_cluster(fs, &start_cluster);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Failed to allocate initial cluster for new file.\n");
+		debug("FAT16: Failed to allocate initial cluster for new file.\n");
 		return ret;
 	}
 
 	/* 创建文件目录项 */
-	ret = fat12_create_entry(fs, parent_cluster, filename, FAT_ATTR_ARCHIVE, start_cluster, 0, &new_entry);
+	ret = fat16_create_entry(fs, parent_cluster, filename, FAT_ATTR_ARCHIVE, start_cluster, 0, &new_entry);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Failed to create directory entry for new file.\n");
+		debug("FAT16: Failed to create directory entry for new file.\n");
 		/* 回滚，释放已分配的簇 */
-		fat12_free_clusters(fs, start_cluster);
+		fat16_free_clusters(fs, start_cluster);
 		return ret;
 	}
 
 	/* 更新文件时间戳 */
-	fat12_update_file_timestamp(&new_entry, true, true, true);
+	fat16_update_file_timestamp(&new_entry, true, true, true);
 
 	/* 更新目录项 */
-	ret = fat12_update_directory_entry(fs, parent_cluster, filename, &new_entry);
+	ret = fat16_update_directory_entry(fs, parent_cluster, filename, &new_entry);
 	if (ret != FATFS_SUCCESS)
-		debug("FAT12: Failed to update directory entry timestamp.\n");
+		debug("FAT16: Failed to update directory entry timestamp.\n");
 
 	if (file != NULL) {
 		/* 初始化文件句柄 */
@@ -1494,7 +1477,7 @@ int32_t fat12_create_file(FAT_FILE *file, FATFS *fs, const char *path)
 		/* 分配并复制目录项 */
 		file->entry = (FAT_DIRENTRY *) kmalloc(sizeof(FAT_DIRENTRY));
 		if (file->entry == NULL) {
-			debug("FAT12: Failed to allocate memory for file entry.\n");
+			debug("FAT16: Failed to allocate memory for file entry.\n");
 		} else {
 			memcpy(file->entry, &new_entry, sizeof(FAT_DIRENTRY));
 			file->current_pos = 0;
@@ -1502,7 +1485,7 @@ int32_t fat12_create_file(FAT_FILE *file, FATFS *fs, const char *path)
 		}
 	}
 
-	debug("FAT12: Created file \'%s\' with start cluster %u, bytes written: %u.\n", path, start_cluster, bytes_written);
+	debug("FAT16: Created file \'%s\' with start cluster %u, bytes written: %u.\n", path, start_cluster, bytes_written);
 
 	return FATFS_SUCCESS;
 }
@@ -1515,7 +1498,7 @@ int32_t fat12_create_file(FAT_FILE *file, FATFS *fs, const char *path)
 	@param bytes_read 返回实际读取的字节数
 	@return 错误码
 */
-int32_t fat12_read_file(FAT_FILE *file, void *buffer, uint32_t size, uint32_t *bytes_read)
+int32_t fat16_read_file(FAT_FILE *file, void *buffer, uint32_t size, uint32_t *bytes_read)
 {
 	uint8_t *buf = (uint8_t *) buffer;
 	uint32_t bytes_read_local = 0;
@@ -1530,25 +1513,25 @@ int32_t fat12_read_file(FAT_FILE *file, void *buffer, uint32_t size, uint32_t *b
 
 	/* 参数检查 */
 	if (file == NULL || buffer == NULL || size == 0 || bytes_read == NULL) {
-		debug("FAT12: Invalid parameters in read.\n");
+		debug("FAT16: Invalid parameters in read.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	*bytes_read = 0;
 
 	if (!file->is_open) {
-		debug("FAT12: File is not open.\n");
+		debug("FAT16: File is not open.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	if (file->entry == NULL) {
-		debug("FAT12: File has no directory entry.\n");
+		debug("FAT16: File has no directory entry.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	/* 检查文件大小 */
 	if (file->current_pos >= file->entry->file_size) {
-		debug("FAT12: Already at end of file.\n");
+		debug("FAT16: Already at end of file.\n");
 		return FATFS_SUCCESS;
 	}
 
@@ -1559,7 +1542,7 @@ int32_t fat12_read_file(FAT_FILE *file, void *buffer, uint32_t size, uint32_t *b
 	/* 分配簇缓冲区 */
 	cluster_buffer = (uint8_t *) kmalloc(bytes_per_cluster);
 	if (cluster_buffer == NULL) {
-		debug("FAT12: Failed to allocate cluster buffer.\n");
+		debug("FAT16: Failed to allocate cluster buffer.\n");
 		return FATFS_MEMORY_ALLOC;
 	}
 
@@ -1569,21 +1552,21 @@ int32_t fat12_read_file(FAT_FILE *file, void *buffer, uint32_t size, uint32_t *b
 	offset_in_cluster = pos_in_file % bytes_per_cluster;
 	current_cluster = file->entry->first_cluster_low;
 
-	debug("FAT12: Reading from file at position %u, cluster %u, offset %u.\n",
+	debug("FAT16: Reading from file at position %u, cluster %u, offset %u.\n",
 		pos_in_file, current_cluster, offset_in_cluster);
 
 	/* 定位到当前簇 */
 	for (uint32_t i = 0; i < cluster_num; i++) {
-		ret = fat12_get_next_cluster(file->fs, current_cluster, &current_cluster);
+		ret = fat16_get_next_cluster(file->fs, current_cluster, &current_cluster);
 		if (ret != FATFS_SUCCESS) {
-			debug("FAT12: Failed to traverse cluster chain.\n");
+			debug("FAT16: Failed to traverse cluster chain.\n");
 			kfree(cluster_buffer);
 			return ret;
 		}
 
-		if (current_cluster >= 0xFF8) {
+		if (current_cluster >= 0xFFF8) {
 			/* 已到达文件末尾 */
-			debug("FAT12: Reached end of file while traversing cluster chain.\n");
+			debug("FAT16: Reached end of file while traversing cluster chain.\n");
 			kfree(cluster_buffer);
 			*bytes_read = bytes_read_local;
 			return FATFS_SUCCESS;
@@ -1593,9 +1576,9 @@ int32_t fat12_read_file(FAT_FILE *file, void *buffer, uint32_t size, uint32_t *b
 	/* 读取数据 */
 	while (bytes_read_local < size && pos_in_file < file->entry->file_size) {
 		/* 读取当前簇 */
-		ret = fat12_read_cluster(file->fs, current_cluster, cluster_buffer);
+		ret = fat16_read_cluster(file->fs, current_cluster, cluster_buffer);
 		if (ret != FATFS_SUCCESS) {
-			debug("FAT12: Failed to read cluster %u.\n", current_cluster);
+			debug("FAT16: Failed to read cluster %u.\n", current_cluster);
 			break;
 		}
 
@@ -1620,8 +1603,8 @@ int32_t fat12_read_file(FAT_FILE *file, void *buffer, uint32_t size, uint32_t *b
 
 		/* 已读完当前簇，移动到下一个簇 */
 		if (offset_in_cluster >= bytes_per_cluster) {
-			ret = fat12_get_next_cluster(file->fs, current_cluster, &current_cluster);
-			if (ret != FATFS_SUCCESS || current_cluster >= 0xFF8) {
+			ret = fat16_get_next_cluster(file->fs, current_cluster, &current_cluster);
+			if (ret != FATFS_SUCCESS || current_cluster >= 0xFFF8) {
 				/* 到达文件末尾或出错 */
 				break;
 			}
@@ -1636,17 +1619,17 @@ int32_t fat12_read_file(FAT_FILE *file, void *buffer, uint32_t size, uint32_t *b
 
 	/* 更新文件访问时间 */
 	if (bytes_read_local > 0) {
-		fat12_update_file_timestamp(file->entry, false, true, false);
+		fat16_update_file_timestamp(file->entry, false, true, false);
 
 		/* 更新目录项 */
 		char filename[FAT_MAX_PATH];
 		uint16_t parent_cluster;
-		ret = fat12_parse_path(file->fs, file->path, NULL, filename, &parent_cluster);
+		ret = fat16_parse_path(file->fs, file->path, NULL, filename, &parent_cluster);
 		if (ret == FATFS_SUCCESS && filename[0] != '\0')
-			fat12_update_directory_entry(file->fs, parent_cluster, filename, file->entry);
+			fat16_update_directory_entry(file->fs, parent_cluster, filename, file->entry);
 	}
 
-	debug("FAT12: Read %u bytes from file, new position: %u.\n", bytes_read_local, file->current_pos);
+	debug("FAT16: Read %u bytes from file, new position: %u.\n", bytes_read_local, file->current_pos);
 
 	return FATFS_SUCCESS;
 }
@@ -1660,7 +1643,7 @@ int32_t fat12_read_file(FAT_FILE *file, void *buffer, uint32_t size, uint32_t *b
 	@param bytes_written 返回实际写入的字节数
 	@return 错误码
 */
-int32_t fat12_write_file(FAT_FILE *file, const void *buffer, uint32_t size, bool append, uint32_t *bytes_written)
+int32_t fat16_write_file(FAT_FILE *file, const void *buffer, uint32_t size, bool append, uint32_t *bytes_written)
 {
 	const uint8_t *buf = (const uint8_t *) buffer;
 	uint32_t bytes_written_local = 0;
@@ -1675,19 +1658,19 @@ int32_t fat12_write_file(FAT_FILE *file, const void *buffer, uint32_t size, bool
 
 	/* 参数检查 */
 	if (file == NULL || buffer == NULL || size == 0 || bytes_written == NULL) {
-		debug("FAT12: Invalid parameters in write.\n");
+		debug("FAT16: Invalid parameters in write.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	*bytes_written = 0;
 
 	if (!file->is_open) {
-		debug("FAT12: File is not open.\n");
+		debug("FAT16: File is not open.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	if (file->entry == NULL) {
-		debug("FAT12: File has no directory entry.\n");
+		debug("FAT16: File has no directory entry.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
@@ -1698,7 +1681,7 @@ int32_t fat12_write_file(FAT_FILE *file, const void *buffer, uint32_t size, bool
 	/* 分配簇缓冲区 */
 	cluster_buffer = (uint8_t *) kmalloc(bytes_per_cluster);
 	if (cluster_buffer == NULL) {
-		debug("FAT12: Failed to allocate cluster buffer.\n");
+		debug("FAT16: Failed to allocate cluster buffer.\n");
 		return FATFS_MEMORY_ALLOC;
 	}
 
@@ -1709,18 +1692,18 @@ int32_t fat12_write_file(FAT_FILE *file, const void *buffer, uint32_t size, bool
 		/* 文件已有数据，释放除第一个簇外的所有簇 */
 		if (file->entry->first_cluster_low != 0) {
 			uint16_t next_cluster;
-			ret = fat12_get_next_cluster(file->fs, file->entry->first_cluster_low, &next_cluster);
-			if (ret == FATFS_SUCCESS && next_cluster < 0xFF8) {
-				ret = fat12_free_clusters(file->fs, next_cluster);
+			ret = fat16_get_next_cluster(file->fs, file->entry->first_cluster_low, &next_cluster);
+			if (ret == FATFS_SUCCESS && next_cluster < 0xFFF8) {
+				ret = fat16_free_clusters(file->fs, next_cluster);
 				if (ret != FATFS_SUCCESS) {
-					debug("FAT12: Warning - failed to free existing clusters.\n");
+					debug("FAT16: Warning - failed to free existing clusters.\n");
 				}
 			}
 
 			/* 标记第一个簇为结束 */
-			ret = fat12_set_next_cluster(file->fs, file->entry->first_cluster_low, 0xFFF);
+			ret = fat16_set_next_cluster(file->fs, file->entry->first_cluster_low, 0xFFFF);
 			if (ret != FATFS_SUCCESS) {
-				debug("FAT12: Failed to mark first cluster as end.\n");
+				debug("FAT16: Failed to mark first cluster as end.\n");
 				kfree(cluster_buffer);
 				return ret;
 			}
@@ -1737,56 +1720,56 @@ int32_t fat12_write_file(FAT_FILE *file, const void *buffer, uint32_t size, bool
 
 	/* 文件没有簇，分配第一个簇 */
 	if (current_cluster == 0) {
-		ret = fat12_allocate_cluster(file->fs, &current_cluster);
+		ret = fat16_allocate_cluster(file->fs, &current_cluster);
 		if (ret != FATFS_SUCCESS) {
-			debug("FAT12: Failed to allocate first cluster for file.\n");
+			debug("FAT16: Failed to allocate first cluster for file.\n");
 			kfree(cluster_buffer);
 			return ret;
 		}
 		file->entry->first_cluster_low = current_cluster;
 
 		/* 标记为簇链结束 */
-		ret = fat12_set_next_cluster(file->fs, current_cluster, 0xFFF);
+		ret = fat16_set_next_cluster(file->fs, current_cluster, 0xFFFF);
 		if (ret != FATFS_SUCCESS) {
-			debug("FAT12: Failed to mark first cluster as end.\n");
+			debug("FAT16: Failed to mark first cluster as end.\n");
 			kfree(cluster_buffer);
 			return ret;
 		}
 	}
 
-	debug("FAT12: Writing to file at position %u, cluster %u, offset %u.\n",
+	debug("FAT16: Writing to file at position %u, cluster %u, offset %u.\n",
 		pos_in_file, current_cluster, offset_in_cluster);
 
 	/* 定位到当前簇 */
 	for (uint32_t i = 0; i < cluster_num; i++) {
 		uint16_t next_cluster;
-		ret = fat12_get_next_cluster(file->fs, current_cluster, &next_cluster);
+		ret = fat16_get_next_cluster(file->fs, current_cluster, &next_cluster);
 		if (ret != FATFS_SUCCESS) {
-			debug("FAT12: Failed to traverse cluster chain.\n");
+			debug("FAT16: Failed to traverse cluster chain.\n");
 			kfree(cluster_buffer);
 			return ret;
 		}
 
-		if (next_cluster >= 0xFF8) {
+		if (next_cluster >= 0xFFF8) {
 			/* 需要分配新簇 */
-			ret = fat12_allocate_cluster(file->fs, &next_cluster);
+			ret = fat16_allocate_cluster(file->fs, &next_cluster);
 			if (ret != FATFS_SUCCESS) {
-				debug("FAT12: Failed to allocate new cluster.\n");
+				debug("FAT16: Failed to allocate new cluster.\n");
 				kfree(cluster_buffer);
 				return ret;
 			}
 
-			ret = fat12_set_next_cluster(file->fs, current_cluster, next_cluster);
+			ret = fat16_set_next_cluster(file->fs, current_cluster, next_cluster);
 			if (ret != FATFS_SUCCESS) {
-				debug("FAT12: Failed to link new cluster.\n");
+				debug("FAT16: Failed to link new cluster.\n");
 				kfree(cluster_buffer);
 				return ret;
 			}
 
 			/* 标记新簇为结束 */
-			ret = fat12_set_next_cluster(file->fs, next_cluster, 0xFFF);
+			ret = fat16_set_next_cluster(file->fs, next_cluster, 0xFFFF);
 			if (ret != FATFS_SUCCESS) {
-				debug("FAT12: Failed to mark new cluster as end.\n");
+				debug("FAT16: Failed to mark new cluster as end.\n");
 				kfree(cluster_buffer);
 				return ret;
 			}
@@ -1798,9 +1781,9 @@ int32_t fat12_write_file(FAT_FILE *file, const void *buffer, uint32_t size, bool
 	while (bytes_written_local < size) {
 		/* 需要修改簇的中间部分，先读取整个簇 */
 		if (offset_in_cluster > 0 || (offset_in_cluster + (size - bytes_written_local)) < bytes_per_cluster) {
-			ret = fat12_read_cluster(file->fs, current_cluster, cluster_buffer);
+			ret = fat16_read_cluster(file->fs, current_cluster, cluster_buffer);
 			if (ret != FATFS_SUCCESS) {
-				debug("FAT12: Failed to read cluster for partial write.\n");
+				debug("FAT16: Failed to read cluster for partial write.\n");
 				break;
 			}
 		} else {
@@ -1819,9 +1802,9 @@ int32_t fat12_write_file(FAT_FILE *file, const void *buffer, uint32_t size, bool
 		memcpy(cluster_buffer + offset_in_cluster, buf + bytes_written_local, bytes_to_write);
 
 		/* 写入簇 */
-		ret = fat12_write_cluster(file->fs, current_cluster, cluster_buffer);
+		ret = fat16_write_cluster(file->fs, current_cluster, cluster_buffer);
 		if (ret != FATFS_SUCCESS) {
-			debug("FAT12: Failed to write cluster %u.\n", current_cluster);
+			debug("FAT16: Failed to write cluster %u.\n", current_cluster);
 			break;
 		}
 
@@ -1838,25 +1821,25 @@ int32_t fat12_write_file(FAT_FILE *file, const void *buffer, uint32_t size, bool
 		/* 已写满当前簇，移动到下一个簇 */
 		if (offset_in_cluster >= bytes_per_cluster) {
 			uint16_t next_cluster;
-			ret = fat12_get_next_cluster(file->fs, current_cluster, &next_cluster);
-			if (ret != FATFS_SUCCESS || next_cluster >= 0xFF8) {
+			ret = fat16_get_next_cluster(file->fs, current_cluster, &next_cluster);
+			if (ret != FATFS_SUCCESS || next_cluster >= 0xFFF8) {
 				/* 需要分配新簇 */
-				ret = fat12_allocate_cluster(file->fs, &next_cluster);
+				ret = fat16_allocate_cluster(file->fs, &next_cluster);
 				if (ret != FATFS_SUCCESS) {
-					debug("FAT12: Failed to allocate new cluster.\n");
+					debug("FAT16: Failed to allocate new cluster.\n");
 					break;
 				}
 
-				ret = fat12_set_next_cluster(file->fs, current_cluster, next_cluster);
+				ret = fat16_set_next_cluster(file->fs, current_cluster, next_cluster);
 				if (ret != FATFS_SUCCESS) {
-					debug("FAT12: Failed to link new cluster.\n");
+					debug("FAT16: Failed to link new cluster.\n");
 					break;
 				}
 
 				/* 标记新簇为结束 */
-				ret = fat12_set_next_cluster(file->fs, next_cluster, 0xFFF);
+				ret = fat16_set_next_cluster(file->fs, next_cluster, 0xFFFF);
 				if (ret != FATFS_SUCCESS) {
-					debug("FAT12: Failed to mark new cluster as end.\n");
+					debug("FAT16: Failed to mark new cluster as end.\n");
 					break;
 				}
 			}
@@ -1872,18 +1855,18 @@ int32_t fat12_write_file(FAT_FILE *file, const void *buffer, uint32_t size, bool
 
 	/* 更新文件时间戳 */
 	if (bytes_written_local > 0) {
-		fat12_update_file_timestamp(file->entry, false, false, true);
+		fat16_update_file_timestamp(file->entry, false, false, true);
 
 		/* 更新目录项 */
 		char filename[FAT_MAX_PATH];
 		uint16_t parent_cluster;
-		ret = fat12_parse_path(file->fs, file->path, NULL, filename, &parent_cluster);
+		ret = fat16_parse_path(file->fs, file->path, NULL, filename, &parent_cluster);
 		if (ret == FATFS_SUCCESS && filename[0] != '\0') {
-			fat12_update_directory_entry(file->fs, parent_cluster, filename, file->entry);
+			fat16_update_directory_entry(file->fs, parent_cluster, filename, file->entry);
 		}
 	}
 
-	debug("FAT12: Wrote %u bytes to file, new size: %u, new position: %u.\n",
+	debug("FAT16: Wrote %u bytes to file, new size: %u, new position: %u.\n",
 		bytes_written_local, file->entry->file_size, file->current_pos);
 
 	return FATFS_SUCCESS;
@@ -1894,29 +1877,29 @@ int32_t fat12_write_file(FAT_FILE *file, const void *buffer, uint32_t size, bool
 	@param file 文件句柄
 	@return 错误码
 */
-int32_t fat12_close_file(FAT_FILE *file)
+int32_t fat16_close_file(FAT_FILE *file)
 {
 	/* 参数检查 */
 	if (file == NULL) {
-		debug("FAT12: Invalid parameters in close.\n");
+		debug("FAT16: Invalid parameters in close.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	if (!file->is_open) {
-		debug("FAT12: File is not open.\n");
+		debug("FAT16: File is not open.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	/* 更新文件访问时间 */
 	if (file->current_pos > 0) {
-		fat12_update_file_timestamp(file->entry, false, true, true);
+		fat16_update_file_timestamp(file->entry, false, true, true);
 
 		/* 更新目录项 */
 		char filename[FAT_MAX_PATH];
 		uint16_t parent_cluster;
-		int32_t ret = fat12_parse_path(file->fs, file->path, NULL, filename, &parent_cluster);
+		int32_t ret = fat16_parse_path(file->fs, file->path, NULL, filename, &parent_cluster);
 		if (ret == FATFS_SUCCESS && filename[0] != '\0') {
-			fat12_update_directory_entry(file->fs, parent_cluster, filename, file->entry);
+			fat16_update_directory_entry(file->fs, parent_cluster, filename, file->entry);
 		}
 	}
 
@@ -1932,7 +1915,7 @@ int32_t fat12_close_file(FAT_FILE *file)
 	file->current_pos = 0;
 	file->path[0] = '\0';
 
-	debug("FAT12: Closed file.\n");
+	debug("FAT16: Closed file.\n");
 
 	return FATFS_SUCCESS;
 }
@@ -1943,7 +1926,7 @@ int32_t fat12_close_file(FAT_FILE *file)
 	@param path 文件路径
 	@return 错误码
 */
-int32_t fat12_delete_file(FATFS *fs, const char *path)
+int32_t fat16_delete_file(FATFS *fs, const char *path)
 {
 	char filename[FAT_MAX_PATH];
 	uint16_t parent_cluster;
@@ -1951,33 +1934,33 @@ int32_t fat12_delete_file(FATFS *fs, const char *path)
 
 	/* 参数检查 */
 	if (fs == NULL || path == NULL) {
-		debug("FAT12: Invalid parameters in delete_file.\n");
+		debug("FAT16: Invalid parameters in delete_file.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
-	debug("FAT12: Deleting file: \'%s\'.\n", path);
+	debug("FAT16: Deleting file: \'%s\'.\n", path);
 
 	/* 解析路径 */
-	ret = fat12_parse_path(fs, path, NULL, filename, &parent_cluster);
+	ret = fat16_parse_path(fs, path, NULL, filename, &parent_cluster);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Failed to parse path: \'%s\'.\n", path);
+		debug("FAT16: Failed to parse path: \'%s\'.\n", path);
 		return ret;
 	}
 
 	/* 检查文件名是否为空（目录） */
 	if (filename[0] == '\0') {
-		debug("FAT12: Cannot delete directory.\n");
+		debug("FAT16: Cannot delete directory.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	/* 删除文件目录项 */
-	ret = fat12_delete_entry(fs, parent_cluster, filename);
+	ret = fat16_delete_entry(fs, parent_cluster, filename);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Failed to delete file entry.\n");
+		debug("FAT16: Failed to delete file entry.\n");
 		return ret;
 	}
 
-	debug("FAT12: Successfully deleted file: \'%s\'.\n", path);
+	debug("FAT16: Successfully deleted file: \'%s\'.\n", path);
 
 	return FATFS_SUCCESS;
 }
@@ -1988,7 +1971,7 @@ int32_t fat12_delete_file(FATFS *fs, const char *path)
 	@param path 目录路径
 	@return 错误码
 */
-int32_t fat12_create_directory(FATFS *fs, const char *path)
+int32_t fat16_create_directory(FATFS *fs, const char *path)
 {
 	char dirname[FAT_MAX_PATH];
 	uint16_t parent_cluster;
@@ -2000,63 +1983,63 @@ int32_t fat12_create_directory(FATFS *fs, const char *path)
 
 	/* 参数检查 */
 	if (fs == NULL || path == NULL) {
-		debug("FAT12: Invalid parameters in create_directory.\n");
+		debug("FAT16: Invalid parameters in create_directory.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
-	debug("FAT12: Creating directory: \'%s\'.\n", path);
+	debug("FAT16: Creating directory: \'%s\'.\n", path);
 
 	/* 解析路径 */
-	ret = fat12_parse_path(fs, path, NULL, dirname, &parent_cluster);
+	ret = fat16_parse_path(fs, path, NULL, dirname, &parent_cluster);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Failed to parse path: \'%s\'.\n", path);
+		debug("FAT16: Failed to parse path: \'%s\'.\n", path);
 		return ret;
 	}
 
 	/* 检查目录名是否为空 */
 	if (dirname[0] == '\0') {
-		debug("FAT12: Cannot create directory with empty name.\n");
+		debug("FAT16: Cannot create directory with empty name.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	/* 检查目录是否已存在 */
-	ret = fat12_find_entry(fs, parent_cluster, dirname, NULL, NULL);
+	ret = fat16_find_entry(fs, parent_cluster, dirname, NULL, NULL);
 	if (ret == FATFS_SUCCESS) {
-		debug("FAT12: Directory already exists: \'%s\'.\n", path);
+		debug("FAT16: Directory already exists: \'%s\'.\n", path);
 		return FATFS_ENTRY_EXISTS;
 	}
 
 	/* 分配簇 */
-	ret = fat12_allocate_cluster(fs, &start_cluster);
+	ret = fat16_allocate_cluster(fs, &start_cluster);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Failed to allocate cluster for new directory.\n");
+		debug("FAT16: Failed to allocate cluster for new directory.\n");
 		return ret;
 	}
 
 	/* 创建目录项 */
-	ret = fat12_create_entry(fs, parent_cluster, dirname, FAT_ATTR_DIRECTORY, start_cluster, 0, &new_entry);
+	ret = fat16_create_entry(fs, parent_cluster, dirname, FAT_ATTR_DIRECTORY, start_cluster, 0, &new_entry);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Failed to create directory entry.\n");
-		fat12_free_clusters(fs, start_cluster);
+		debug("FAT16: Failed to create directory entry.\n");
+		fat16_free_clusters(fs, start_cluster);
 		return ret;
 	}
 
 	/* 更新目录时间戳 */
-	fat12_update_file_timestamp(&new_entry, true, true, true);
+	fat16_update_file_timestamp(&new_entry, true, true, true);
 
 	/* 更新目录项 */
-	ret = fat12_update_directory_entry(fs, parent_cluster, dirname, &new_entry);
+	ret = fat16_update_directory_entry(fs, parent_cluster, dirname, &new_entry);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Failed to update directory entry timestamp.\n");
+		debug("FAT16: Failed to update directory entry timestamp.\n");
 	}
 
 	/* 分配簇缓冲区 */
 	bytes_per_cluster = fs->bpb.bytes_per_sector * fs->bpb.sectors_per_cluster;
 	cluster_buffer = (uint8_t *) kmalloc(bytes_per_cluster);
 	if (cluster_buffer == NULL) {
-		debug("FAT12: Failed to allocate cluster buffer.\n");
-		fat12_delete_entry(fs, parent_cluster, dirname);
-		fat12_free_clusters(fs, start_cluster);
+		debug("FAT16: Failed to allocate cluster buffer.\n");
+		fat16_delete_entry(fs, parent_cluster, dirname);
+		fat16_free_clusters(fs, start_cluster);
 		return FATFS_MEMORY_ALLOC;
 	}
 
@@ -2070,7 +2053,7 @@ int32_t fat12_create_directory(FATFS *fs, const char *path)
 	memcpy(dot_entry->extension, "   ", FAT_EXT_LEN);
 	dot_entry->attributes = FAT_ATTR_DIRECTORY;
 	dot_entry->first_cluster_low = start_cluster;
-	fat12_update_file_timestamp(dot_entry, true, true, true);
+	fat16_update_file_timestamp(dot_entry, true, true, true);
 
 	/* 创建 .. 目录项（指向父目录） */
 	FAT_DIRENTRY *dotdot_entry = (FAT_DIRENTRY *) (cluster_buffer + sizeof(FAT_DIRENTRY));
@@ -2079,22 +2062,22 @@ int32_t fat12_create_directory(FATFS *fs, const char *path)
 	memcpy(dotdot_entry->extension, "   ", FAT_EXT_LEN);
 	dotdot_entry->attributes = FAT_ATTR_DIRECTORY;
 	dotdot_entry->first_cluster_low = parent_cluster;
-	fat12_update_file_timestamp(dotdot_entry, true, true, true);
+	fat16_update_file_timestamp(dotdot_entry, true, true, true);
 
 	/* 写入目录簇 */
-	ret = fat12_write_cluster(fs, start_cluster, cluster_buffer);
+	ret = fat16_write_cluster(fs, start_cluster, cluster_buffer);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Failed to write directory cluster.\n");
+		debug("FAT16: Failed to write directory cluster.\n");
 		kfree(cluster_buffer);
-		fat12_delete_entry(fs, parent_cluster, dirname);
-		fat12_free_clusters(fs, start_cluster);
+		fat16_delete_entry(fs, parent_cluster, dirname);
+		fat16_free_clusters(fs, start_cluster);
 		return ret;
 	}
 
 	/* 释放簇缓冲区 */
 	kfree(cluster_buffer);
 
-	debug("FAT12: Created directory \'%s\' with start cluster %u.\n", path, start_cluster);
+	debug("FAT16: Created directory \'%s\' with start cluster %u.\n", path, start_cluster);
 
 	return FATFS_SUCCESS;
 }
@@ -2105,7 +2088,7 @@ int32_t fat12_create_directory(FATFS *fs, const char *path)
 	@param path 目录路径
 	@return 错误码
 */
-int32_t fat12_delete_directory(FATFS *fs, const char *path)
+int32_t fat16_delete_directory(FATFS *fs, const char *path)
 {
 	char dirname[FAT_MAX_PATH];
 	uint16_t parent_cluster;
@@ -2116,59 +2099,59 @@ int32_t fat12_delete_directory(FATFS *fs, const char *path)
 
 	/* 参数检查 */
 	if (fs == NULL || path == NULL) {
-		debug("FAT12: Invalid parameters in delete_directory.\n");
+		debug("FAT16: Invalid parameters in delete_directory.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
-	debug("FAT12: Deleting directory: \'%s\'.\n", path);
+	debug("FAT16: Deleting directory: \'%s\'.\n", path);
 
 	/* 解析路径 */
-	ret = fat12_parse_path(fs, path, NULL, dirname, &parent_cluster);
+	ret = fat16_parse_path(fs, path, NULL, dirname, &parent_cluster);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Failed to parse path: \'%s\'.\n", path);
+		debug("FAT16: Failed to parse path: \'%s\'.\n", path);
 		return ret;
 	}
 
 	/* 检查目录名是否为空 */
 	if (dirname[0] == '\0') {
-		debug("FAT12: Cannot delete root directory.\n");
+		debug("FAT16: Cannot delete root directory.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	/* 查找目录 */
-	ret = fat12_find_entry(fs, parent_cluster, dirname, &dir_entry, NULL);
+	ret = fat16_find_entry(fs, parent_cluster, dirname, &dir_entry, NULL);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Directory not found: \'%s\'.\n", path);
+		debug("FAT16: Directory not found: \'%s\'.\n", path);
 		return FATFS_ENTRY_NOT_FOUND;
 	}
 
 	/* 检查是否为目录 */
 	if (!(dir_entry.attributes & FAT_ATTR_DIRECTORY)) {
-		debug("FAT12: Path is not a directory: \'%s\'.\n", path);
+		debug("FAT16: Path is not a directory: \'%s\'.\n", path);
 		return FATFS_INVALID_PARAM;
 	}
 
 	/* 检查目录是否为空 */
-	fat12_read_directory(fs, dir_entry.first_cluster_low, entries, 16, &count);
+	fat16_read_directory(fs, dir_entry.first_cluster_low, entries, 16, &count);
 	if (count < 0) {
-		debug("FAT12: Failed to read directory contents.\n");
+		debug("FAT16: Failed to read directory contents.\n");
 		return FATFS_READ_FAILED;
 	}
 
 	/* 目录应至少包含 . 和 .. 两个条目 */
 	if (count > 2) {
-		debug("FAT12: Directory is not empty: \'%s\' (%d entries).\n", path, count);
+		debug("FAT16: Directory is not empty: \'%s\' (%d entries).\n", path, count);
 		return FATFS_DIR_NOT_EMPTY;
 	}
 
 	/* 删除目录项 */
-	ret = fat12_delete_entry(fs, parent_cluster, dirname);
+	ret = fat16_delete_entry(fs, parent_cluster, dirname);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Failed to delete directory entry.\n");
+		debug("FAT16: Failed to delete directory entry.\n");
 		return ret;
 	}
 
-	debug("FAT12: Successfully deleted directory: \'%s\'.\n", path);
+	debug("FAT16: Successfully deleted directory: \'%s\'.\n", path);
 
 	return FATFS_SUCCESS;
 }
@@ -2182,7 +2165,7 @@ int32_t fat12_delete_directory(FATFS *fs, const char *path)
 	@param entries_read 返回实际读取的目录项数
 	@return 错误码
 */
-int32_t fat12_get_directory_entries(FATFS *fs, const char *path, FAT_DIRENTRY *entries, int32_t max_entries, int32_t *entries_read)
+int32_t fat16_get_directory_entries(FATFS *fs, const char *path, FAT_DIRENTRY *entries, int32_t max_entries, int32_t *entries_read)
 {
 	char dirname[FAT_MAX_PATH];
 	uint16_t parent_cluster;
@@ -2192,22 +2175,22 @@ int32_t fat12_get_directory_entries(FATFS *fs, const char *path, FAT_DIRENTRY *e
 
 	/* 参数检查 */
 	if (fs == NULL || path == NULL || entries == NULL || max_entries <= 0 || entries_read == NULL) {
-		debug("FAT12: Invalid parameters in get_directory_entries.\n");
+		debug("FAT16: Invalid parameters in get_directory_entries.\n");
 		return FATFS_INVALID_PARAM;
 	}
 
 	*entries_read = 0;
 
-	debug("FAT12: Getting directory entries for: \'%s\'.\n", path);
+	debug("FAT16: Getting directory entries for: \'%s\'.\n", path);
 
 	/* 解析路径 */
-	ret = fat12_parse_path(fs, path, NULL, dirname, &parent_cluster);
+	ret = fat16_parse_path(fs, path, NULL, dirname, &parent_cluster);
 	if (ret != FATFS_SUCCESS) {
 		/* 解析失败，尝试将路径作为根目录处理 */
 		if (strlen(path) == 0 || (path[0] == '/' && strlen(path) == 1)) {
 			/* 根目录 */
-			debug("FAT12: Reading root directory.\n");
-			ret = fat12_read_directory(fs, 0, entries, max_entries, &local_entries_read);
+			debug("FAT16: Reading root directory.\n");
+			ret = fat16_read_directory(fs, 0, entries, max_entries, &local_entries_read);
 			*entries_read = local_entries_read;
 			return ret;
 		}
@@ -2219,44 +2202,44 @@ int32_t fat12_get_directory_entries(FATFS *fs, const char *path, FAT_DIRENTRY *e
 	} else {
 		/* 解析成功但文件名为空（目录） */
 		if (dirname[0] == '\0') {
-			debug("FAT12: Reading root directory.\n");
-			ret = fat12_read_directory(fs, 0, entries, max_entries, &local_entries_read);
+			debug("FAT16: Reading root directory.\n");
+			ret = fat16_read_directory(fs, 0, entries, max_entries, &local_entries_read);
 			*entries_read = local_entries_read;
 			return ret;
 		}
 	}
 
 	/* 查找目录 */
-	ret = fat12_find_entry(fs, parent_cluster, dirname, &dir_entry, NULL);
+	ret = fat16_find_entry(fs, parent_cluster, dirname, &dir_entry, NULL);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Directory not found: \'%s\'.\n", path);
+		debug("FAT16: Directory not found: \'%s\'.\n", path);
 		return FATFS_ENTRY_NOT_FOUND;
 	}
 
 	/* 检查是否为目录 */
 	if (!(dir_entry.attributes & FAT_ATTR_DIRECTORY)) {
-		debug("FAT12: Path is not a directory: \'%s\'.\n", path);
+		debug("FAT16: Path is not a directory: \'%s\'.\n", path);
 		return FATFS_INVALID_PARAM;
 	}
 
 	/* 更新目录访问时间 */
-	fat12_update_file_timestamp(&dir_entry, false, true, false);
+	fat16_update_file_timestamp(&dir_entry, false, true, false);
 
 	/* 更新目录项 */
-	ret = fat12_update_directory_entry(fs, parent_cluster, dirname, &dir_entry);
+	ret = fat16_update_directory_entry(fs, parent_cluster, dirname, &dir_entry);
 	if (ret != FATFS_SUCCESS)
-		debug("FAT12: Failed to update directory access time.\n");
+		debug("FAT16: Failed to update directory access time.\n");
 
 	/* 读取目录内容 */
-	ret = fat12_read_directory(fs, dir_entry.first_cluster_low, entries, max_entries, &local_entries_read);
+	ret = fat16_read_directory(fs, dir_entry.first_cluster_low, entries, max_entries, &local_entries_read);
 	if (ret != FATFS_SUCCESS) {
-		debug("FAT12: Failed to read directory contents.\n");
+		debug("FAT16: Failed to read directory contents.\n");
 		return ret;
 	}
 
 	*entries_read = local_entries_read;
 
-	debug("FAT12: Read %d entries from directory \'%s\'.\n", local_entries_read, path);
+	debug("FAT16: Read %d entries from directory \'%s\'.\n", local_entries_read, path);
 
 	return FATFS_SUCCESS;
 }

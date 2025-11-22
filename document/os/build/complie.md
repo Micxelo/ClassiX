@@ -49,6 +49,7 @@ make clean
 |`-Wextra`|启用额外警告|
 |`-Wno-unused-parameter`|忽略未使用的函数参数警告|
 |`-Wno-unused-function`|忽略未使用的静态函数警告|
+|`-Werror=parentheses`|将括号相关的警告视为错误|
 |`-ffreestanding`|编译独立环境程序|
 |`-fleading-underscore`|在符号名前自动添加 `_` 前缀|
 |`-fno-pic`|禁用位置无关代码|
