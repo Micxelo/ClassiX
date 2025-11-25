@@ -11,9 +11,16 @@
 
 #include <ClassiX/typedef.h>
 
-#define MAJOR
-#define MINOR
-#define PATCH
+typedef uint32_t version_t;
+
+/* 版本数值宏 */
+#define VERSION(major, minor, patch) \
+	((((major) & 0xFF) << 16) | (((minor) & 0xFF) << 8) | ((patch) & 0xFF))
+
+/* 版本组件宏 */
+#define VERSION_MAJOR(ver)					(((ver) >> 16) & 0xFF)	/* 主版本 */
+#define VERSION_MINOR(ver)					(((ver) >> 8) & 0xFF)	/* 次版本 */
+#define VERSION_PATCH(ver)					((ver) & 0xFF)			/* 修订版本 */
 
 /* 声明资源文件 */
 #define DECLARE_ASSET(type, name) \

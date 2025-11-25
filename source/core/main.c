@@ -50,6 +50,8 @@ extern uintptr_t kernel_end_phys;						/* 内核结束物理地址 */
 extern uintptr_t bss_start_phys;						/* BSS 段起始地址 */
 extern uintptr_t bss_end_phys;							/* BSS 段结束地址 */
 
+const version_t os_version = VERSION(0, 0, 1);
+
 BITMAP_FONT font_terminus_12n;
 BITMAP_FONT font_terminus_16n;
 BITMAP_FONT font_terminus_16b;
@@ -232,6 +234,9 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 			boot_device->id, boot_device->sector_size, boot_device->total_sectors);
 	else
 		debug("Boot device not found.\n");
+
+	FATFS rootfs;
+	fatfs_init(&rootfs, boot_device, FAT_TYPE_NONE);
 
 	for (;;) {
 		cli();

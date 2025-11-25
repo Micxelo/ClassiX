@@ -50,15 +50,15 @@ static char *strtok_r(char *str, const char *delim, char **saveptr)
 }
 
 /* 从设备读取一个扇区 */
-static inline int32_t read_sector(const FATFS *fs, uint32_t sector, uint8_t *buffer)
+static inline int32_t read_sector(const FATFS *fs, uint32_t sector, uint32_t count, uint8_t *buffer)
 {
-	return fs->device->read(fs->device, sector + fs->fs_sector, 1, buffer);
+	return fs->device->read(fs->device, sector + fs->fs_sector, count, buffer);
 }
 
 /* 向设备写入一个扇区 */
-static inline int32_t write_sector(const FATFS *fs, uint32_t sector, const uint8_t *buffer)
+static inline int32_t write_sector(const FATFS *fs, uint32_t sector, uint32_t count, const uint8_t *buffer)
 {
-	return fs->device->write(fs->device, sector + fs->fs_sector, 1, buffer);
+	return fs->device->write(fs->device, sector + fs->fs_sector, count, buffer);
 }
 
 /* 计算的总簇数 */
@@ -275,7 +275,7 @@ int32_t fat16_init(FATFS *fs, BLKDEV *device)
 	fs->fat_size = fat_size;
 
 	/* 读取第一个 FAT 表 */
-	if (read_sector(fs, fs->bpb.reserved_sectors, fs->fat) != BD_SUCCESS) {
+	if (read_sector(fs, fs->bpb.reserved_sectors, fs->bpb.sectors_per_fat, fs->fat) != BD_SUCCESS) {
 		debug("FAT16: Failed to read FAT table.\n");
 		kfree(fs->fat);
 		fs->fat = NULL;
@@ -309,7 +309,7 @@ static int32_t fat16_write_fat(FATFS *fs)
 			debug("FAT16: Writing back FAT table %u at sector %u.\n", i, current_fat_sector);
 
 			/* 写入当前 FAT 表 */
-			if (write_sector(fs, current_fat_sector, fs->fat) != BD_SUCCESS) {
+			if (write_sector(fs, current_fat_sector, fs->bpb.sectors_per_fat, fs->fat) != BD_SUCCESS) {
 				debug("FAT16: Failed to write FAT table %u.\n", i);
 				ret = FATFS_WRITE_FAILED;
 				/* 继续尝试写回其他 FAT 表 */
@@ -397,7 +397,7 @@ int32_t fat16_get_next_cluster(FATFS *fs, uint16_t cluster, uint16_t *next_clust
 	}
 
 	/* 读取 16 位 FAT 项 */
-	value = *((uint16_t *)(fs->fat + fat_offset));
+	value = *((uint16_t *) (fs->fat + fat_offset));
 
 	/* FAT16 使用完整的 16 位，但高 4 位保留 */
 	value &= 0xFFFF;
@@ -598,7 +598,7 @@ static int32_t fat16_read_cluster(FATFS *fs, uint16_t cluster, uint8_t *buffer)
 
 	/* 读取簇的所有扇区 */
 	for (i = 0; i < sectors_per_cluster; i++) {
-		ret = read_sector(fs, sector + i, buffer + i * bytes_per_sector);
+		ret = read_sector(fs, sector + i, 1, buffer + i * bytes_per_sector);
 		if (ret != BD_SUCCESS) {
 			debug("FAT16: Failed to read sector %u for cluster %u.\n", sector + i, cluster);
 			return FATFS_READ_FAILED;
@@ -646,7 +646,7 @@ static int32_t fat16_write_cluster(FATFS *fs, uint16_t cluster, const uint8_t *b
 
 	/* 写入簇的所有扇区 */
 	for (i = 0; i < sectors_per_cluster; i++) {
-		ret = write_sector(fs, sector + i, buffer + i * bytes_per_sector);
+		ret = write_sector(fs, sector + i, 1, buffer + i * bytes_per_sector);
 		if (ret != BD_SUCCESS) {
 			debug("FAT16: Failed to write sector %u for cluster %u.\n", sector + i, cluster);
 			return FATFS_WRITE_FAILED;
@@ -716,7 +716,7 @@ static int32_t fat16_read_directory_entry(FATFS *fs, uint16_t dir_cluster, int32
 	}
 
 	/* 读取扇区并获取目录项 */
-	ret = read_sector(fs, sector_num, buffer);
+	ret = read_sector(fs, sector_num, 1, buffer);
 	if (ret != BD_SUCCESS) {
 		debug("FAT16: Failed to read sector %d for directory entry.\n", sector_num);
 		return FATFS_READ_FAILED;
@@ -808,7 +808,7 @@ static int32_t fat16_write_directory_entry(FATFS *fs, uint16_t dir_cluster, int3
 	}
 
 	/* 更新目录项 */
-	ret = read_sector(fs, sector_num, buffer);
+	ret = read_sector(fs, sector_num, 1, buffer);
 	if (ret != BD_SUCCESS) {
 		debug("FAT16: Failed to read sector %d for directory entry update.\n", sector_num);
 		return FATFS_READ_FAILED;
@@ -816,7 +816,7 @@ static int32_t fat16_write_directory_entry(FATFS *fs, uint16_t dir_cluster, int3
 
 	memcpy(&buffer[sector_offset * sizeof(FAT_DIRENTRY)], entry, sizeof(FAT_DIRENTRY));
 
-	ret = write_sector(fs, sector_num, buffer);
+	ret = write_sector(fs, sector_num, 1, buffer);
 	if (ret != BD_SUCCESS) {
 		debug("FAT16: Failed to write sector %d with updated directory entry.\n", sector_num);
 		return FATFS_WRITE_FAILED;

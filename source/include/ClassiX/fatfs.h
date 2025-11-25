@@ -127,7 +127,7 @@ typedef struct {
 /* 文件句柄 */
 typedef struct {
 	FATFS *fs;								/* 文件系统上下文 */
-	FAT_DIRENTRY *entry;						/* 文件目录项 */
+	FAT_DIRENTRY *entry;					/* 文件目录项 */
 	char path[FAT_MAX_PATH];				/* 文件路径 */
 	bool is_open;							/* 是否打开 */
 	uint32_t current_pos;					/* 当前读写位置 */

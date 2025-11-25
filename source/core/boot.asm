@@ -22,9 +22,10 @@ section	.classix
 align 4
 classix:
 	; ClassiX Header
+	extern _os_version
 	extern kernel_size
 
-	.magic:			dd CLASSIX					; 签名
+	.magic:			dd _os_version				; 签名
 	.version:		dd VERSION					; 版本信息
 	.entry:			dd start					; 入口点
 	.size			dd kernel_size				; 内核大小
