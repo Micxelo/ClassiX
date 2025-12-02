@@ -13,6 +13,13 @@
 #define ROOT_DIR_ENTRY_COUNT				224		/* 根目录项数 */
 #define FAT_ENTRY_SIZE						3		/* 单个 FAT 项占用 1.5 字节 */
 
+/*
+	@brief 线程安全的字符串分割函数。
+	@param str 待分割的字符串
+	@param delim 分隔符字符串
+	@param saveptr 保存上下文的指针
+	@return 分割出的子字符串，若无更多子字符串则返回 NULL
+*/
 static char *strtok_r(char *str, const char *delim, char **saveptr)
 {
 	char *token;

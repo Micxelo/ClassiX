@@ -22,6 +22,8 @@ typedef uint32_t version_t;
 #define VERSION_MINOR(ver)					(((ver) >> 8) & 0xFF)	/* 次版本 */
 #define VERSION_PATCH(ver)					((ver) & 0xFF)			/* 修订版本 */
 
+extern const version_t os_version;
+
 /* 声明资源文件 */
 #define DECLARE_ASSET(type, name) \
 	extern const uint8_t binary_assets_##type##_##name##_start[];	\

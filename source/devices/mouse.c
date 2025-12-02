@@ -33,9 +33,9 @@ void init_mouse(FIFO *fifo, int32_t data0)
 	extern void asm_isr_mouse(void);
 	idt_set_gate(INT_NUM_MOUSE, (uint32_t) asm_isr_mouse, 0x08, AR_INTGATE32);
 
-	wait_kbc_sendready();
+	kbc_wait_ready();
 	out8(PORT_MOUSE_COMMAND, KEYCMD_SENDTO_MOUSE);
-	wait_kbc_sendready();
+	kbc_wait_ready();
 	out8(PORT_MOUSE_DATA, MOUSECMD_ENABLE);
 
 	debug("MOUSE: Mouse initialized.\n");

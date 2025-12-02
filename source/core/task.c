@@ -22,6 +22,7 @@ static struct TASK_MANAGER {
 	TASK tasks0[MAX_TASKS];
 } *task_manager;
 
+/* 空闲任务入口点 */
 static void task_idle_entry(void)
 {
 	for(;;)
@@ -177,4 +178,13 @@ void task_sleep(TASK *task)
 		if (ts)
 			farjmp(0, task_manager->tasks[task_manager->now]->selector);
 	}
+}
+
+/*
+	@brief 获取当前任务。
+	@return 指向当前任务的指针
+*/
+TASK *task_get_current(void)
+{
+	return task_manager->tasks[task_manager->now];
 }

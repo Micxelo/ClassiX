@@ -9,10 +9,12 @@
 #include <ClassiX/timer.h>
 #include <ClassiX/typedef.h>
 
-static TIMER *timer_head = NULL;		/* 定时器链表的头指针 */
+static TIMER *timer_head = NULL;			/* 定时器链表的头指针 */
 static volatile int32_t timer_lock = 0;		/* 互斥锁 */
 
-/* 获取锁 */
+/*
+	@brief 获取定时器锁。
+*/
 static void timer_lock_acquire(void)
 {
 	uint32_t eflags = load_eflags();
@@ -22,7 +24,9 @@ static void timer_lock_acquire(void)
 	store_eflags(eflags);
 }
 
-/* 释放锁 */
+/*
+	@brief 释放定时器锁。
+*/
 static void timer_lock_release(void)
 {
 	uint32_t eflags = load_eflags();

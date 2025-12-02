@@ -21,7 +21,7 @@ SECTIONS {
 
 	/* ClassiX 头 */
 	.classix : ALIGN(1K) {
-		*(classix)
+		*(.classix)
 	} > RAM
 
 	/* Multiboot 头 */

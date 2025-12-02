@@ -152,6 +152,8 @@ enum {
 	FATFS_DIR_NOT_EMPTY						/* 目录不为空 */
 };
 
+extern FATFS * const g_fs;
+
 void fatfs_convert_to_83(const char *filename, char *short_name, char *extension);
 void fatfs_convert_from_83(const char *short_name, const char *extension, char *filename);
 int32_t fatfs_init(FATFS *fs, BLKDEV *device, FAT_TYPE type);

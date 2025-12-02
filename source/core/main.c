@@ -28,6 +28,7 @@
 #include <ClassiX/typedef.h>
 #include <ClassiX/widgets.h>
 
+#include <ctype.h>
 #include <string.h>
 
 #define MODIFIER_LCONTROL					(0b00000001)
@@ -50,7 +51,7 @@ extern uintptr_t kernel_end_phys;						/* 内核结束物理地址 */
 extern uintptr_t bss_start_phys;						/* BSS 段起始地址 */
 extern uintptr_t bss_end_phys;							/* BSS 段结束地址 */
 
-const version_t os_version = VERSION(0, 0, 1);
+const version_t __attribute__((section(".classix"))) os_version = VERSION(0, 0, 1);
 
 BITMAP_FONT font_terminus_12n;
 BITMAP_FONT font_terminus_16n;
@@ -119,6 +120,7 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	/* RMeta RAlt RShift RCtrl LMeta LAlt LShift LCtrl */
 	uint8_t key_modifiers = 0;
 	/* 扩展键盘扫描码的识别阶段 */
+	/* 0 - 无； 1 - 已按下； 2 - 等待释放 */
 	uint8_t expanded_key_phase = 0;
 
 	MOUSE_DATA mouse_data = { }; 			/* 鼠标数据结构 */
@@ -199,6 +201,9 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	out8(PIC0_IMR,  0b11111000); /* 允许 IRQ0、IRQ1 和 IRQ2 */
 	out8(PIC1_IMR,  0b11101111); /* 允许 IRQ12 */
 
+	/* 开放中断 */
+	sti();
+
 	/* 初始化内建字体 */
 	font_terminus_12n = psf_load(ASSET_DATA(fonts, terminus12n_psf), ASSET_SIZE(fonts, terminus12n_psf));
 	font_terminus_16n = psf_load(ASSET_DATA(fonts, terminus16n_psf), ASSET_SIZE(fonts, terminus16n_psf));
@@ -219,8 +224,6 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	layer_move(layer_cursor, cursor_x, cursor_y);
 	layer_set_z(layer_cursor, 1);
 
-	sti();
-
 	/* 扫描 PCI 设备 */
 	pci_scan_devices();
 
@@ -235,10 +238,25 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	else
 		debug("Boot device not found.\n");
 
-	FATFS rootfs;
-	fatfs_init(&rootfs, boot_device, FAT_TYPE_NONE);
+	/* 初始化根文件系统 */
+	fatfs_init(g_fs, boot_device, FAT_TYPE_NONE);
+
+	/* 初始化键盘指示灯 */
+	uint8_t keychar;						/* 键盘数据 */
+	uint8_t key_leds = 0;					/* LED 状态 */
+	uint32_t key_cmd_wait = 0xffffffff;		/* 键盘命令等待标志 */
+	FIFO key_cmd_queue;						/* 键盘命令 FIFO */
+	uint32_t key_cmd_buf[32] = { };			/* 键盘命令缓冲区 */
+	fifo_init(&key_cmd_queue, 32, key_cmd_buf, NULL);
+	fifo_push(&key_cmd_queue, KEYCMD_LED);
+	fifo_push(&key_cmd_queue, 0); /* 初始状态全部关闭 */
 
 	for (;;) {
+		if (fifo_status(&key_cmd_queue) > 0 && key_cmd_wait == 0xffffffff) {
+			/* 发送键盘数据 */
+			key_cmd_wait = fifo_pop(&key_cmd_queue);
+			kbc_send_data((uint8_t) key_cmd_wait);
+		}
 		cli();
 		if (fifo_status(&kmsg_queue) == 0) {
 			sti();
@@ -258,6 +276,129 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 					/* 扩展键前缀 */
 					expanded_key_phase = 1;
 				}
+
+				/* 将键码转换为字符数据 */
+				if (_data < KEYBOARD_DATA0 + 0x80)
+					/* 普通键 */
+					keychar = (key_modifiers & (MODIFIER_SHIFT | MODIFIER_RSHIFT)) ?
+						keymap_us_shift[_data - KEYBOARD_DATA0] : keymap_us_default[_data - KEYBOARD_DATA0];
+				else
+					keychar = 0;
+
+				/* 字母 */
+				if (isupper(keychar))
+					if (((key_modifiers & (MODIFIER_SHIFT | MODIFIER_RSHIFT)) && (key_leds & KEYBOARD_LED_CAPS_LOCK)) ||
+						((!(key_modifiers & (MODIFIER_SHIFT | MODIFIER_RSHIFT))) && (!(key_leds & KEYBOARD_LED_CAPS_LOCK))))
+						keychar += ('a' - 'A');
+
+				/* LControl */
+				if (_data == KEYBOARD_DATA0 + 0x1d)
+					key_modifiers |= MODIFIER_LCONTROL;
+				if (_data == KEYBOARD_DATA0 + 0x9d)
+					key_modifiers &= ~MODIFIER_LCONTROL;
+
+				/* RControl */
+				if (_data == KEYBOARD_DATA0 + 0x9d && expanded_key_phase == 1) {
+					key_modifiers |= MODIFIER_RCONTROL;
+					expanded_key_phase = 2;
+				}
+				if (_data == KEYBOARD_DATA0 + 0x9d && expanded_key_phase == 2) {
+					key_modifiers &= ~MODIFIER_RCONTROL;
+					expanded_key_phase = 0;
+				}
+					
+				/* RShift */
+				if (_data == KEYBOARD_DATA0 + 0x36)
+					key_modifiers |= MODIFIER_RSHIFT;
+				if (_data == KEYBOARD_DATA0 + 0xb6)
+					key_modifiers &= ~MODIFIER_RSHIFT;
+
+				/* LShift */
+				if (_data == KEYBOARD_DATA0 + 0x2a)
+					key_modifiers |= MODIFIER_LSHIFT;
+				if (_data == KEYBOARD_DATA0 + 0xaa)
+					key_modifiers &= ~MODIFIER_LSHIFT;
+					
+				/* RShift */
+				if (_data == KEYBOARD_DATA0 + 0x36)
+					key_modifiers |= MODIFIER_RSHIFT;
+				if (_data == KEYBOARD_DATA0 + 0xb6)
+					key_modifiers &= ~MODIFIER_RSHIFT;
+
+				/* LAlt */
+				if (_data == KEYBOARD_DATA0 + 0x38)
+					key_modifiers |= MODIFIER_LALT;
+				if (_data == KEYBOARD_DATA0 + 0xb8)
+					key_modifiers &= ~MODIFIER_LALT;
+
+				/* RAlt */
+				if (_data == KEYBOARD_DATA0 + 0xb8 && expanded_key_phase == 1) {
+					key_modifiers |= MODIFIER_RALT;
+					expanded_key_phase = 2;
+				}
+				if (_data == KEYBOARD_DATA0 + 0xb8 && expanded_key_phase == 2) {
+					key_modifiers &= ~MODIFIER_RALT;
+					expanded_key_phase = 0;
+				}
+
+				/* LMeta */
+				if (_data == KEYBOARD_DATA0 + 0x5b && expanded_key_phase == 1) {
+					key_modifiers |= MODIFIER_LMETA;
+					expanded_key_phase = 2;
+				}
+				if (_data == KEYBOARD_DATA0 + 0xdb && expanded_key_phase == 2) {
+					key_modifiers &= ~MODIFIER_LMETA;
+					expanded_key_phase = 0;
+				}
+
+				/* RMeta */
+				if (_data == KEYBOARD_DATA0 + 0x5c && expanded_key_phase == 1) {
+					key_modifiers |= MODIFIER_RMETA;
+					expanded_key_phase = 2;
+				}
+				if (_data == KEYBOARD_DATA0 + 0xdc && expanded_key_phase == 2) {
+					key_modifiers &= ~MODIFIER_RMETA;
+					expanded_key_phase = 0;
+				}
+				
+				/* Menu */
+				if (_data == KEYBOARD_DATA0 + 0x5d && expanded_key_phase == 1) {
+					expanded_key_phase = 2;
+				}
+				if (_data == KEYBOARD_DATA0 + 0xdd && expanded_key_phase == 2) {
+					expanded_key_phase = 0;
+				}
+
+				/* Caps Lock */
+				if (_data == KEYBOARD_DATA0 + 0x3a) {
+					key_leds ^= KEYBOARD_LED_CAPS_LOCK;
+					fifo_push(&key_cmd_queue, KEYCMD_LED);
+					fifo_push(&key_cmd_queue, key_leds);
+				}
+
+				/* Num Lock */
+				if (_data == KEYBOARD_DATA0 + 0x45) {
+					key_leds ^= KEYBOARD_LED_NUM_LOCK;
+					fifo_push(&key_cmd_queue, KEYCMD_LED);
+					fifo_push(&key_cmd_queue, key_leds);
+				}
+
+				/* Scroll Lock */
+				if (_data == KEYBOARD_DATA0 + 0x46) {
+					key_leds ^= KEYBOARD_LED_SCROLL_LOCK;
+					fifo_push(&key_cmd_queue, KEYCMD_LED);
+					fifo_push(&key_cmd_queue, key_leds);
+				}
+
+				/* 键盘成功接收数据 */
+				if (_data == KEYBOARD_DATA0 + 0xfa)
+					key_cmd_wait = 0xffffffff;
+				
+				/* 键盘未能接收数据 */
+				if (_data == KEYBOARD_DATA0 + 0xfe)
+					/* 重新发送上次的数据 */
+					if (key_cmd_wait != 0xffffffff)
+						kbc_send_data((uint8_t) key_cmd_wait);
 			} else {
 				/* 鼠标数据 */
 				if (mouse_decoder(&mouse_data, _data - MOUSE_DATA0)) {

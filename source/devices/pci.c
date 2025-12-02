@@ -47,13 +47,27 @@
 
 PCI_DEVICE_LIST pci_devices;
 
-/* 生成 PCI 配置地址 */
+/*
+	@brief 生成 PCI 配置空间地址。
+	@param bus 总线号
+	@param device 设备号
+	@param function 功能号
+	@param offset 寄存器偏移量
+	@return 配置空间地址
+*/
 static inline uint32_t pci_make_address(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset)
 {
 	return (1 << 31) | (bus << 16) | (device << 11) | (function << 8) | (offset & 0xFC);
 }
 
-/* 按双字读取 PCI 配置空间 */
+/*
+	@brief 按双字读取 PCI 配置空间。
+	@param bus 总线号
+	@param device 设备号
+	@param function 功能号
+	@param offset 寄存器偏移量
+	@return 读取的双字值
+*/
 static uint32_t pci_read_config32(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset)
 {
 	uint32_t address = pci_make_address(bus, device, function, offset);
@@ -61,7 +75,14 @@ static uint32_t pci_read_config32(uint8_t bus, uint8_t device, uint8_t function,
 	return in32(PCI_CONFIG_DATA);
 }
 
-/* 按双字写入 PCI 配置空间 */
+/*
+	@brief 按双字写入 PCI 配置空间。
+	@param bus 总线号
+	@param device 设备号
+	@param function 功能号
+	@param offset 寄存器偏移量
+	@param value 写入的双字值
+*/
 static void pci_write_config32(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset, uint32_t value)
 {
 	uint32_t address = pci_make_address(bus, device, function, offset);
@@ -69,14 +90,28 @@ static void pci_write_config32(uint8_t bus, uint8_t device, uint8_t function, ui
 	out32(PCI_CONFIG_DATA, value);
 }
 
-/* 按字读取 PCI 配置空间 */
+/*
+	@brief 按字读取 PCI 配置空间。
+	@param bus 总线号
+	@param device 设备号
+	@param function 功能号
+	@param offset 寄存器偏移量
+	@return 读取的字值
+*/
 static uint16_t pci_read_config16(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset)
 {
 	uint32_t value = pci_read_config32(bus, device, function, offset);
 	return (uint16_t) (value >> ((offset & 2) * 8));
 }
 
-/* 按字写入 PCI 配置空间 */
+/*
+	@brief 按字写入 PCI 配置空间。
+	@param bus 总线号
+	@param device 设备号
+	@param function 功能号
+	@param offset 寄存器偏移量
+	@param value 写入的字值
+*/
 static void pci_write_config16(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset, uint16_t value)
 {
 	uint32_t current = pci_read_config32(bus, device, function, offset & ~3);
@@ -86,14 +121,28 @@ static void pci_write_config16(uint8_t bus, uint8_t device, uint8_t function, ui
 	pci_write_config32(bus, device, function, offset & ~3, new_value);
 }
 
-/* 按字节读取 PCI 配置空间 */
+/*
+	@brief 按字节读取 PCI 配置空间。
+	@param bus 总线号
+	@param device 设备号
+	@param function 功能号
+	@param offset 寄存器偏移量
+	@return 读取的字节值
+*/
 static uint8_t pci_read_config8(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset)
 {
 	uint32_t value = pci_read_config32(bus, device, function, offset);
 	return (uint8_t) (value >> ((offset & 3) * 8));
 }
 
-/* 按字节写入 PCI 配置空间 */
+/*
+	@brief 按字节写入 PCI 配置空间。
+	@param bus 总线号
+	@param device 设备号
+	@param function 功能号
+	@param offset 寄存器偏移量
+	@param value 写入的字节值
+*/
 static void pci_write_config8(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset, uint8_t value)
 {
 	uint32_t current = pci_read_config32(bus, device, function, offset & ~3);
@@ -103,13 +152,24 @@ static void pci_write_config8(uint8_t bus, uint8_t device, uint8_t function, uin
 	pci_write_config32(bus, device, function, offset & ~3, new_value);
 }
 
-/* 获取 PCI 设备头类型 */
+/*
+	@brief 获取 PCI 头类型。
+	@param bus 总线号
+	@param device 设备号
+	@param function 功能号
+	@return 头类型值
+*/
 static uint8_t pci_get_header_type(uint8_t bus, uint8_t device, uint8_t function)
 {
 	return pci_read_config8(bus, device, function, PCI_HEADER_TYPE);
 }
 
-/* 获取 PCI 设备类型 */
+/*
+	@brief 根据类代码和子类代码获取 PCI 设备类型。
+	@param class_code 设备类代码
+	@param subclass 设备子类代码
+	@return PCI 设备类型枚举值
+*/
 static PCI_DEVICE_TYPE pci_get_device_type(uint8_t class_code, uint8_t subclass)
 {
 	switch (class_code) {
@@ -163,14 +223,27 @@ static PCI_DEVICE_TYPE pci_get_device_type(uint8_t class_code, uint8_t subclass)
 	}
 }
 
-/* 检查设备是否存在 */
+/*
+	@brief 检查指定 PCI 设备是否存在。
+	@param bus 总线号
+	@param device 设备号
+	@param function 功能号
+	@return 存在返回 true，否则返回 false
+*/
 static bool pci_device_exists(uint8_t bus, uint8_t device, uint8_t function)
 {
 	uint16_t vendor_id = pci_read_config16(bus, device, function, PCI_VENDOR_ID);
 	return vendor_id != 0xFFFF;
 }
 
-/* 获取设备类代码和子类代码 */
+/*
+	@brief 获取指定 PCI 设备的类代码和子类代码。
+	@param bus PCI 总线号
+	@param device PCI 设备号
+	@param function PCI 功能号
+	@param class_code 返回的类代码指针
+	@param subclass 返回的子类代码指针
+*/
 static void pci_get_class_codes(uint8_t bus, uint8_t device, uint8_t function, uint8_t *class_code, uint8_t *subclass)
 {
 	uint32_t reg = pci_read_config32(bus, device, function, PCI_CLASS_CODE);

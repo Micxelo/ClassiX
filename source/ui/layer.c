@@ -85,6 +85,14 @@ LAYER *layer_alloc(uint16_t width, uint16_t height, bool allow_inv)
 	return NULL;
 }
 
+/*
+	@brief 刷新图层映射。
+	@param vx0 刷新区域左上角 X 坐标
+	@param vy0 刷新区域左上角 Y 坐标
+	@param vx1 刷新区域右下角 X 坐标
+	@param vy1 刷新区域右下角 Y 坐标
+	@param z0 起始 Z 顺序
+*/
 static void layer_refreshmap(int32_t vx0, int32_t vy0, int32_t vx1, int32_t vy1, int32_t z0)
 {
 	int32_t bx0, by0, bx1, by1;
@@ -134,6 +142,15 @@ static void layer_refreshmap(int32_t vx0, int32_t vy0, int32_t vx1, int32_t vy1,
 	}
 }
 
+/*
+	@brief 刷新图层显示内容。
+	@param vx0 刷新区域左上角 X 坐标
+	@param vy0 刷新区域左上角 Y 坐标
+	@param vx1 刷新区域右下角 X 坐标
+	@param vy1 刷新区域右下角 Y 坐标
+	@param z0 起始 Z 顺序
+	@param z1 结束 Z 顺序
+*/
 static void layer_refreshsub(int32_t vx0, int32_t vy0, int32_t vx1, int32_t vy1, int32_t z0, int32_t z1)
 {
 	int32_t bx0, by0, bx1, by1;
@@ -224,7 +241,7 @@ void layer_set_z(LAYER *layer, int32_t z1)
 		}
 	} else {
 		/* 调高 */
-		if (z0 > 0) {
+		if (z0 >= 0) {
 			for (int32_t z = z0; z < z1; z++) {
 				layer_manager.layers[z] = layer_manager.layers[z + 1];
 				layer_manager.layers[z]->z = z;

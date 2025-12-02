@@ -1,6 +1,6 @@
 # 块设备 - ClassiX 文档
 
-> 当前位置：os/arch/blkdev/blkdev.md
+> 当前位置: os/arch/devices/blkdev/blkdev.md
 
 ## 概述
 
@@ -65,20 +65,20 @@
 
 ## 设备注册
 
-通过 `register_blkdevs()` 函数注册系统中的块设备，流程如下：
+通过 `register_blkdevs` 函数注册系统中的块设备，流程如下：
 
 1. 初始化 IDE 设备和软盘设备  
 2. 为每个检测到的设备创建 BLKDEV 结构
 3. 设置设备操作函数指针
 4. 添加到全局设备列表
 
-## API 接口
+## 接口
 
-### `register_blkdevs()`
+### `register_blkdevs`
 
 注册系统中所有可用的块设备。
 
-**函数原型：**
+**函数原型**
 
 ```c
 int32_t register_blkdevs(void);
@@ -88,14 +88,16 @@ int32_t register_blkdevs(void);
 |:-:|:-:|
 |`int32_t`|成功注册的设备数量|
 
-### `get_device()`
+### `get_device`
 
 根据设备 ID 获取块设备指针。
 
-**函数原型：**
+**函数原型**
 
 ```c
-BLKDEV *get_device(uint32_t dev_id);
+BLKDEV *get_device(
+	uint32_t dev_id
+);
 ```
 
 |参数|描述|
@@ -112,10 +114,15 @@ BLKDEV *get_device(uint32_t dev_id);
 
 #### 读扇区
 
-**函数原型：**
+**函数原型**
 
 ```c
-int32_t (*blkdev_io)(void *dev, uint32_t lba, uint32_t count, void *buf);
+int32_t (*blkdev_io)(
+	void *dev,
+	uint32_t lba,
+	uint32_t count,
+	void *buf
+);
 ```
 
 |参数|描述|
@@ -131,10 +138,15 @@ int32_t (*blkdev_io)(void *dev, uint32_t lba, uint32_t count, void *buf);
 
 #### 写扇区
 
-**函数原型：**
+**函数原型**
 
 ```c  
-int32_t (*blkdev_io)(void *dev, uint32_t lba, uint32_t count, void *buf);
+int32_t (*blkdev_io)(
+	void *dev,
+	uint32_t lba,
+	uint32_t count,
+	const void *buf
+);
 ```
 
 |参数|描述|

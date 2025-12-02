@@ -27,7 +27,7 @@ static inline void set_pixel_universal(uint16_t x, uint16_t y, COLOR color);
 	@param mbi Multiboot 信息
 	@return 成功返回 0，失败返回 -1
 */
-int32_t init_framebuffer(multiboot_info_t *mbi)
+int32_t init_framebuffer(const multiboot_info_t *mbi)
 {
 	if (!(mbi && mbi->flags & MULTIBOOT_INFO_FRAMEBUFFER_INFO)) {
 		debug("FRAMEBUF: Failed to initialize global framebuffer.\n");
@@ -135,7 +135,7 @@ static inline COLOR get_pixel_universal(uint16_t x, uint16_t y)
 	g = expand_to_8bit(g, g_fb.green_mask_size);
 	b = expand_to_8bit(b, g_fb.blue_mask_size);
 
-	return COLOR32_FROM_RGBA(r, g, b, 0xff);
+	return COLOR32_FROM_ARGB(r, g, b, 0xff);
 }
 
 /* 适用于通用颜色格式缓冲区的 Set Pixel */

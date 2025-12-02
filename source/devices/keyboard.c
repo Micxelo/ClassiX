@@ -19,6 +19,30 @@
 static uint32_t keydata0;
 static FIFO *keyboard_fifo;
 
+/* 键盘映射表 */
+const uint8_t keymap_us_default[] = {
+	0,   0,   '1', '2', '3', '4', '5', '6', '7',  '8', '9', '0',  '-',  '=', '\b', '\t',
+	'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O',  'P', '[', ']',  '\r', 0,   'A',  'S',
+	'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', '\'', '`', 0,   '\\', 'Z',  'X', 'C',  'V',
+	'B', 'N', 'M', ',', '.', '/', 0,   '*', 0,    ' ', 0,   0,    0,    0,   0,    0,
+	0,   0,   0,   0,   0,   0,   0,   '7', '8',  '9', '-', '4',  '5',  '6', '+',  '1',
+	'2', '3', '0', '.', 0,   0,   0,   0,   0,    0,   0,   0,    0,    0,   0,    0,
+	0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,    0,    0,   0,    0,
+	0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,    0,    0,   0,    0
+};
+
+/* 按下 SHIFT 时的键盘映射表 */
+const uint8_t keymap_us_shift[] = {
+	0,   0,   '!', '@', '#', '$', '%', '^', '&',  '*', '(', ')',  '_',  '+', '\b', '\t',
+	'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O',  'P', '{', '}',  '\r', 0,   'A',  'S',
+	'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '\"', '~', 0,   '|',  'Z',  'X', 'C',  'V',
+	'B', 'N', 'M', '<', '>', '?', 0,   '*', 0,    ' ', 0,   0,    0,    0,   0,    0,
+	0,   0,   0,   0,   0,   0,   0,   '7', '8',  '9', '-', '4',  '5',  '6', '+',  '1',
+	'2', '3', '0', '.', 0,   0,   0,   0,   0,    0,   0,   0,    0,    0,   0,    0,
+	0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,    0,    0,   0,    0,
+	0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,    0,    0,   0,    0
+};
+
 /*	@brief 初始化键盘。
 	@param fifo FIFO 缓冲区指针
 	@param data0 键盘数据偏移量
@@ -34,9 +58,9 @@ void init_keyboard(FIFO *fifo, int32_t data0)
 	idt_set_gate(INT_NUM_KEYBOARD, (uint32_t) asm_isr_keyboard, 0x08, AR_INTGATE32);
 
 	/* 键盘控制电路初始化 */
-	wait_kbc_sendready();
+	kbc_wait_ready();
 	out8(PORT_KEYBOARD_COMMAND, KEYCMD_WRITE_MODE);
-	wait_kbc_sendready();
+	kbc_wait_ready();
 	out8(PORT_KEYBOARD_DATA, KBC_MODE);
 	
 	debug("KEYBOARD: Keyboard initialized.\n");
@@ -45,12 +69,22 @@ void init_keyboard(FIFO *fifo, int32_t data0)
 /*
 	@brief 等待键盘控制器发送就绪。
 */
-void wait_kbc_sendready(void)
+void kbc_wait_ready(void)
 {
 	for (;;)
 		if ((in8(PORT_KEYSTA) & KEYSTA_SEND_NOTREADY) == 0)
 			break;
 	return;
+}
+
+/*
+	@brief 向键盘控制器发送数据。
+	@param data 要发送的数据
+*/
+void kbc_send_data(uint8_t data)
+{
+	kbc_wait_ready();
+	out8(PORT_KEYBOARD_DATA, data);
 }
 
 void isr_keyboard(ISR_PARAMS params)
@@ -59,30 +93,6 @@ void isr_keyboard(ISR_PARAMS params)
 	out8(PIC0_OCW2, 0x20); /* 主 PIC EOI */
 	data = in8(PORT_KEYBOARD_DATA);
 	fifo_push(keyboard_fifo, data + keydata0);
-	debug("KEYBOARD: Keyboard data: 0x%02x.\n", data);
+	/* debug("KEYBOARD: Keyboard data: 0x%02x.\n", data); */
 	return;
 }
-
-/* 键盘映射表 */
-const uint8_t keymap0[] = {
-	0,   0,   '1', '2',  '3', '4', '5', '6', '7',  '8', '9', '0',  '-',  '=',  0x08, 0,
-	'Q', 'W', 'E', 'R',  'T', 'Y', 'U', 'I', 'O',  'P', '[', ']',  0x0a, 0,    'A', 'S',
-	'D', 'F', 'G', 'H',  'J', 'K', 'L', ';', '\'', '`',   0,  '\\', 'Z', 'X',  'C', 'V',
-	'B', 'N', 'M', ',',  '.', '/', 0,   '*', 0,    ' ', 0,   0,    0,    0,    0,   0,
-	0,   0,   0,   0,    0,   0,   0,   '7', '8',  '9', '-', '4',  '5',  '6',  '+', '1',
-	'2', '3', '0', '.',  0,   0,   0,   0,   0,    0,   0,   0,    0,    0,    0,   0,
-	0,   0,   0,   0,    0,   0,   0,   0,   0,    0,   0,   0,    0,    0,    0,   0,
-	0,   0,   0,   0x5c, 0,   0,   0,   0,   0,    0,   0,   0,    0,    0x5c, 0,   0
-};
-
-/* 按下 SHIFT 时的键盘映射表 */
-const uint8_t keymap1[] = {
-	0,   0,   '!', '@', '#', '$', '%', '^', '&',  '*', '(', ')', '_',  '+', 0x08, 0,
-	'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O',  'P', '{', '}', 0x0a, 0,   'A', 'S',
-	'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '\"', '~', 0,   '|', 'Z',  'X', 'C', 'V',
-	'B', 'N', 'M', '<', '>', '?', 0,   '*', 0,    ' ', 0,   0,   0,    0,   0,   0,
-	0,   0,   0,   0,   0,   0,   0,   '7', '8',  '9', '-', '4', '5',  '6', '+', '1',
-	'2', '3', '0', '.', 0,   0,   0,   0,   0,    0,   0,   0,   0,    0,   0,   0,
-	0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,    0,   0,   0,
-	0,   0,   0,   '_', 0,   0,   0,   0,   0,    0,   0,   0,   0,    '|', 0,   0
-};

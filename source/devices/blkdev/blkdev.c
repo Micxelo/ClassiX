@@ -10,7 +10,14 @@
 static BLKDEV blkdev_list[16];
 static int32_t blkdev_count = 0;
 
-/* 硬盘读 */
+/*
+	@brief 硬盘读。
+	@param dev 块设备结构体指针
+	@param lba 逻辑块地址
+	@param count 读取扇区数
+	@param buf 数据缓冲区
+	@return 错误码
+*/
 static int32_t hd_read(void *dev, uint32_t lba, uint32_t count, void *buf)
 {
 	IDE_DEVICE *ide_dev = (IDE_DEVICE *) (((BLKDEV *) dev)->device);
@@ -21,7 +28,14 @@ static int32_t hd_read(void *dev, uint32_t lba, uint32_t count, void *buf)
 	return ide_read_sectors(ide_dev, lba, count, (uint16_t *) buf);
 }
 
-/* 硬盘写 */
+/*
+	@brief 硬盘写。
+	@param dev 块设备结构体指针
+	@param lba 逻辑块地址
+	@param count 写入扇区数
+	@param buf 数据缓冲区
+	@return 错误码
+*/
 static int32_t hd_write(void *dev, uint32_t lba, uint32_t count, const void *buf)
 {
 	IDE_DEVICE *ide_dev = (IDE_DEVICE *) (((BLKDEV *) dev)->device);
@@ -38,7 +52,14 @@ static int32_t hd_write(void *dev, uint32_t lba, uint32_t count, const void *buf
 	return ide_flush_cache(ide_dev);
 }
 
-/* 软盘读 */
+/*
+	@brief 软盘读。
+	@param dev 块设备结构体指针
+	@param lba 逻辑块地址
+	@param count 读取扇区数
+	@param buf 数据缓冲区
+	@return 错误码
+*/
 static int32_t fd_read(void *dev, uint32_t lba, uint32_t count, void *buf)
 {
 	FD_DEVICE *fd_dev = (FD_DEVICE *) (((BLKDEV *) dev)->device);
@@ -49,7 +70,14 @@ static int32_t fd_read(void *dev, uint32_t lba, uint32_t count, void *buf)
 	return fd_read_sectors(fd_dev, lba, count, (uint8_t *) buf);		
 }
 
-/* 软盘写 */
+/*
+	@brief 软盘写。
+	@param dev 块设备结构体指针
+	@param lba 逻辑块地址
+	@param count 写入扇区数
+	@param buf 数据缓冲区
+	@return 错误码
+*/
 static int32_t fd_write(void *dev, uint32_t lba, uint32_t count, const void *buf)
 {
 	FD_DEVICE *fd_dev = (FD_DEVICE *) (((BLKDEV *) dev)->device);
@@ -61,7 +89,7 @@ static int32_t fd_write(void *dev, uint32_t lba, uint32_t count, const void *buf
 }
 
 /*
-	@brief 注册块设备
+	@brief 注册块设备。
 	@param dev 块设备结构体指针
 	@return 错误码
 */

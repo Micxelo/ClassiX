@@ -39,7 +39,11 @@ typedef struct __attribute__((packed)) {
 	/* charsize = height * ((width + 7) / 8) */
 } PSF2_HEADER;
 
-/* 验证 PSF 版本 */
+/*
+	@brief 验证内存中的 PSF 字体文件。
+	@param buf 内存字体文件缓冲区
+	@return PSF 版本号，0 表示无效字体
+*/
 static uint32_t psf_validator(const uint8_t *buf)
 {
 	const uint16_t magic_low = *((const uint16_t *) buf);
@@ -52,7 +56,12 @@ static uint32_t psf_validator(const uint8_t *buf)
 	return 0;
 }
 
-/* 解析 PSF1 Unicode 表 */
+/*
+	@brief 解析 PSF1 Unicode 表。
+	@param font 字体对象
+	@param table_data Unicode 表数据指针
+	@param table_size Unicode 表数据大小
+*/
 static void parse_psf1_unicode_table(const BITMAP_FONT *font, const uint8_t *table_data, uint32_t table_size)
 {
 	uint32_t current_char = 0;
@@ -90,7 +99,12 @@ static void parse_psf1_unicode_table(const BITMAP_FONT *font, const uint8_t *tab
 	}
 }
 
-/* 解析 PSF2 Unicode 表 */
+/*
+	@brief 解析 PSF2 Unicode 表。
+	@param font 字体对象
+	@param table_data Unicode 表数据指针
+	@param table_size Unicode 表数据大小
+*/
 static void parse_psf2_unicode_table(const BITMAP_FONT *font, const uint8_t *table_data, uint32_t table_size)
 {
 	uint32_t current_char = 0;

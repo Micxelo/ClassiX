@@ -4,15 +4,14 @@
 
 ; ClassiX Kernel 签名
 CLASSIX						equ			0xcd59f115			; 魔数
-VERSION						equ			0x00000001			; 版本
 
-; Multiboot flags 位定义
+; Multiboot Flags 位定义
 MBALIGN						equ			1 << 0				; 对齐信息
 MEMINFO						equ			1 << 1				; 内存映射信息
 VIDEOMODE					equ			1 << 2				; 视频信息
 ADDRWORD					equ			1 << 16				; 地址字段
 
-; Multiboot 常量定义
+; Multiboot Header 常量定义
 MBFLAGS						equ			MBALIGN | MEMINFO | VIDEOMODE | ADDRWORD
 MAGIC						equ			0x1badB002			; Multiboot 魔数
 CHECKSUM					equ			-(MAGIC + MBFLAGS)	; 上述值的校验和
@@ -25,10 +24,10 @@ classix:
 	extern _os_version
 	extern kernel_size
 
-	.magic:			dd _os_version				; 签名
-	.version:		dd VERSION					; 版本信息
+	.magic:			dd CLASSIX					; 签名
+	.version:		dd _os_version				; 版本信息
 	.entry:			dd start					; 入口点
-	.size			dd kernel_size				; 内核大小
+	.size:			dd kernel_size				; 内核大小
 	.reserved:		times 12 dd 0
 
 ; GRUB 在内核文件的前 8 KiB（按 32 位边界对齐）中搜索 Header
@@ -66,7 +65,8 @@ global start: function (start.end - start)
 start:
 	; GRUB 已切换至 32 位保护模式、禁用中断和分页
 
-	mov esp, stack_top		; 将 ESP 指向栈顶
+	; 将 ESP 指向栈顶
+	mov esp, stack_top
 
 	; 重置 EFLAGS
 	push long 0

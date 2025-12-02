@@ -1,6 +1,6 @@
 # 硬盘 - ClassiX 文档
 
-> 当前位置：os/arch/blkdev/hd.md
+> 当前位置: os/arch/blkdev/devices/hd.md
 
 ## 概述
 
@@ -86,7 +86,7 @@ IDE 控制器有两个通道：主通道（Primary）和从通道（Secondary）
 
 #### PIO 模式读扇区（`IDE_CMD_READ_PIO` - `0x20`）
 
-**命令序列：**
+**命令序列**
 
 |Step|Register|Value|Description|
 |:-:|:-:|:-:|:-:|
@@ -101,7 +101,7 @@ IDE 控制器有两个通道：主通道（Primary）和从通道（Secondary）
 
 #### PIO 模式写扇区（`IDE_CMD_WRITE_PIO` - `0x30`）
 
-**命令序列：**
+**命令序列**
 
 |Step|Register|Value|Description|
 |:-:|:-:|:-:|:-:|

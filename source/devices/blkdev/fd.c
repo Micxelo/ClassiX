@@ -114,7 +114,10 @@ FD_DEVICE fd_devices[FD_DEVICE_COUNT] = {
 
 static void fdc_dma_setup(uint8_t *buf, uint32_t count, uint8_t cmd);
 
-/* 重置 FDC */
+/*
+	@brief 重置 FDC 控制器。
+	@param drive 选择的驱动器号
+*/
 static void fdc_reset(uint8_t drive)
 {
 	const uint8_t drive_sel[] = {
@@ -133,7 +136,11 @@ static void fdc_reset(uint8_t drive)
 	out8(FDC_DOR, dor);
 }
 
-/* 向 FDC 写入数据 */
+/*
+	@brief 向 FDC 写入数据。
+	@param data 待写入数据
+	@return 错误码
+*/
 static int32_t fdc_write_byte(uint8_t data)
 {
 	for (uint32_t i = 0; i < FD_TIMEOUT; i++) {
@@ -148,7 +155,11 @@ static int32_t fdc_write_byte(uint8_t data)
 	return BD_TIMEOUT; /* 超时 */
 }
 
-/* 从 FDC 读取数据 */
+/*
+	@brief 从 FDC 读取数据。
+	@param data 读取数据存放指针
+	@return 错误码
+*/
 static int32_t fdc_read_byte(uint8_t* data)
 {
 	for (uint32_t i = 0; i < FD_TIMEOUT; i++) {
@@ -163,7 +174,9 @@ static int32_t fdc_read_byte(uint8_t* data)
 	return BD_TIMEOUT; /* 超时 */
 }
 
-/* 设定 FDC 参数 */
+/*
+	@brief 设定 FDC 参数。
+*/
 static void fdc_specify(void)
 {
 	fdc_write_byte(FD_SPECIFY);
@@ -171,14 +184,22 @@ static void fdc_specify(void)
 	fdc_write_byte(0x03 << 1);	/* HLT=16ms, 启用 DMA */
 }
 
-/* 重新校正 */
+/*
+	@brief 重新校正驱动器。
+	@param drive 驱动器号
+*/
 static void fdc_recalibrate(uint8_t drive)
 {
 	fdc_write_byte(FD_RECALIBRATE);
 	fdc_write_byte(drive & 0x03);
 }
 
-/* 寻道 */
+/*
+	@brief 寻道。
+	@param drive 驱动器号
+	@param head 磁头号
+	@param cylinder 柱面号
+*/
 static void fdc_seek(uint8_t drive, uint8_t head, uint8_t cylinder)
 {
 	fdc_write_byte(FD_SEEK);
@@ -186,7 +207,12 @@ static void fdc_seek(uint8_t drive, uint8_t head, uint8_t cylinder)
 	fdc_write_byte(cylinder);
 }
 
-/* 检测中断状态 */
+/*
+	@brief 检测中断状态。
+	@param st0 返回的 ST0 寄存器值
+	@param cyl 返回的当前柱面号
+	@return 错误码
+*/
 static int32_t fdc_sense_interrupt(ST0 *st0, uint8_t *cyl)
 {
 	fdc_write_byte(FD_SENSEI);
@@ -201,7 +227,14 @@ static int32_t fdc_sense_interrupt(ST0 *st0, uint8_t *cyl)
 	return ret;
 }
 
-/* LBA 转 CHS */
+
+/*
+	@brief LBA 转 CHS 地址转换。
+	@param lba 逻辑块地址
+	@param cylinder 返回的柱面号
+	@param head 返回的磁头号
+	@param sector 返回的扇区号
+*/
 static inline void lba_to_chs(uint32_t lba, uint8_t *cylinder, uint8_t *head, uint8_t *sector)
 {
 	*cylinder = (lba / (2 * 18));
@@ -209,7 +242,13 @@ static inline void lba_to_chs(uint32_t lba, uint8_t *cylinder, uint8_t *head, ui
 	*sector   = (lba % 18) + 1;
 }
 
-/* 读扇区 */
+/*
+	@brief 读扇区。
+	@param dev 软盘设备对象
+	@param lba 逻辑块地址
+	@param buffer 数据缓冲区
+	@return 错误码
+*/
 static int32_t fdc_read_sector(FD_DEVICE *dev, uint32_t lba, uint8_t *buffer)
 {
 	uint8_t cylinder, head, sector;
@@ -245,7 +284,13 @@ static int32_t fdc_read_sector(FD_DEVICE *dev, uint32_t lba, uint8_t *buffer)
 	return BD_SUCCESS;
 }
 
-/* 写扇区 */
+/*
+	@brief 写扇区。
+	@param dev 软盘设备对象
+	@param lba 逻辑块地址
+	@param buffer 数据缓冲区
+	@return 错误码
+*/
 static int32_t fdc_write_sector(FD_DEVICE *dev, uint32_t lba, uint8_t *buffer)
 {
 	uint8_t cylinder, head, sector;
@@ -296,7 +341,12 @@ static int32_t fdc_write_sector(FD_DEVICE *dev, uint32_t lba, uint8_t *buffer)
 #define DMA_READ							0x46 	/* DMA 读命令 */
 #define DMA_WRITE							0x4A	/* DMA 写命令 */
 
-/* 设置 DMA 传输 */
+/*
+	@brief 设置 DMA 控制器进行数据传输。
+	@param buf 数据缓冲区
+	@param count 传输字节数
+	@param cmd 传输命令 (`FD_READ` 或 `FD_WRITE`)
+*/
 static void fdc_dma_setup(uint8_t *buf, uint32_t count, uint8_t cmd)
 {
 	uint32_t addr = (uint32_t) buf;

@@ -156,7 +156,16 @@ void draw_line(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t x1
 	}
 }
 
-/* 绘制当前点的 8 个对称位置 */
+/*
+	@brief 绘制圆当前点的 8 个对称位置。
+	@param buf 绘图缓冲区
+	@param bx 绘图缓冲区的宽度
+	@param x0 圆心 x 坐标
+	@param y0 圆心 y 坐标
+	@param x 当前点 x 偏移
+	@param y 当前点 y 偏移
+	@param color 圆形颜色
+*/
 static void _draw_circle_points(uint32_t *buf, uint16_t bx, int32_t x0, int32_t y0, int32_t x, int32_t y, COLOR color)
 {
 	SET_PIXEL32(buf, bx, x0 + x, y0 + y, color);
@@ -223,6 +232,16 @@ void fill_circle(uint32_t *buf, uint16_t bx, int32_t x0, int32_t y0, int32_t rad
 	}
 }
 
+/*
+	@brief 绘制椭圆当前点的 4 个对称位置。
+	@param buf 绘图缓冲区
+	@param bx 绘图缓冲区的宽度
+	@param x0 椭圆中心 x 坐标
+	@param y0 椭圆中心 y 坐标
+	@param x 当前点 x 偏移
+	@param y 当前点 y 偏移
+	@param color 椭圆颜色
+*/
 static void _draw_ellipse_points(uint32_t *buf, uint16_t bx, int32_t x0, int32_t y0, int32_t x, int32_t y, COLOR color)
 {
 	/* 绘制当前点的 4 个对称位置 */
@@ -322,9 +341,18 @@ void bit_blit(const uint32_t *src, uint16_t src_bx, uint16_t src_x, uint16_t src
 			SET_PIXEL32(dst, dst_bx, dst_x + x, dst_y + y, GET_PIXEL32(src, src_bx, src_x + x, src_y + y));
 }
 
-/* 绘制单个字形 */
-static void draw_font_char(uint32_t *buf, uint16_t bx, uint16_t x, uint16_t y, COLOR color, 
-						   const uint8_t *font_data, uint16_t width, uint16_t height)
+/*
+	@brief 绘制单个字体字符。
+	@param buf 绘图缓冲区
+	@param bx 绘图缓冲区的宽度
+	@param x X 坐标
+	@param y Y 坐标
+	@param color 字符颜色
+	@param font_data 字体数据
+	@param width 字符宽度
+	@param height 字符高度
+*/
+static void _draw_font_char(uint32_t *buf, uint16_t bx, uint16_t x, uint16_t y, COLOR color, const uint8_t *font_data, uint16_t width, uint16_t height)
 {
 	uint32_t bytes_per_row = (width + 7) / 8;
 
@@ -357,7 +385,7 @@ void draw_ascii_string(uint32_t *buf, uint16_t bx, uint16_t x, uint16_t y, COLOR
 	for (; *str != 0; str++) {
 		uint32_t char_index = psf_find_char_index(font, (uint8_t) *str);
 		const uint8_t *char_data = font->buf + char_index * font->charsize;
-		draw_font_char(buf, bx, x, y, color, char_data, font->width, font->height);
+		_draw_font_char(buf, bx, x, y, color, char_data, font->width, font->height);
 		x += font->width;
 	}
 }
@@ -416,7 +444,7 @@ void draw_unicode_string(uint32_t *buf, uint16_t bx, uint16_t x, uint16_t y, COL
 		
 		/* 绘制字符 */
 		const uint8_t *char_data = font->buf + char_index * font->charsize;
-		draw_font_char(buf, bx, current_x, y, color, char_data, font->width, font->height);
+		_draw_font_char(buf, bx, current_x, y, color, char_data, font->width, font->height);
 		
 		current_x += font->width;
 		str += bytes_to_skip;

@@ -1,6 +1,6 @@
 # 启动 - ClassiX 文档
 
-> 当前位置：os/arch/boot.md
+> 当前位置: os/arch/core/boot.md
 
 ## 引导
 

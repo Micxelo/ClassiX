@@ -22,7 +22,7 @@ typedef union {
 } COLOR;
 
 #define COLOR32(_color)						((COLOR) { .color = (_color) })
-#define COLOR32_FROM_RGBA(_r, _g, _b, _a)	((COLOR) { .a = (_a), .r = (_r), .g = (_g), .b = (_b) })
+#define COLOR32_FROM_ARGB(_r, _g, _b, _a)	((COLOR) { .a = (_a), .r = (_r), .g = (_g), .b = (_b) })
 
 #define COLOR32_INVERT(_color)				\
 	((COLOR) { .a = (_color).a, .r = 255 - (_color).r, .g = 255 - (_color).g, .b = 255 - (_color).b })

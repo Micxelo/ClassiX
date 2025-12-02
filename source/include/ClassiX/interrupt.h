@@ -11,10 +11,10 @@
 
 #include <ClassiX/typedef.h>
 
-#define AR_0_CODE32_ER						(0xcf9a)
-#define AR_0_DATA32_RW						(0xcf92)
-#define AR_3_CODE32_ER						(0xcffa)
-#define AR_3_DATA32_RW						(0xcff2)
+#define AR_0_CODE32_ER						(0xcf9a)		/* 可执行、可读、访问级别 0 */
+#define AR_0_DATA32_RW						(0xcf92)		/* 可读写、访问级别 0 */
+#define AR_3_CODE32_ER						(0xcffa)		/* 可执行、可读、访问级别 3 */
+#define AR_3_DATA32_RW						(0xcff2)		/* 可读写、访问级别 3 */
 
 #define GDT_LIMIT							(1024)
 #define TASK_GDT0							(3)

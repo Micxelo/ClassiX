@@ -10,6 +10,9 @@
 #include <ctype.h>
 #include <string.h>
 
+static FATFS rootfs;
+FATFS * const g_fs = &rootfs;
+
 int32_t fat12_get_next_cluster(FATFS *fs, uint16_t cluster, uint16_t *next_cluster);
 int32_t fat12_init(FATFS *fs, BLKDEV *device);
 int32_t fat12_close(FATFS *fs);

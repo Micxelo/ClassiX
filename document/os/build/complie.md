@@ -1,6 +1,6 @@
 # 编译 - ClassiX 文档
 
-> 当前位置：os/build/complie.md
+> 当前位置: os/build/complie.md
 
 ## 系统要求
 
@@ -68,6 +68,6 @@ make clean
 |选项|含义|
 |:-:|:-|
 |`-T $(LDSCRIPT)`|使用自定义的链接脚本|
-|`-melf_i386`|生成 i386 架构的 ELF 可执行文件|
+|`-melf_i386`|使用 i386 架构的 ELF 可执行文件|
 |`-nostdlib`|禁用所有标准库|
 |`-z noexecstack`|强制标记堆栈空间不可执行|

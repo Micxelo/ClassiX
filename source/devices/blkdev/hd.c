@@ -55,7 +55,13 @@ IDE_DEVICE ide_devices[IDE_DEVICE_COUNT] = {
 	{ .primary = false, .master = false, .type = IDE_DEVICE_NONE }	/* 从通道从盘 */
 };
 
-/* 等待 IDE 状态 */
+/*
+	@brief 等待 IDE 设备状态。
+	@param primary 是否为主通道设备
+	@param mask 状态掩码
+	@param value 期望的状态值
+	@return 错误码
+*/
 static int32_t ide_wait_status(bool primary, uint8_t mask, uint8_t value)
 {
 	uint32_t timeout = IDE_WAIT_TIMEOUT;
@@ -79,19 +85,31 @@ static int32_t ide_wait_status(bool primary, uint8_t mask, uint8_t value)
 	return BD_TIMEOUT;
 }
 
-/* 等待 IDE 就绪 */
+/*
+	@brief 等待 IDE 设备就绪。
+	@param primary 是否为主通道设备
+	@return 错误码
+*/
 static int32_t ide_wait_ready(bool primary)
 {
 	return ide_wait_status(primary, IDE_STATUS_BSY, 0);
 }
 
-/* 等待数据请求 */
+/*
+	@brief 等待 IDE 设备数据请求就绪。
+	@param primary 是否为主通道设备
+	@return 错误码
+*/
 static int32_t ide_wait_drq(bool primary)
 {
 	return ide_wait_status(primary, IDE_STATUS_BSY | IDE_STATUS_DRQ, IDE_STATUS_DRQ);
 }
 
-/* 识别 IDE 设备 */
+/*
+	@brief 识别 IDE 设备。
+	@param dev IDE 设备结构体指针
+	@return 错误码
+*/
 static int32_t ide_identify(IDE_DEVICE *dev)
 {
 	uint16_t base = dev->primary ? IDE_PRIMARY_BASE : IDE_SECONDARY_BASE;
@@ -186,7 +204,12 @@ uint32_t ide_init(void)
 	return count;
 }
 
-/* 选择 IDE 驱动器 */
+/*
+	@brief 选择 IDE 设备并设置 LBA 地址。
+	@param dev 目标 IDE 设备
+	@param lba 起始扇区号
+	@return 错误码
+*/
 static int32_t ide_select_device(IDE_DEVICE *dev, uint32_t lba)
 {
 	uint16_t base = dev->primary ? IDE_PRIMARY_BASE : IDE_SECONDARY_BASE;

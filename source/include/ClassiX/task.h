@@ -44,6 +44,15 @@ typedef struct TASK {
 	TASK_PRIORITY priority;	/* 任务优先级 */
 	FIFO fifo;
 	TSS tss;
+	struct {
+		uint16_t limit_low;
+		uint16_t base_low;
+		uint8_t base_mid;
+		uint8_t access;
+		uint8_t granularity;
+		uint8_t base_high;
+	} ldt;					/* LDT 描述符 */
+	uint32_t ds_base;		/* 数据段基址 */
 } TASK;
 
 TASK *init_multitasking(void);
@@ -51,6 +60,7 @@ TASK *task_alloc(void);
 void task_register(TASK *task, TASK_PRIORITY priority);
 void task_schedule(void);
 void task_sleep(TASK *task);
+TASK *task_get_current(void);
 
 #ifdef __cplusplus
 	}
