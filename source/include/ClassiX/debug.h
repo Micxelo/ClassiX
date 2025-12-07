@@ -16,9 +16,9 @@
 
 #ifdef DEBUG
 	#define debug(fmt, ...)					uart_printf(fmt, ##__VA_ARGS__)
-	#define assert(condition, info)			do {						\
+	#define assert(condition)			do {							\
 		if(!(condition)) {												\
-			debug("[Assert] %s:%d  %s\n", __FILE__, __LINE__, info);	\
+			debug("[Assert] %s:%d\n", __FILE__, __LINE__);				\
 			asm volatile ("    cli\n""1:  hlt\n""    jmp 1b");			\
 		}																\
 	} while(0)

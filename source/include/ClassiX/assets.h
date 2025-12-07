@@ -11,18 +11,22 @@
 
 #include <ClassiX/typedef.h>
 
-typedef uint32_t version_t;
+typedef struct __attribute__((packed)) {
+	uint32_t magic;			/* 签名 */
+	union {
+		uint32_t version;	/* 版本信息 */
+		struct {
+			uint16_t major;	/* 主版本号 */
+			uint8_t minor;	/* 次版本号 */
+			uint8_t patch;	/* 修订号 */
+		};
+	};
+	uint32_t entry;			/* 入口点 */
+	uint32_t size;			/* 内核大小 */
+	uint32_t reserved[12];	/* 保留 */
+} CLASSIX_HEADER;
 
-/* 版本数值宏 */
-#define VERSION(major, minor, patch) \
-	((((major) & 0xFF) << 16) | (((minor) & 0xFF) << 8) | ((patch) & 0xFF))
-
-/* 版本组件宏 */
-#define VERSION_MAJOR(ver)					(((ver) >> 16) & 0xFF)	/* 主版本 */
-#define VERSION_MINOR(ver)					(((ver) >> 8) & 0xFF)	/* 次版本 */
-#define VERSION_PATCH(ver)					((ver) & 0xFF)			/* 修订版本 */
-
-extern const version_t os_version;
+extern const CLASSIX_HEADER *kernel_header;
 
 /* 声明资源文件 */
 #define DECLARE_ASSET(type, name) \

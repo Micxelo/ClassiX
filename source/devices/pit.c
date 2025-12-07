@@ -56,7 +56,7 @@ void isr_pit(ISR_PARAMS params)
 
 	/* 任务调度 */
 	extern uint64_t next_schedule_tick;
-	if (next_schedule_tick <= system_ticks)
+	if ((system_ticks & 3) == 0 && next_schedule_tick <= system_ticks)
 		task_schedule();
 }
 

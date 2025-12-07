@@ -65,7 +65,7 @@
 #define MULTIBOOT_INFO_BOOT_LOADER_NAME		0x00000200		/* 是否有引导加载器名称 */
 #define MULTIBOOT_INFO_APM_TABLE			0x00000400		/* 是否有 APM 表 */
 #define MULTIBOOT_INFO_VBE_INFO				0x00000800		/* 是否有视频信息 */
-#define MULTIBOOT_INFO_FRAMEBUFFER_INFO		0x00001000
+#define MULTIBOOT_INFO_FRAMEBUFFER_INFO		0x00001000		/* 是否有帧缓冲区信息 */
 
 struct multiboot_header {
 	uint32_t magic;		/* 必须为 MULTIBOOT_MAGIC */

@@ -49,9 +49,9 @@
 extern uintptr_t kernel_start_phys;						/* 内核起始物理地址 */
 extern uintptr_t kernel_end_phys;						/* 内核结束物理地址 */
 extern uintptr_t bss_start_phys;						/* BSS 段起始地址 */
-extern uintptr_t bss_end_phys;							/* BSS 段结束地址 */
+extern uintptr_t bss_end_phys;							/* BSS 段结束地址 */\
 
-const version_t __attribute__((section(".classix"))) os_version = VERSION(0, 0, 1);
+const CLASSIX_HEADER *kernel_header = (CLASSIX_HEADER *) &kernel_start_phys;
 
 BITMAP_FONT font_terminus_12n;
 BITMAP_FONT font_terminus_16n;
@@ -65,54 +65,8 @@ BITMAP_FONT font_unifont;
 
 static FIFO kmsg_queue = { };							/* 内核消息队列 */
 
-/*
-	@brief 检查 Multiboot 启动信息。
-	@param mb_magic Multiboot 魔数
-	@param mbi Multiboot 信息结构体指针
-	@return 如果检查通过，返回 true；否则返回 false
-*/
-static bool check_boot_info(uint32_t mb_magic, multiboot_info_t *mbi)
+void main(multiboot_info_t *mbi)
 {
-	cga_clear();
-
-	if (mb_magic != MULTIBOOT_BOOTLOADER_MAGIC) {
-		/* 非 Multiboot 启动 */
-		cga_printf("Invalid magic number: 0x%x .\n", mb_magic);
-		return false;
-	}
-
-	if (!(mbi->flags & MULTIBOOT_INFO_MEMORY)) {
-		/* 未传递内存信息 */
-		cga_printf("Memory information is unavailable.");
-		return false;
-	}
-
-	if (!(mbi->flags & MULTIBOOT_INFO_BOOTDEV)) {
-		/* 未传递启动设备信息 */
-		cga_printf("Boot device information is unavailable.");
-		return false;
-	}
-
-	if (!(mbi->flags & MULTIBOOT_INFO_FRAMEBUFFER_INFO)) {
-		/* 未传递帧缓冲区信息 */
-		cga_printf("Frame buffer information is unavailable.");
-		return false;
-	}
-
-	if (mbi->framebuffer_type != MULTIBOOT_FRAMEBUFFER_TYPE_RGB) {
-		/* 不支持的帧缓冲类型 */
-		cga_printf("Unsupported frame buffer type: %d.\n", mbi->framebuffer_type);
-		return false;
-	}
-
-	return true;
-}
-
-void main(uint32_t mb_magic, multiboot_info_t *mbi)
-{
-	/* 清空 BSS */
-	memset((void*) &bss_start_phys, 0, (size_t) (&bss_end_phys - &bss_start_phys));
-
 	uint32_t kmsg_queue_buf[KMSG_QUEUE_SIZE] = { }; /* 内核消息队列缓冲区 */
 
 	/* 修饰键 */
@@ -129,18 +83,19 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	int32_t new_cursor_x, new_cursor_y;		/* 光标移动后的位置 */
 	bool cursor_updated = false;			/* 光标是否已更新 */
 
-	/* 检查 Multiboot 启动信息 */
-	if (!check_boot_info(mb_magic, mbi)) return;
-
 	uart_init();
 
-	debug("\nKernel PHYS: 0x%x - 0x%x\n", (uint32_t) &kernel_start_phys, (uint32_t) &kernel_end_phys);
+	debug("ClassiX Kernel Signature: 0x%08x\n", kernel_header->magic);
+	debug("Kernel Version: %u.%u.%u\n", kernel_header->major, kernel_header->minor, kernel_header->patch);
+	debug("Kernel Entry Point: 0x%x\n", kernel_header->entry);
+	debug("Kernel Size: %u bytes\n", kernel_header->size);
+	debug("Kernel Phys: 0x%x - 0x%x\n", (uint32_t) &kernel_start_phys, (uint32_t) &kernel_end_phys);
 
 	debug("\nMultiboot Bootloader Information\n\n");
 
 	/* 内存信息 */
 	multiboot_memory_map_t *mmap;
-	debug("Available memory size: %d KiB\n", mbi->mem_lower + mbi->mem_upper);
+	debug("Available memory size: %u KiB\n", mbi->mem_lower + mbi->mem_upper);
 	for (mmap = (multiboot_memory_map_t *) mbi->mmap_addr;
 			(uintptr_t) mmap < (mbi->mmap_addr + mbi->mmap_length);
 			mmap = (multiboot_memory_map_t *) ((uintptr_t) mmap + mmap->size + sizeof(mmap->size)))
@@ -167,7 +122,7 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 	}
 
 	/* Video Mode 信息 */
-	debug("\nFrame buffer info:\n  Address: 0x%llx, Width: %d, Height: %d, Pitch: %d, BPP: %d\n\n",
+	debug("\nFrame buffer info:\n  Address: 0x%llx, Width: %u, Height: %u, Pitch: %u, BPP: %u\n\n",
 		mbi->framebuffer_addr, mbi->framebuffer_width, mbi->framebuffer_height, mbi->framebuffer_pitch, mbi->framebuffer_bpp);
 
 	/* 启动参数 */
@@ -237,7 +192,7 @@ void main(uint32_t mb_magic, multiboot_info_t *mbi)
 			boot_device->id, boot_device->sector_size, boot_device->total_sectors);
 	else
 		debug("Boot device not found.\n");
-
+		
 	/* 初始化根文件系统 */
 	fatfs_init(g_fs, boot_device, FAT_TYPE_NONE);
 

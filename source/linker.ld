@@ -22,12 +22,14 @@ SECTIONS {
 	/* ClassiX 头 */
 	.classix : ALIGN(1K) {
 		*(.classix)
+		*(.classix.*)
 	} > RAM
 
 	/* Multiboot 头 */
 	.multiboot : ALIGN(1K) {
 		multiboot_header_phys = .;
 		*(.multiboot)
+		*(.multiboot.*)
 	} > RAM
 
 	/* 代码段 */
@@ -51,11 +53,11 @@ SECTIONS {
 	load_end_phys = .;
 
 	.bss : ALIGN(4K) {
-		_bss_start_phys = .;		/* BSS 起始 */
+		bss_start_phys = .;		/* BSS 起始 */
 		*(.bss)
 		*(.bss.*)
 		*(COMMON)
-		_bss_end_phys = .;			/* BSS 终止 */
+		bss_end_phys = .;			/* BSS 终止 */
 	} > RAM
 
 	. = ALIGN(4K);
@@ -64,5 +66,3 @@ SECTIONS {
 
 PROVIDE(entry_phys = start);
 PROVIDE(kernel_size = _kernel_end_phys - _kernel_start_phys);
-PROVIDE(bss_start_phys = _bss_start_phys);
-PROVIDE(bss_end_phys = _bss_end_phys);
