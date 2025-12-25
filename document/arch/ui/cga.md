@@ -1,6 +1,6 @@
 # CGA 文本显示 - ClassiX 文档
 
-> 当前位置: os/arch/ui/cga.md
+> 当前位置: arch/ui/cga.md
 
 ## 概述
 

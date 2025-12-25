@@ -127,7 +127,7 @@ void main(multiboot_info_t *mbi)
 
 	/* 启动参数 */
 	if (mbi->flags & MULTIBOOT_INFO_CMDLINE)
-		debug("Boot comand line: %s\n\n", mbi->cmdline);
+		debug("Boot comand line: %s\n", mbi->cmdline);
 
 	/* 初始化内存管理 */
 	uintptr_t mem_start = (uintptr_t) &kernel_end_phys;

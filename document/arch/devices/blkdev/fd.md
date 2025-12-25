@@ -1,6 +1,6 @@
 # 软盘 - ClassiX 文档
 
-> 当前位置: os/arch/devices/blkdev/fd.md
+> 当前位置: arch/devices/blkdev/fd.md
 
 ## 概述
 

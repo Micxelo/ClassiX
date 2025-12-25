@@ -30,9 +30,9 @@ extern const CLASSIX_HEADER *kernel_header;
 
 /* 声明资源文件 */
 #define DECLARE_ASSET(type, name) \
-	extern const uint8_t binary_assets_##type##_##name##_start[];	\
-	extern const uint8_t binary_assets_##type##_##name##_end[];		\
-	extern const uint8_t binary_assets_##type##_##name##_size[];
+	extern const uint8_t binary_source_assets_##type##_##name##_start[];	\
+	extern const uint8_t binary_source_assets_##type##_##name##_end[];		\
+	extern const uint8_t binary_source_assets_##type##_##name##_size[];
 
 /* 光标文件 */
 DECLARE_ASSET(cursors, arrow_csr);
@@ -48,11 +48,11 @@ DECLARE_ASSET(fonts, terminus16b_psf);
 #undef DECLARE_ASSET
 
 /* 引用资源数据指针 */
-#define ASSET_DATA(type, name)				binary_assets_##type##_##name##_start
+#define ASSET_DATA(type, name)				binary_source_assets_##type##_##name##_start
 
 /* 获取资源大小 */
 #define ASSET_SIZE(type, name) \
-	((size_t) (binary_assets_##type##_##name##_end - binary_assets_##type##_##name##_start))
+	((size_t) (binary_source_assets_##type##_##name##_end - binary_source_assets_##type##_##name##_start))
 
 #ifdef __cplusplus
 	}

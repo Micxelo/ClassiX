@@ -1,6 +1,6 @@
 # 帧缓冲区 - ClassiX 文档
 
-> 当前位置: os/arch/ui/framebuf.md
+> 当前位置: arch/ui/framebuf.md
 
 ## 概述
 

@@ -1,6 +1,6 @@
 # 图层管理 - ClassiX 文档
 
-> 当前位置: os/arch/ui/layer.md
+> 当前位置: arch/ui/layer.md
 
 ## 概述
 

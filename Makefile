@@ -12,26 +12,26 @@ CFLAGS		= -O2 -m32 -std=gnu99 \
 			  -ffreestanding -fleading-underscore -fno-pic -fno-stack-protector \
 			  -nostartfiles -nostdinc
 ASFLAGS		= -f elf32
-LDSCRIPT	= linker.ld
+LDSCRIPT	= ./source/linker.ld
 LDFLAGS		= -T $(LDSCRIPT) -melf_i386 -nostdlib -z noexecstack
 
-INCPATH		= ./include
+INCPATH		= ./source/include
 
 # 源文件
-C_SOURCES	= $(shell find . -name "*.c" -not -path "./assets/*")
-ASM_SOURCES	= $(shell find . -name "*.asm" -not -path "./assets/*")
+C_SOURCES	= $(shell find ./source/ -name "*.c" -not -path "./source/assets/*")
+ASM_SOURCES	= $(shell find ./source/ -name "*.asm" -not -path "./source/assets/*")
 
 # 资源文件
-ASSET_FILES	= $(shell find assets -type f -not -name Makefile -not -name "*.obj")
+ASSET_FILES	= $(shell find ./source/assets/ -type f -not -name Makefile -not -name "*.obj")
 
 DEPS		= $(C_SOURCES:.c=.obj) $(ASM_SOURCES:.asm=.obj) $(ASSET_FILES:%=%.obj)
 
-TARGETS		= ClassiX.sys
+TARGET		= ClassiX.sys
 
 .PHONY : default
-default : $(TARGETS)
+default : $(TARGET)
 
-$(TARGETS) : $(DEPS)
+$(TARGET) : $(DEPS)
 	@$(LD) $(LDFLAGS) $^ -o $@
 	@echo "\tLD\t$@"
 
@@ -54,5 +54,5 @@ $(TARGETS) : $(DEPS)
 .PHONY : clean
 clean:
 	@find . -name "*.obj" -delete
-	@rm -f $(TARGETS)
-	@echo "\tRM\t$(TARGETS)"
+	@rm -f $(TARGET)
+	@echo "\tRM\t$(TARGET)"

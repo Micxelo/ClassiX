@@ -19,9 +19,9 @@
 #define PIT_COMMAND							(0x43)
 
 /* PIT 命令字 */
-#define PIT_CMD_CH0							(0x00)		/* 通道0 */
-#define PIT_CMD_CH1							(0x40)		/* 通道1 */
-#define PIT_CMD_CH2							(0x80)		/* 通道2 */
+#define PIT_CMD_CH0							(0x00)		/* 通道 0 */
+#define PIT_CMD_CH1							(0x40)		/* 通道 1 */
+#define PIT_CMD_CH2							(0x80)		/* 通道 2 */
 #define PIT_CMD_LATCH						(0x00)		/* 锁存计数器值 */
 #define PIT_CMD_LOBYTE						(0x10)		/* 只读写低字节 */
 #define PIT_CMD_HIBYTE						(0x20)		/* 只读写高字节 */

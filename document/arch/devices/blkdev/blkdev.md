@@ -1,6 +1,6 @@
 # 块设备 - ClassiX 文档
 
-> 当前位置: os/arch/devices/blkdev/blkdev.md
+> 当前位置: arch/devices/blkdev/blkdev.md
 
 ## 概述
 

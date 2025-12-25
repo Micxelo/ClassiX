@@ -1,6 +1,6 @@
 # 编译 - ClassiX 文档
 
-> 当前位置: os/build/complie.md
+> 当前位置: build/complie.md
 
 ## 系统要求
 

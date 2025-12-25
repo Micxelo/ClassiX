@@ -1,6 +1,6 @@
 # 内存管理 - ClassiX 文档
 
-> 当前位置: os/arch/core/memory.md
+> 当前位置: arch/core/memory.md
 
 ## 概述
 

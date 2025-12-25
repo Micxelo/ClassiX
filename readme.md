@@ -9,11 +9,13 @@ ClassiX 是一个从零开始编写的 32 位操作系统内核，支持基础�
 ## 特性概览
 
 - 32 位保护模式运行
-- 物理内存管理
+- Multiboot 兼容引导
+- 链式物理内存管理
 - PS/2 键盘、鼠标驱动
-- VBE 图形模式显示支持
+- VBE 图形模式显示
 - 块设备驱动
-- 多任务处理支持
+- FAT 文件系统
+- 多任务处理
 
 ## 构建
 
@@ -21,11 +23,11 @@ ClassiX 是一个从零开始编写的 32 位操作系统内核，支持基础�
 # 安装工具链
 sudo apt install build-essential nasm
 
-# 克隆仓库
+# 克隆
 git clone https://github.com/Micxelo/ClassiX.git
 cd ClassiX/source
 
-# 构建系统
+# 构建
 make
 ```
 

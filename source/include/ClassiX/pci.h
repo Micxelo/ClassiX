@@ -58,9 +58,9 @@ extern PCI_DEVICE_LIST pci_devices;
 
 /* 物理区域描述符 */
 typedef struct __attribute__((packed)) {
-	uint32_t physical_address;	/* 物理地址 (32 位) */
-	uint16_t length;			/* 传输长度 (最大 65535 字节) */
-	uint16_t eot;				/* 结束标志 (0x8000 表示最后一个描述符) */
+	uint32_t phys;		/* 物理地址 */
+	uint16_t length;	/* 传输长度 */
+	uint16_t eot;		/* 结束标志 (0x8000 表示最后一个描述符) */
 } PRD_ENTRY;
 
 void pci_enable_device(uint8_t bus, uint8_t device, uint8_t function);

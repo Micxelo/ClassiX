@@ -1,6 +1,6 @@
 # 图形绘制 - ClassiX 文档
 
-> 当前位置: os/arch/ui/graphic.md
+> 当前位置: arch/ui/graphic.md
 
 ## 概述
 

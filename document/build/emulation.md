@@ -1,6 +1,6 @@
 # 使用虚拟机运行 - ClassiX 文档
 
-> 当前位置: os/build/emulation.md
+> 当前位置: build/emulation.md
 
 ## 获取硬盘镜像
 
