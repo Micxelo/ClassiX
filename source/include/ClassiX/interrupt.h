@@ -16,8 +16,10 @@
 #define AR_3_CODE32_ER						(0xcffa)		/* 可执行、可读、访问级别 3 */
 #define AR_3_DATA32_RW						(0xcff2)		/* 可读写、访问级别 3 */
 
-#define GDT_LIMIT							(1024)
+#define GDT_LIMIT							(8192)
 #define TASK_GDT0							(3)
+
+#define IDT_LIMIT							(256)
 
 #define AR_LDT								(0x0082)
 #define AR_TSS32							(0x0089)
@@ -46,10 +48,13 @@ typedef struct {
 	uint32_t eip;
 	uint32_t cs;
 	uint32_t eflags;
+
+	/* 错误码 */
+	uint32_t errcode;	/* 对于无错误码的中断，此值未定义 */
 	
 	/* 由中断处理程序压入的部分 */
-	uint32_t es;
 	uint32_t ds;
+	uint32_t es;
 	
 	/* 通用寄存器 (PUSHAD 顺序) */
 	uint32_t edi;

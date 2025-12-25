@@ -63,7 +63,7 @@ void init_gdt(void)
 	gdt_set_gate(2, 0, 0xffffffff, AR_0_DATA32_RW & 0xff, AR_0_DATA32_RW >> 8);	/* 内核数据段 */
 
 	/* 加载 GDT */
-	asm volatile ("lgdt %0"::"m"(gdt_ptr));
+	asm volatile("lgdt %0"::"m"(gdt_ptr));
 
 	/* 刷新段寄存器 */
 	asm volatile(

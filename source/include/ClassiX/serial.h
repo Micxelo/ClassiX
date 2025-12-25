@@ -16,7 +16,7 @@
 void uart_init(void);
 void uart_putchar(char c);
 void uart_puts(const char *str);
-int32_t uart_printf(const char *format, ...);
+int32_t uart_printf(const char *format, ...) __attribute__((format(printf, 1, 2)));
 
 #ifdef __cplusplus
 	}

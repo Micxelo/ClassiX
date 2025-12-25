@@ -127,7 +127,7 @@ void main(multiboot_info_t *mbi)
 
 	/* 启动参数 */
 	if (mbi->flags & MULTIBOOT_INFO_CMDLINE)
-		debug("Boot comand line: %s\n", mbi->cmdline);
+		debug("Boot comand line: %s\n", (char *) mbi->cmdline);
 
 	/* 初始化内存管理 */
 	uintptr_t mem_start = (uintptr_t) &kernel_end_phys;
@@ -151,7 +151,6 @@ void main(multiboot_info_t *mbi)
 
 	/* 初始化 PIT */
 	init_pit(1000); /* 频率为 1000 Hz */
-
 	/* 初始化 PIC */
 	out8(PIC0_IMR,  0b11111000); /* 允许 IRQ0、IRQ1 和 IRQ2 */
 	out8(PIC1_IMR,  0b11101111); /* 允许 IRQ12 */
@@ -178,6 +177,7 @@ void main(multiboot_info_t *mbi)
 	cursor_y = (g_fb.height - layer_cursor->height) / 2;
 	layer_move(layer_cursor, cursor_x, cursor_y);
 	layer_set_z(layer_cursor, 1);
+
 
 	/* 扫描 PCI 设备 */
 	pci_scan_devices();

@@ -11,6 +11,8 @@
 #include <ClassiX/task.h>
 #include <ClassiX/timer.h>
 
+#include <string.h>
+
 volatile uint64_t next_schedule_tick;			/* 下一次进行任务调度的系统滴答数 */
 
 static uint32_t ticks_per_priority_unit = 10;	/* 每单位优先级对应的系统滴答数 */
@@ -43,7 +45,20 @@ TASK *init_multitasking(void)
 	for (int32_t i = 0; i < MAX_TASKS; i++) {
 		task_manager->tasks0[i].state = TASK_FREE;
 		task_manager->tasks0[i].selector = (TASK_GDT0 + i) * 8;
-		gdt_set_gate(TASK_GDT0 + i, (uint32_t) &task_manager->tasks0[i].tss, sizeof(TSS) - 1, AR_TSS32 & 0xff, AR_TSS32 >> 16);
+		task_manager->tasks0[i].tss.ldtr = (TASK_GDT0 + i + MAX_TASKS) * 8;
+
+		memset(&task_manager->tasks0[i].ldt, 0, sizeof(task_manager->tasks0[i].ldt));
+
+		gdt_set_gate(TASK_GDT0 + i,
+			(uint32_t) &task_manager->tasks0[i].tss,
+			sizeof(TSS) - 1,
+			AR_TSS32 & 0xff,
+			AR_TSS32 >> 16);
+		gdt_set_gate(TASK_GDT0 + i + MAX_TASKS,
+			(uint32_t) &task_manager->tasks0[i].ldt,
+			sizeof(task_manager->tasks0[i].ldt) - 1,
+			AR_LDT & 0xff,
+			AR_LDT >> 16);
 	}
 
 	ktask = task_alloc();
@@ -83,6 +98,7 @@ TASK *task_alloc(void)
 	for (int32_t i = 0; i < MAX_TASKS; i++) {
 		if (task_manager->tasks0[i].state == TASK_FREE) {
 			task = &task_manager->tasks0[i];
+
 			task->state = TASK_USED;
 			task->tss.eflags = 0x00000202;
 			task->tss.eax = 0;
@@ -98,6 +114,7 @@ TASK *task_alloc(void)
 			task->tss.gs = 0;
 			task->tss.ldtr = 0;
 			task->tss.iomap = 0x40000000;
+
 			debug("TASK: Allocated task %p.\n", task);
 			return task;
 		}

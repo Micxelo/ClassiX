@@ -17,14 +17,14 @@ ClassiX 在如下环境中编译通过：
 sudo apt install build-essential nasm
 ```
 
-## 克隆仓库
+## 克隆
 
 ```shell
 git clone https://github.com/Micxelo/ClassiX.git
 cd ClassiX/source
 ```
 
-## 构建系统
+## 构建
 
 ```shell
 make

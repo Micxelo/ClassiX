@@ -13,7 +13,7 @@
 #include <ClassiX/interrupt.h>
 #include <ClassiX/typedef.h>
 
-#define MAX_TASKS							(1024)
+#define MAX_TASKS							(1000)
 
 #define DEFAULT_USER_STACK					(4 * 1024)
 #define TIME_SLICE_BASE_PER_PRIORITY_MS		(5)
@@ -51,7 +51,7 @@ typedef struct TASK {
 		uint8_t access;
 		uint8_t granularity;
 		uint8_t base_high;
-	} ldt;					/* LDT 描述符 */
+	} ldt[2];				/* LDT 描述符 */
 	uint32_t ds_base;		/* 数据段基址 */
 } TASK;
 
