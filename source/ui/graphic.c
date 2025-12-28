@@ -63,7 +63,6 @@ void draw_rectangle_by_corners(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t
 	}
 }
 
-
 /*
 	@brief 指定一点坐标、宽度和高度填充矩形区域。
 	@param buf 绘图缓冲区
@@ -123,6 +122,8 @@ void fill_rectangle_by_corners(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t
 */
 void draw_line(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, COLOR color)
 {
+	SET_PIXEL32(buf, bx, x0, y0, color);
+
 	int32_t dx = x1 - x0;
 	int32_t dy = y1 - y0;
 	int32_t abs_dx = (dx < 0) ? -dx : dx;
@@ -134,24 +135,24 @@ void draw_line(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t x1
 	if (abs_dx >= abs_dy) {
 		int32_t err = abs_dx / 2;
 		while (x0 != x1) {
-			SET_PIXEL32(buf, bx, x0, y0, color);
+			x0 += sx;
 			err -= abs_dy;
 			if (err < 0) {
 				y0 += sy;
 				err += abs_dx;
 			}
-			x0 += sx;
+			SET_PIXEL32(buf, bx, x0, y0, color);
 		}
 	} else {
 		int32_t err = abs_dy / 2;
 		while (y0 != y1) {
-			SET_PIXEL32	(buf, bx, x0, y0, color);
+			y0 += sy;
 			err -= abs_dx;
 			if (err < 0) {
 				x0 += sx;
 				err += abs_dy;
 			}
-			y0 += sy;
+			SET_PIXEL32(buf, bx, x0, y0, color);
 		}
 	}
 }

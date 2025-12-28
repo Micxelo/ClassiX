@@ -26,6 +26,8 @@ typedef struct {
 void init_mouse(FIFO *fifo, int32_t data0);
 int32_t mouse_decoder(MOUSE_DATA *mouse_data, uint8_t data);
 
+#define MOUSE_DATA0							(512)		/* 鼠标数据起始索引 */
+
 #ifdef __cplusplus
 	}
 #endif

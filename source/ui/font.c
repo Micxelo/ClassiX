@@ -66,36 +66,25 @@ static void parse_psf1_unicode_table(const BITMAP_FONT *font, const uint8_t *tab
 {
 	uint32_t current_char = 0;
 	uint32_t i = 0;
-	
+
+	/* PSF1 使用 16 位 UCS-2/UTF-16 码点 */
 	while (i < table_size && current_char < font->count) {
-		uint8_t byte = table_data[i++];
+		if (i + 1 >= table_size)
+			break;
 		
-		if (byte == 0xFF) {
-			/* 分隔符，移动到下一个字符 */
+		uint16_t unicode = (table_data[i] << 8) | table_data[i + 1];
+		i += 2;
+		
+		if (unicode == PSF1_SEPARATOR)
+			/* 分隔符 */
 			current_char++;
-		} else {
-			/* 解析 UTF-8 序列 */
-			uint32_t code_point = 0;
-			
-			if ((byte & 0x80) == 0) {
-				/* 单字节 UTF-8 */
-				code_point = byte;
-			} else if ((byte & 0xE0) == 0xC0 && i < table_size) {
-				/* 双字节 UTF-8 */
-				uint8_t byte2 = table_data[i++];
-				if ((byte2 & 0xC0) == 0x80)
-					code_point = ((byte & 0x1F) << 6) | (byte2 & 0x3F);
-			} else if ((byte & 0xF0) == 0xE0 && i + 1 < table_size) {
-				/* 三字节 UTF-8 */
-				uint8_t byte2 = table_data[i++];
-				uint8_t byte3 = table_data[i++];
-				if ((byte2 & 0xC0) == 0x80 && (byte3 & 0xC0) == 0x80)
-					code_point = ((byte & 0x0F) << 12) | ((byte2 & 0x3F) << 6) | (byte3 & 0x3F);
-			}
-			
-			if (code_point > 0 && current_char < font->count)
-				font->unicode_map[current_char] = code_point;
-		}
+		else if (unicode == PSF1_STARTSEQ)
+			/* 多个 Unicode 对应一个字形 */
+			continue;
+		else
+			/* 有效 Unicode 码点 */
+			if (current_char < font->count)
+				font->unicode_map[current_char] = unicode;
 	}
 }
 

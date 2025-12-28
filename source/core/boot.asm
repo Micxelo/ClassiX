@@ -59,9 +59,9 @@ multiboot:
 
 	; 视频模式
 	dd 0										; 线性帧缓冲区
-	dd 0										; 宽度（默认）
-	dd 0										; 高度（默认）
-	dd 0										; 色深（默认）
+	dd 1280										; 宽度（默认）
+	dd 800										; 高度（默认）
+	dd 32										; 色深（默认）
 
 ; linker.ld 指定 start 为内核入口点
 section .text

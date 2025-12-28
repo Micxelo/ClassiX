@@ -26,6 +26,8 @@ void init_keyboard(FIFO *fifo, int32_t data0);
 void kbc_wait_ready(void);
 void kbc_send_data(uint8_t data);
 
+#define KEYBOARD_DATA0						(256)		/* 键盘数据起始索引 */
+
 #ifdef __cplusplus
 	}
 #endif

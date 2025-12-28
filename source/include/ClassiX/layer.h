@@ -23,10 +23,23 @@ typedef struct {
 	uint32_t *buf;
 	uint16_t width, height;
 	int16_t x, y;
-	int32_t z;							/* Z 高度 */
+	int32_t z;					/* Z 高度 */
 	uint32_t flags;
-	bool allow_inv;						/* 是否启用透明色 */
+	bool allow_inv;				/* 是否启用透明色 */
+	struct WINDOW *window;		/* 关联的窗口 */
 } LAYER;
+
+typedef struct {
+	uint32_t *fb;				/* 帧缓冲区 */
+	uint8_t *map;
+	uint16_t width, height;
+	int32_t top;				/* 图层数量 */
+	LAYER *layers[MAX_LAYERS];
+	LAYER layers0[MAX_LAYERS];
+} LAYER_MANAGER;
+
+/* 全局图层管理器 */
+extern LAYER_MANAGER g_lm;
 
 int32_t layer_init(uint32_t *fb, uint16_t width, uint16_t height);
 LAYER *layer_alloc(uint16_t width, uint16_t height, bool allow_inv);

@@ -207,10 +207,10 @@ void *kmalloc(size_t size)
 */
 void *krealloc(void *ptr, size_t new_size)
 {
-	if (ptr == NULL) {
+	if (ptr == NULL) 
 		/* 等价于 kmalloc */
 		return kmalloc(new_size);
-	}
+		
 	if (new_size == 0) {
 		/* 等价于 kfree */
 		kfree(ptr);
@@ -218,13 +218,13 @@ void *krealloc(void *ptr, size_t new_size)
 	}
 
 	block_header_t *header = (block_header_t *) ((uint8_t *) ptr - sizeof(block_header_t));
-	if (!(header->magic == BLOCK_MAGIC && header->state == BLOCK_USED)) return NULL;
+	if (!(header->magic == BLOCK_MAGIC && header->state == BLOCK_USED))
+		return NULL;
 
 	size_t old_size = header->size - sizeof(block_header_t) - sizeof(block_footer_t);
-	if (new_size <= old_size) {
+	if (new_size <= old_size)
 		/* 新尺寸小于等于旧尺寸，直接返回原指针 */
 		return ptr;
-	}
 
 	/* 分配新内存并拷贝旧数据 */
 	void *new_ptr = kmalloc(new_size);

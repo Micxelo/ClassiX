@@ -11,14 +11,7 @@
 
 #include <string.h>
 
-struct {
-	uint32_t *fb;						/* 帧缓冲区 */
-	uint8_t *map;
-	uint16_t width, height;
-	int32_t top;						/* 图层数量 */
-	LAYER *layers[MAX_LAYERS];
-	LAYER layers0[MAX_LAYERS];
-} layer_manager = { };					/* 图层管理器 */
+LAYER_MANAGER g_lm;
 
 /*
 	@brief 初始化图层管理器。
@@ -29,21 +22,21 @@ struct {
 */
 int32_t layer_init(uint32_t *fb, uint16_t width, uint16_t height)
 {
-	layer_manager.map = kmalloc(width * height * sizeof(uint8_t));
-	if (!layer_manager.map) {
+	g_lm.map = kmalloc(width * height * sizeof(uint8_t));
+	if (!g_lm.map) {
 		debug("LAYER: Failed to allocate memory for layer manager.\n");
 		return -1; /* 内存分配失败 */
 	}
 
-	memset(layer_manager.map, 0, width * height * sizeof(uint8_t));
-	layer_manager.fb = fb;
-	layer_manager.width = width;
-	layer_manager.height = height;
-	layer_manager.top = -1; /* 无图层 */
+	memset(g_lm.map, 0, width * height * sizeof(uint8_t));
+	g_lm.fb = fb;
+	g_lm.width = width;
+	g_lm.height = height;
+	g_lm.top = -1; /* 无图层 */
 
 	for (int32_t i = 0; i < MAX_LAYERS; i++) {
-		layer_manager.layers0[i].flags = LAYER_FREE;
-		layer_manager.layers[i] = NULL;
+		g_lm.layers0[i].flags = LAYER_FREE;
+		g_lm.layers[i] = NULL;
 	}
 
 	debug("LAYER: Layer manager initialized.\n");
@@ -62,8 +55,8 @@ LAYER *layer_alloc(uint16_t width, uint16_t height, bool allow_inv)
 	LAYER *layer;
 
 	for (int32_t i = 0; i < MAX_LAYERS; i++) {
-		if (layer_manager.layers0[i].flags == LAYER_FREE) {
-			layer = &layer_manager.layers0[i];
+		if (g_lm.layers0[i].flags == LAYER_FREE) {
+			layer = &g_lm.layers0[i];
 			layer->buf = kmalloc(width * height * sizeof(uint32_t));
 			if (!layer->buf) {
 				debug("LAYER: Failed to allocate memory for new layer.\n");
@@ -75,6 +68,7 @@ LAYER *layer_alloc(uint16_t width, uint16_t height, bool allow_inv)
 			layer->height = height;
 			layer->z = -1; /* 隐藏 */
 			layer->allow_inv = allow_inv;
+			layer->window = NULL;
 
 			debug("LAYER: Layer created at %p, size %dx%d.\n", layer, width, height);
 			return layer;
@@ -101,12 +95,12 @@ static void layer_refreshmap(int32_t vx0, int32_t vy0, int32_t vx1, int32_t vy1,
 
 	if (vx0 < 0) vx0 = 0;
 	if (vy0 < 0) vy0 = 0;
-	if (vx1 > layer_manager.width) vx1 = layer_manager.width;
-	if (vy1 > layer_manager.height) vy1 = layer_manager.height;
+	if (vx1 > g_lm.width) vx1 = g_lm.width;
+	if (vy1 > g_lm.height) vy1 = g_lm.height;
 
-	for (int32_t z = z0; z <= layer_manager.top; z++) {
-		layer = layer_manager.layers[z];
-		id = layer - layer_manager.layers0;
+	for (int32_t z = z0; z <= g_lm.top; z++) {
+		layer = g_lm.layers[z];
+		id = layer - g_lm.layers0;
 
 		bx0 = vx0 - layer->x;
 		by0 = vy0 - layer->y;
@@ -124,7 +118,7 @@ static void layer_refreshmap(int32_t vx0, int32_t vy0, int32_t vx1, int32_t vy1,
 				int32_t vy = layer->y + by;
 				for (int32_t bx = bx0; bx < bx1; bx++) {
 					int32_t vx = layer->x + bx;
-					layer_manager.map[vy * layer_manager.width + vx] = id;
+					g_lm.map[vy * g_lm.width + vx] = id;
 				}
 			}
 		} else {
@@ -134,7 +128,7 @@ static void layer_refreshmap(int32_t vx0, int32_t vy0, int32_t vx1, int32_t vy1,
 				for (int32_t bx = bx0; bx < bx1; bx++) {
 					int32_t vx = layer->x + bx;
 					if (GET_PIXEL32(layer->buf, layer->width, bx, by).a == 0xff) {
-						layer_manager.map[vy * layer_manager.width + vx] = id;
+						g_lm.map[vy * g_lm.width + vx] = id;
 					}
 				}
 			}
@@ -160,12 +154,12 @@ static void layer_refreshsub(int32_t vx0, int32_t vy0, int32_t vx1, int32_t vy1,
 	/* 修正超过画面范围的值 */
 	if (vx0 < 0) vx0 = 0;
 	if (vy0 < 0) vy0 = 0;
-	if (vx1 > layer_manager.width) vx1 = layer_manager.width;
-	if (vy1 > layer_manager.height) vy1 = layer_manager.height;
+	if (vx1 > g_lm.width) vx1 = g_lm.width;
+	if (vy1 > g_lm.height) vy1 = g_lm.height;
 
 	for (int32_t z = z0; z <= z1; z++) {
-		layer = layer_manager.layers[z];
-		id = layer - layer_manager.layers0;
+		layer = g_lm.layers[z];
+		id = layer - g_lm.layers0;
 		
 		bx0 = vx0 - layer->x;
 		by0 = vy0 - layer->y;
@@ -182,9 +176,9 @@ static void layer_refreshsub(int32_t vx0, int32_t vy0, int32_t vx1, int32_t vy1,
 				int32_t vy = layer->y + by;
 				for (int32_t bx = bx0; bx < bx1; bx++) {
 					int32_t vx = layer->x + bx;
-					if (layer_manager.map[vy * layer_manager.width + vx] == id) {
+					if (g_lm.map[vy * g_lm.width + vx] == id) {
 						COLOR pixel = GET_PIXEL32(layer->buf, layer->width, bx, by);
-						SET_PIXEL32(layer_manager.fb, layer_manager.width, vx, vy, pixel);
+						SET_PIXEL32(g_lm.fb, g_lm.width, vx, vy, pixel);
 					}
 				}
 			}
@@ -193,7 +187,7 @@ static void layer_refreshsub(int32_t vx0, int32_t vy0, int32_t vx1, int32_t vy1,
 				int32_t vy = layer->y + by;
 				for (int32_t bx = bx0; bx < bx1; bx++) {
 					int32_t vx = layer->x + bx;
-					if (layer_manager.map[vy * layer_manager.width + vx] == id) {
+					if (g_lm.map[vy * g_lm.width + vx] == id) {
 						COLOR pixel = GET_PIXEL32(layer->buf, layer->width, bx, by);
 						set_pixel(vx, vy, pixel);
 					}
@@ -213,7 +207,7 @@ void layer_set_z(LAYER *layer, int32_t z1)
 	if (z0 == z1) return;
 
 	/* 对超出范围的值进行修正 */
-	if (z1 > layer_manager.top + 1) z1 = layer_manager.top + 1;
+	if (z1 > g_lm.top + 1) z1 = g_lm.top + 1;
 	if (z1 < -1) z1 = -1;
 	layer->z = z1;
 
@@ -222,20 +216,20 @@ void layer_set_z(LAYER *layer, int32_t z1)
 		/* 调低 */
 		if (z1 >= 0) {
 			for (int32_t z = z0; z > z1; z--) {
-				layer_manager.layers[z] = layer_manager.layers[z - 1];
-				layer_manager.layers[z]->z = z;
+				g_lm.layers[z] = g_lm.layers[z - 1];
+				g_lm.layers[z]->z = z;
 			}
-			layer_manager.layers[z1] = layer;
+			g_lm.layers[z1] = layer;
 			layer_refreshmap(layer->x, layer->y, layer->x + layer->width, layer->y + layer->height, z1 + 1);
 			layer_refreshsub(layer->x, layer->y, layer->x + layer->width, layer->y + layer->height, z1 + 1, z0);
 		} else {
-			if (z0 < layer_manager.top) {
-				for (int32_t z = z0; z < layer_manager.top; z++) {
-					layer_manager.layers[z] = layer_manager.layers[z + 1];
-					layer_manager.layers[z]->z = z;
+			if (z0 < g_lm.top) {
+				for (int32_t z = z0; z < g_lm.top; z++) {
+					g_lm.layers[z] = g_lm.layers[z + 1];
+					g_lm.layers[z]->z = z;
 				}
 			}
-			layer_manager.top--;
+			g_lm.top--;
 			layer_refreshmap(layer->x, layer->y, layer->x + layer->width, layer->y + layer->height, 0);
 			layer_refreshsub(layer->x, layer->y, layer->x + layer->width, layer->y + layer->height, 0, z0 - 1);
 		}
@@ -243,17 +237,17 @@ void layer_set_z(LAYER *layer, int32_t z1)
 		/* 调高 */
 		if (z0 >= 0) {
 			for (int32_t z = z0; z < z1; z++) {
-				layer_manager.layers[z] = layer_manager.layers[z + 1];
-				layer_manager.layers[z]->z = z;
+				g_lm.layers[z] = g_lm.layers[z + 1];
+				g_lm.layers[z]->z = z;
 			}
-			layer_manager.layers[z1] = layer;
+			g_lm.layers[z1] = layer;
 		} else {
-			for (int32_t z = layer_manager.top; z >= z1; z--) {
-				layer_manager.layers[z + 1] = layer_manager.layers[z];
-				layer_manager.layers[z + 1]->z = z + 1;
+			for (int32_t z = g_lm.top; z >= z1; z--) {
+				g_lm.layers[z + 1] = g_lm.layers[z];
+				g_lm.layers[z + 1]->z = z + 1;
 			}
-			layer_manager.layers[z1] = layer;
-			layer_manager.top++;
+			g_lm.layers[z1] = layer;
+			g_lm.top++;
 		}
 		layer_refreshmap(layer->x, layer->y, layer->x + layer->width, layer->y + layer->height, z1);
 		layer_refreshsub(layer->x, layer->y, layer->x + layer->width, layer->y + layer->height, z1, z1);

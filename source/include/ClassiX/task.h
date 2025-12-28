@@ -16,7 +16,7 @@
 #define MAX_TASKS							(1000)
 
 #define DEFAULT_USER_STACK					(4 * 1024)
-#define TIME_SLICE_BASE_PER_PRIORITY_MS		(5)
+#define TIME_SLICE_BASE_PER_PRIORITY_MS		(1)
 
 typedef enum {
 	TASK_FREE = 0,

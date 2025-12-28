@@ -4,7 +4,6 @@
 
 #include <ClassiX/assets.h>
 #include <ClassiX/blkdev.h>
-#include <ClassiX/cga.h>
 #include <ClassiX/cpu.h>
 #include <ClassiX/debug.h>
 #include <ClassiX/fatfs.h>
@@ -49,7 +48,7 @@
 extern uintptr_t kernel_start_phys;						/* 内核起始物理地址 */
 extern uintptr_t kernel_end_phys;						/* 内核结束物理地址 */
 extern uintptr_t bss_start_phys;						/* BSS 段起始地址 */
-extern uintptr_t bss_end_phys;							/* BSS 段结束地址 */\
+extern uintptr_t bss_end_phys;							/* BSS 段结束地址 */
 
 const CLASSIX_HEADER *kernel_header = (CLASSIX_HEADER *) &kernel_start_phys;
 
@@ -59,9 +58,6 @@ BITMAP_FONT font_terminus_16b;
 BITMAP_FONT font_unifont;
 
 #define KMSG_QUEUE_SIZE						(128)		/* 内核消息队列大小 */
-
-#define KEYBOARD_DATA0						(256)		/* 键盘数据起始索引 */
-#define MOUSE_DATA0							(512)		/* 鼠标数据起始索引 */
 
 static FIFO kmsg_queue = { };							/* 内核消息队列 */
 
@@ -81,7 +77,7 @@ void main(multiboot_info_t *mbi)
 
 	int32_t cursor_x, cursor_y;				/* 光标位置 */
 	int32_t new_cursor_x, new_cursor_y;		/* 光标移动后的位置 */
-	bool cursor_updated = false;			/* 光标是否已更新 */
+	bool cursor_updated = false;			/* 光标位置是否已更新 */
 
 	uart_init();
 
@@ -175,9 +171,19 @@ void main(multiboot_info_t *mbi)
 	LAYER *layer_cursor = cursor_init();
 	cursor_x = (g_fb.width - layer_cursor->width) / 2;
 	cursor_y = (g_fb.height - layer_cursor->height) / 2;
+	new_cursor_x = cursor_x;
+	new_cursor_y = cursor_y;
 	layer_move(layer_cursor, cursor_x, cursor_y);
 	layer_set_z(layer_cursor, 1);
-
+	/* 获得焦点的窗口图层 */
+	LAYER *layer_focused = NULL;
+	
+	int32_t drag_start_x = 0, drag_start_y = 0;					/* 拖动起始位置 */
+	int32_t drag_window_start_x = 0, drag_window_start_y = 0;	/* 拖动窗口起始位置 */
+	int32_t new_window_x = 0, new_window_y = 0;					/* 窗口移动后的位置 */
+	bool dragging = false;										/* 是否正在拖动窗口 */
+	bool window_updated = false;								/* 窗口位置是否已更新 */
+	LAYER *layer_dragged = NULL;								/* 正在拖动的图层 */
 
 	/* 扫描 PCI 设备 */
 	pci_scan_devices();
@@ -206,6 +212,10 @@ void main(multiboot_info_t *mbi)
 	fifo_push(&key_cmd_queue, KEYCMD_LED);
 	fifo_push(&key_cmd_queue, 0); /* 初始状态全部关闭 */
 
+	/* 运行演示程序 */
+	extern TASK *demo_terminal(void);
+	TASK *terminal_task = demo_terminal();
+
 	for (;;) {
 		if (fifo_status(&key_cmd_queue) > 0 && key_cmd_wait == 0xffffffff) {
 			/* 发送键盘数据 */
@@ -219,6 +229,9 @@ void main(multiboot_info_t *mbi)
 				/* 光标位置已更新 */
 				layer_move(layer_cursor, new_cursor_x, new_cursor_y);
 				cursor_updated = false;
+			} else if (window_updated && layer_dragged) {
+				/* 窗口位置已更新 */
+				layer_move(layer_dragged, new_window_x, new_window_y);
 			} else {
 				task_sleep(ktask);
 			}
@@ -227,10 +240,9 @@ void main(multiboot_info_t *mbi)
 			sti();
 			if (KEYBOARD_DATA0 <= _data && _data < MOUSE_DATA0) {
 				/* 键盘数据 */
-				if (_data == KEYBOARD_DATA0 + EXPANDED_KEY_PREFIX) {
+				if (_data == KEYBOARD_DATA0 + EXPANDED_KEY_PREFIX)
 					/* 扩展键前缀 */
 					expanded_key_phase = 1;
-				}
 
 				/* 将键码转换为字符数据 */
 				if (_data < KEYBOARD_DATA0 + 0x80)
@@ -241,10 +253,29 @@ void main(multiboot_info_t *mbi)
 					keychar = 0;
 
 				/* 字母 */
-				if (isupper(keychar))
-					if (((key_modifiers & (MODIFIER_SHIFT | MODIFIER_RSHIFT)) && (key_leds & KEYBOARD_LED_CAPS_LOCK)) ||
-						((!(key_modifiers & (MODIFIER_SHIFT | MODIFIER_RSHIFT))) && (!(key_leds & KEYBOARD_LED_CAPS_LOCK))))
-						keychar += ('a' - 'A');
+				if (isalpha(keychar)) {
+					bool shift_pressed = (key_modifiers & (MODIFIER_SHIFT | MODIFIER_RSHIFT)) != 0;
+					bool caps_lock_on = (key_leds & KEYBOARD_LED_CAPS_LOCK) != 0;
+					
+					if (shift_pressed != caps_lock_on) {
+						if (islower(keychar))
+							keychar = toupper(keychar);
+					} else {
+						if (isupper(keychar))
+							keychar = tolower(keychar);
+					}
+				}
+
+				/* 小键盘区处理 */
+				if (_data >= KEYBOARD_DATA0 + 0x47 && _data <= KEYBOARD_DATA0 + 0x53)
+					/* 小键盘区键码范围 */
+					if (!(key_leds & KEYBOARD_LED_NUM_LOCK))
+						if ('0' <= keychar && keychar <= '9')
+							keychar = 0;
+
+				if (keychar && g_lm.top > 1)
+					/* 有效字符，发送到获得焦点的窗口 */
+					fifo_push(&terminal_task->fifo, keychar + KEYBOARD_DATA0);
 
 				/* LControl */
 				if (_data == KEYBOARD_DATA0 + 0x1d)
@@ -373,6 +404,45 @@ void main(multiboot_info_t *mbi)
 						/* 按下鼠标 */
 						if (mouse_data.button & MOUSE_LBUTTON) {
 							/* 按下鼠标左键 */
+							if (!dragging) {
+								/* 寻找最上方的窗口 */
+								for (int32_t z = g_lm.top - 1; z >= 0; z--) {
+									LAYER *current_layer = g_lm.layers[z];
+									if (!current_layer->window)
+										continue;
+									
+									int32_t rx = cursor_x - current_layer->x;	/* 相对窗口的 X 坐标 */
+									int32_t ry = cursor_y - current_layer->y;	/* 相对窗口的 Y 坐标 */
+
+									if (0 <= rx && rx < current_layer->width && 0 <= ry && ry < current_layer->height) {
+										if (GET_PIXEL32(current_layer->buf, current_layer->width, rx, ry).a) {
+											/* 非透明区域 */
+											layer_set_z(current_layer, g_lm.top - 1);
+
+											if (WD_WINDOW_IS_HOLDING_TITLEBAR(current_layer->window, rx, ry)) {
+												/* 进入窗口移动模式 */
+												drag_start_x = cursor_x;
+												drag_start_y = cursor_y;
+												drag_window_start_x = current_layer->x;
+												drag_window_start_y = current_layer->y;
+												new_window_x = current_layer->x;
+												new_window_y = current_layer->y;
+												layer_dragged = current_layer;
+												dragging = true;
+												window_updated = true;
+												break;
+											}
+										}
+									}
+								}
+							} else {
+								/* 正在拖动窗口 */
+								if (layer_dragged) {
+									/* 新位置 = 窗口初始位置 + (当前鼠标位置 - 拖动起始位置) */
+									new_window_x = drag_window_start_x + (cursor_x - drag_start_x);
+									new_window_y = drag_window_start_y + (cursor_y - drag_start_y);
+								}
+							}
 						} else if (mouse_data.button & MOUSE_RBUTTON) {
 							/* 按下鼠标右键 */
 						} else if (mouse_data.button & MOUSE_MBUTTON) {
@@ -380,7 +450,14 @@ void main(multiboot_info_t *mbi)
 						}
 					} else {
 						/* 松开鼠标 */
-
+						if (dragging) {
+							dragging = false;
+							if (layer_dragged && window_updated) {
+								layer_move(layer_dragged, new_window_x, new_window_y);
+								window_updated = false;
+								layer_dragged = NULL;
+							}
+						}
 					}
 				}
 			}

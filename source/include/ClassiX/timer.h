@@ -18,7 +18,7 @@ typedef enum {
 } TIMER_STATE;
 
 /* 定时器回调函数类型 */
-typedef void (*TIMER_CALLBACK) (void *arg);
+typedef void (*TIMER_CALLBACK)(void *arg);
 
 typedef struct TIMER {
 	uint64_t interval;			/* 触发间隔 */

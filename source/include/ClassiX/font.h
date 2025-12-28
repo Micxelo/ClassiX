@@ -21,6 +21,10 @@ typedef struct {
 	uint8_t version;		/* PSF 版本 */
 } BITMAP_FONT;
 
+extern BITMAP_FONT font_terminus_12n;
+extern BITMAP_FONT font_terminus_16n;
+extern BITMAP_FONT font_terminus_16b;
+
 BITMAP_FONT psf_load(const uint8_t *buf, size_t size);
 void psf_free(BITMAP_FONT *font);
 uint32_t psf_find_char_index(const BITMAP_FONT *font, uint32_t unicode);
