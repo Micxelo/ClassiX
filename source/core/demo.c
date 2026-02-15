@@ -313,6 +313,15 @@ static void terminal_cmd_sysinfo(TERMINAL *terminal)
 	terminal_printf(terminal, "  Usage: %d%%\n", usage_percent);
 }
 
+/* run 命令 */
+static void terminal_cmd_run(TERMINAL *terminal)
+{
+	FAT_FILE file;
+	fatfs_open_file(&file, g_fs, "/system/hello.srv");
+	extern int32_t app_start(FAT_FILE *file, const char *cmdline);
+	app_start(&file, NULL);
+}
+
 /* unknown 命令 */
 static void terminal_cmd_unknown(TERMINAL *terminal)
 {
@@ -339,6 +348,8 @@ static void terminal_process_cmdline(TERMINAL *terminal)
 		terminal_cmd_ls(terminal);
 	else if (strcmp(terminal->cmdline, "sysinfo") == 0)
 		terminal_cmd_sysinfo(terminal);
+	else if (strcmp(terminal->cmdline, "run") == 0)
+		terminal_cmd_run(terminal);
 	else if (terminal->cmdline[0] != '\0')
 		terminal_cmd_unknown(terminal);
 		

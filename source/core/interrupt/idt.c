@@ -84,4 +84,8 @@ void init_idt(void)
 	idt_set_gate(0x0E, (uint32_t) asm_isr_pf,  0x08, AR_INTGATE32);	/* 页错误异常 */
 	idt_set_gate(0x10, (uint32_t) asm_isr_mf,  0x08, AR_INTGATE32);	/* x87 浮点异常 */
 	idt_set_gate(0x11, (uint32_t) asm_isr_ac,  0x08, AR_INTGATE32);	/* 对齐检查异常 */
+
+	/* 系统调用 */
+	extern void service_api(void);
+	idt_set_gate(0x40, (uint32_t) service_api, 0x08, AR_INTGATE32 + 0x60);
 }

@@ -38,22 +38,26 @@ typedef struct {
 	uint32_t ldtr, iomap;
 } TSS;
 
+typedef struct {
+	uint16_t limit_low;
+	uint16_t base_low;
+	uint8_t base_mid;
+	uint8_t access;
+	uint8_t granularity;
+	uint8_t base_high;
+} SEGMENT_DESCRIPTOR;
+
 typedef struct TASK {
-	int32_t selector;		/* GDT 选择子 */
-	TASK_STATE state;		/* 任务状态 */
-	TASK_PRIORITY priority;	/* 任务优先级 */
-	FIFO fifo;
-	TSS tss;
-	struct {
-		uint16_t limit_low;
-		uint16_t base_low;
-		uint8_t base_mid;
-		uint8_t access;
-		uint8_t granularity;
-		uint8_t base_high;
-	} ldt[2];				/* LDT 描述符 */
-	uint32_t ds_base;		/* 数据段基址 */
+	int32_t selector;			/* GDT 选择子 */
+	TASK_STATE state;			/* 任务状态 */
+	TASK_PRIORITY priority;		/* 任务优先级 */
+	FIFO fifo;					/* 任务专用 FIFO */
+	TSS tss;					/* 任务状态段 */
+	SEGMENT_DESCRIPTOR ldt[2];	/* 代码段和数据段描述符 */
+	uint32_t ds_base;			/* 数据段基址 */
 } TASK;
+
+#define TID(task)							(((task)->selector) / 8)
 
 TASK *init_multitasking(void);
 TASK *task_alloc(void);

@@ -21,9 +21,9 @@ typedef struct __attribute__((packed)) {
 } gdt_ptr_t;
 
 /*
-	0 - reserved
-	1 - kernel code segment
-	2 - kernel data segment
+	0 - 保留
+	1 - 内核代码段
+	2 - 内核数据段
 */
 static gdt_entry_t gdt_entries[GDT_LIMIT];
 static gdt_ptr_t gdt_ptr;

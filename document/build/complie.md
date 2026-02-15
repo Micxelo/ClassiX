@@ -21,7 +21,7 @@ sudo apt install build-essential nasm
 
 ```shell
 git clone https://github.com/Micxelo/ClassiX.git
-cd ClassiX/source
+cd ClassiX
 ```
 
 ## 构建

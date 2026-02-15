@@ -16,9 +16,9 @@ typedef struct __attribute__((packed)) {
 	union {
 		uint32_t version;	/* 版本信息 */
 		struct {
-			uint16_t major;	/* 主版本号 */
+			uint8_t major;	/* 主版本号 */
 			uint8_t minor;	/* 次版本号 */
-			uint8_t patch;	/* 修订号 */
+			uint16_t patch;	/* 修订号 */
 		};
 	};
 	uint32_t entry;			/* 入口点 */

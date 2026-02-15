@@ -95,7 +95,7 @@ int32_t mouse_decoder(MOUSE_DATA *mouse_data, uint8_t data)
 	return 0;
 }
 
-void isr_mouse(ISR_PARAMS params)
+void isr_mouse(ISR_PARAMS *params)
 {
 	uint32_t data = in8(PORT_MOUSE_DATA);
 	fifo_push(mouse_fifo, data + mousedata0);

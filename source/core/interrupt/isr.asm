@@ -77,7 +77,7 @@ _asm_isr_%1:
 	pushad
 	
 	; 设置内核数据段
-	mov ax, ss
+	mov ax, 0x10
 	mov ds, ax
 	mov es, ax
 	
@@ -101,7 +101,7 @@ _asm_isr_%1:
 	iretd
 %endmacro
 
-; 使用宏定义各中断处理程序
+; 中断处理程序
 ISR_TEMPLATE pit			; PIT 中断
 ISR_TEMPLATE keyboard		; 键盘中断
 ISR_TEMPLATE mouse			; 鼠标中断

@@ -43,7 +43,7 @@ void init_pit(uint32_t frequency)
 	debug("PIT: PIT initialized at %d Hz (divisor: %d).\n", frequency, divisor);
 }
 
-void isr_pit(ISR_PARAMS params)
+void isr_pit(ISR_PARAMS *params)
 {
 	/* 增加系统时钟滴答计数 */
 	system_ticks++;

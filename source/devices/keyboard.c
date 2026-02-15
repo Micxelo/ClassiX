@@ -87,7 +87,7 @@ void kbc_send_data(uint8_t data)
 	out8(PORT_KEYBOARD_DATA, data);
 }
 
-void isr_keyboard(ISR_PARAMS params)
+void isr_keyboard(ISR_PARAMS *params)
 {
 	uint32_t data;
 	out8(PIC0_OCW2, 0x20); /* 主 PIC EOI */

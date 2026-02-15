@@ -11,10 +11,10 @@
 
 #include <ClassiX/typedef.h>
 
-#define AR_0_CODE32_ER						(0xcf9a)		/* 可执行、可读、访问级别 0 */
-#define AR_0_DATA32_RW						(0xcf92)		/* 可读写、访问级别 0 */
-#define AR_3_CODE32_ER						(0xcffa)		/* 可执行、可读、访问级别 3 */
-#define AR_3_DATA32_RW						(0xcff2)		/* 可读写、访问级别 3 */
+#define AR_0_CODE32_ER						(0x0c9a)		/* 可执行、可读、访问级别 0 */
+#define AR_0_DATA32_RW						(0x0c92)		/* 可读写、访问级别 0 */
+#define AR_3_CODE32_ER						(0x04fa)		/* 可执行、可读、访问级别 3 */
+#define AR_3_DATA32_RW						(0x04f2)		/* 可读写、访问级别 3 */
 
 #define GDT_LIMIT							(8192)
 #define TASK_GDT0							(3)
@@ -44,27 +44,27 @@
 #define INT_NUM_MOUSE						(0x20 + 12)
 
 typedef struct {
-	/* 由处理器自动压入的部分 */
-	uint32_t eip;
-	uint32_t cs;
-	uint32_t eflags;
-
-	/* 错误码 */
-	uint32_t errcode;	/* 对于无错误码的中断，此值未定义 */
-	
-	/* 由中断处理程序压入的部分 */
-	uint32_t ds;
-	uint32_t es;
-	
 	/* 通用寄存器 (PUSHAD 顺序) */
 	uint32_t edi;
 	uint32_t esi;
 	uint32_t ebp;
-	uint32_t esp;	/* 中断前的 ESP 值 */
+	uint32_t esp; /* 中断前的 ESP 值 */
 	uint32_t ebx;
 	uint32_t edx;
 	uint32_t ecx;
 	uint32_t eax;
+
+	/* 由中断处理程序压入的部分 */
+	uint32_t ds;
+	uint32_t es;
+
+	/* 错误码 (对于无错误码的中断为 0) */
+	uint32_t errcode;
+
+	/* 由处理器自动压入的部分 */
+	uint32_t eflags;
+	uint32_t cs;
+	uint32_t eip;
 } ISR_PARAMS;
 
 void gdt_set_gate(int32_t num, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran);

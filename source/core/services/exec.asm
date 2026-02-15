@@ -33,23 +33,32 @@ _service_end:
 global _service_start
 _service_start:
 	pushad					; 保存寄存器
+
+	; 读取函数参数
 	mov eax, [esp + 36]		; 应用程序 eip
 	mov ecx, [esp + 40]		; 应用程序 cs
 	mov edx, [esp + 44]		; 应用程序 esp
 	mov ebx, [esp + 48]		; 应用程序 ds/ss
-	mov ebp, [esp + 52]		; tss.esp0 
+	mov ebp, [esp + 52]		; tss.esp0
+
+	; 设置 TSS
 	mov [ebp], esp			; 内核 esp
-	mov [ebp + 4], ss		; 内核 ess
+	mov word [ebp + 4], ss	; 内核 ess
+
+	; 构造特权级切换栈帧
+	push ebx				; 应用程序 ss
+	push edx				; 应用程序 esp
+	push dword 0x202		; 应用程序 eflags
+	push ecx				; 应用程序 cs
+	push eax				; 应用程序 eip
+
+	or ecx, 3				; 设置 RPL=3
+	or ebx, 3				; 设置 RPL=3
+
+	; 设置用户态数据段寄存器
 	mov es, bx
 	mov ds, bx
 	mov fs, bx
 	mov gs, bx
-	; 调整堆栈，以用 retf 跳转到应用程序
-	or ecx, 3
-	or ebx, 3
-	push ebx				; 应用程序 ss
-	push edx				; 应用程序 esp
-	push ecx				; 应用程序 cs
-	push eax				; 应用程序 eip
-	retf
-
+	
+	iretd

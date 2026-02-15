@@ -59,7 +59,7 @@ BITMAP_FONT font_unifont;
 
 #define KMSG_QUEUE_SIZE						(128)		/* 内核消息队列大小 */
 
-static FIFO kmsg_queue = { };							/* 内核消息队列 */
+static FIFO kmsg = { };									/* 内核消息队列 */
 
 void main(multiboot_info_t *mbi)
 {
@@ -136,13 +136,13 @@ void main(multiboot_info_t *mbi)
 	init_pic();
 
 	/* 初始化键盘、鼠标 */
-	fifo_init(&kmsg_queue, KMSG_QUEUE_SIZE, kmsg_queue_buf, NULL);
-	init_keyboard(&kmsg_queue, KEYBOARD_DATA0);
-	init_mouse(&kmsg_queue, MOUSE_DATA0);
+	fifo_init(&kmsg, KMSG_QUEUE_SIZE, kmsg_queue_buf, NULL);
+	init_keyboard(&kmsg, KEYBOARD_DATA0);
+	init_mouse(&kmsg, MOUSE_DATA0);
 
 	/* 初始化多任务 */
 	TASK *ktask = init_multitasking();
-	kmsg_queue.task = ktask;
+	kmsg.task = ktask;
 	task_register(ktask, PRIORITY_HIGH);
 
 	/* 初始化 PIT */
@@ -223,7 +223,7 @@ void main(multiboot_info_t *mbi)
 			kbc_send_data((uint8_t) key_cmd_wait);
 		}
 		cli();
-		if (fifo_status(&kmsg_queue) == 0) {
+		if (fifo_status(&kmsg) == 0) {
 			sti();
 			if (cursor_updated) {
 				/* 光标位置已更新 */
@@ -236,7 +236,7 @@ void main(multiboot_info_t *mbi)
 				task_sleep(ktask);
 			}
 		} else {
-			uint32_t _data = fifo_pop(&kmsg_queue);
+			uint32_t _data = fifo_pop(&kmsg);
 			sti();
 			if (KEYBOARD_DATA0 <= _data && _data < MOUSE_DATA0) {
 				/* 键盘数据 */

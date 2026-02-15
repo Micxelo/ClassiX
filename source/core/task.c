@@ -53,12 +53,12 @@ TASK *init_multitasking(void)
 			(uint32_t) &task_manager->tasks0[i].tss,
 			sizeof(TSS) - 1,
 			AR_TSS32 & 0xff,
-			AR_TSS32 >> 16);
+			AR_TSS32 >> 8);
 		gdt_set_gate(TASK_GDT0 + i + MAX_TASKS,
 			(uint32_t) &task_manager->tasks0[i].ldt,
 			sizeof(task_manager->tasks0[i].ldt) - 1,
 			AR_LDT & 0xff,
-			AR_LDT >> 16);
+			AR_LDT >> 8);
 	}
 
 	ktask = task_alloc();
@@ -112,7 +112,6 @@ TASK *task_alloc(void)
 			task->tss.ds = 0;
 			task->tss.fs = 0;
 			task->tss.gs = 0;
-			task->tss.ldtr = 0;
 			task->tss.iomap = 0x40000000;
 
 			debug("TASK: Allocated task %p.\n", task);
