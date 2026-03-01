@@ -33,7 +33,38 @@ void init_mouse(FIFO *fifo, int32_t data0)
 	extern void asm_isr_mouse(void);
 	idt_set_gate(INT_NUM_MOUSE, (uint32_t) asm_isr_mouse, 0x08, AR_INTGATE32);
 
+	/* 等待键盘控制器就绪 */
 	kbc_wait_ready();
+
+	/* 进入滚轮模式 */
+	out8(PORT_MOUSE_COMMAND, KEYCMD_SENDTO_MOUSE);
+	kbc_wait_ready();
+	out8(PORT_MOUSE_DATA, 0xf3); /* 设置采样率 */
+	kbc_wait_ready();
+	out8(PORT_MOUSE_COMMAND, KEYCMD_SENDTO_MOUSE);
+	kbc_wait_ready();
+	out8(PORT_MOUSE_DATA, 200); /* 采样率 200 */
+	kbc_wait_ready();
+
+	out8(PORT_MOUSE_COMMAND, KEYCMD_SENDTO_MOUSE);
+	kbc_wait_ready();
+	out8(PORT_MOUSE_DATA, 0xf3);
+	kbc_wait_ready();
+	out8(PORT_MOUSE_COMMAND, KEYCMD_SENDTO_MOUSE);
+	kbc_wait_ready();
+	out8(PORT_MOUSE_DATA, 100); /* 采样率 100 */
+	kbc_wait_ready();
+
+	out8(PORT_MOUSE_COMMAND, KEYCMD_SENDTO_MOUSE);
+	kbc_wait_ready();
+	out8(PORT_MOUSE_DATA, 0xf3);
+	kbc_wait_ready();
+	out8(PORT_MOUSE_COMMAND, KEYCMD_SENDTO_MOUSE);
+	kbc_wait_ready();
+	out8(PORT_MOUSE_DATA, 80); /* 采样率 80 */
+	kbc_wait_ready();
+
+	/* 启用鼠标数据报告 */
 	out8(PORT_MOUSE_COMMAND, KEYCMD_SENDTO_MOUSE);
 	kbc_wait_ready();
 	out8(PORT_MOUSE_DATA, MOUSECMD_ENABLE);
@@ -54,10 +85,11 @@ int32_t mouse_decoder(MOUSE_DATA *mouse_data, uint8_t data)
 		mouse_data->phase = 0;
 		return 0; /* 无数据包 */
 	}
+
 	/* 处理鼠标数据包 */
 	switch (mouse_data->phase) {
 		case 0:
-			/* Bit1：按钮状态和标志位 */
+			/* 字节 1：按钮状态和标志位 */
 			if ((data & 0xc8) == 0x08) {
 				mouse_data->button = data; /* 按钮状态 */
 				mouse_data->phase = 1;
@@ -68,24 +100,33 @@ int32_t mouse_decoder(MOUSE_DATA *mouse_data, uint8_t data)
 			break;
 
 		case 1:
-			/* Bit2：X 位移 */
+			/* 字节 2：X 位移 */
 			mouse_data->dx = (int8_t) data;
 			mouse_data->phase = 2;
 			break;
 
 		case 2:
-			/* Bit3：Y 位移 */
+			/* 字节 3：Y 位移 */
 			mouse_data->dy = (int8_t) data;
+			mouse_data->phase = 3;
+			break;
 
-			if (mouse_data->button & 0x10) mouse_data->dx |= 0xffffff00;
-			if (mouse_data->button & 0x20) mouse_data->dy |= 0xffffff00;
+		case 3:
+			/* 字节 4：滚轮位移  */
+			mouse_data->dz = (int8_t) data;
+
+			/* 修正数据 */
+			if (mouse_data->button & 0x10)
+				mouse_data->dx |= 0xffffff00;
+			if (mouse_data->button & 0x20)
+			mouse_data->dy |= 0xffffff00;
 			mouse_data->button &= 0b00000111;
 			mouse_data->dy = -mouse_data->dy; /* Y 轴反转 */
 
 			/* 完整数据包已接收 */
 			mouse_data->phase = 0; /* 重置阶段 */
+
 			return 1;
-			break;
 
 		default:
 			debug("MOUSE: Unknown mouse phase: %d.\n", mouse_data->phase);

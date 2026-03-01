@@ -629,7 +629,7 @@ static int32_t _vsprintfcb(_SPRINTFCB *callback, void *user, char *buf, char con
 			cs = 1 + (3 << 24);
 			goto flt_lead;
 
-		case 'f': 
+		case 'f':
 			/* 浮点数 */
 			fv = va_arg(va, double);
 		doafloat:
@@ -814,7 +814,7 @@ static int32_t _vsprintfcb(_SPRINTFCB *callback, void *user, char *buf, char con
 			l = (8 << 4) | (1 << 8);
 			goto radixnum;
 
-		case 'o': 
+		case 'o':
 			/* 八进制 */
 			h = hexu;
 			lead[0] = 0;

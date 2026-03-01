@@ -18,6 +18,7 @@ typedef struct {
 } cache_info_t;
 
 bool check_cpuid_support(void);
+bool cpuid(uint32_t function, uint32_t *eax, uint32_t *ebx, uint32_t *ecx, uint32_t *edx);
 bool check_tsc_support(void);
 bool check_tsc_invariant(void);
 uint64_t rdtsc(void);

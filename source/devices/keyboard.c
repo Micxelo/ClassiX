@@ -62,7 +62,7 @@ void init_keyboard(FIFO *fifo, int32_t data0)
 	out8(PORT_KEYBOARD_COMMAND, KEYCMD_WRITE_MODE);
 	kbc_wait_ready();
 	out8(PORT_KEYBOARD_DATA, KBC_MODE);
-	
+
 	debug("KEYBOARD: Keyboard initialized.\n");
 }
 

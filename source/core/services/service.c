@@ -13,7 +13,8 @@
 
 #include <string.h>
 
-#define SERVICE_HEADER_SIGNATURE			(0x56525358)	/* "XSRV" */
+#define SERVICE_HEADER_SIGNATURE_CONSOLE	(0x43565253)	/* "SRVC" */
+#define SERVICE_HEADER_SIGNATURE_WINDOW		(0x57565253)	/* "SRIW" */
 
 typedef struct __attribute__((packed)) {
 	uint32_t signature;		/* 文件签名 */
@@ -38,8 +39,9 @@ typedef struct __attribute__((packed)) {
 	uint32_t bss_size;		/* BSS段大小 */
 	uint32_t stack_size;	/* 栈大小 */
 	uint32_t heap_size;		/* 堆大小 */
+	uint32_t alignment;		/* 内存对齐要求 */
 
-	uint32_t reserved[2];	/* 保留字段 */
+	uint32_t reserved;		/* 保留字段 */
 } SERVICE_HEADER;
 
 extern void service_start(uint32_t eip, uint32_t cs, uint32_t esp, uint32_t ds, uint32_t *tss_esp0);
@@ -79,7 +81,7 @@ int32_t app_start(FAT_FILE *file, const char *cmdline)
 		debug("SERVICE: Invalid file pointer in app_start.\n");
 		return -1;
 	}
-	
+
 	buf = kmalloc(file->entry->file_size);
 	if (NULL == buf) {
 		debug("SERVICE: Failed to allocate memory for service file.\n");
@@ -95,7 +97,7 @@ int32_t app_start(FAT_FILE *file, const char *cmdline)
 	}
 
 	SERVICE_HEADER *header = (SERVICE_HEADER *) buf;
-	if (header->signature != SERVICE_HEADER_SIGNATURE) {
+	if (header->signature != SERVICE_HEADER_SIGNATURE_CONSOLE && header->signature != SERVICE_HEADER_SIGNATURE_WINDOW) {
 		debug("SERVICE: Invalid service file signature.\n");
 		result = -4; /* 文件格式错误 */
 		goto clean;
@@ -116,10 +118,17 @@ int32_t app_start(FAT_FILE *file, const char *cmdline)
 		goto clean;
 	}
 
-	uint32_t code_segment_size = header->code_size + header->rodata_size;
-	uint32_t data_segment_size = header->data_size + header->bss_size + header->heap_size + header->stack_size;
+	/* 计算代码段和数据段大小，考虑对齐 */
+	uint32_t code_segment_size = ALIGN_UP(header->code_size, header->alignment);
+	uint32_t data_segment_size =
+		ALIGN_UP(header->rodata_size, header->alignment) +
+		ALIGN_UP(header->data_size, header->alignment) +
+		header->bss_size +
+		header->heap_size +
+		header->stack_size;
 
-	if (data_segment_size == 0) data_segment_size = 1; /* 确保数据段大小不为零，以便正确设置段界限 */
+	/* 确保数据段大小不为零，以便正确设置段界限 */
+	if (data_segment_size == 0) data_segment_size = 1;
 
 	if (code_segment_size == 0) {
 		debug("SERVICE: Service file has no code segment.\n");
@@ -142,25 +151,30 @@ int32_t app_start(FAT_FILE *file, const char *cmdline)
 
 	debug("SERVICE: Loaded service file\n");
 	debug("  Version: %u.%u.%u\n", header->major, header->minor, header->patch);
+	debug("  Entry point offset: 0x%x\n", header->entry_point);
 	debug("  Code segment: offset = 0x%x, size = %u bytes\n", header->code_offset, header->code_size);
 	debug("  Rodata segment: offset = 0x%x, size = %u bytes\n", header->rodata_offset, header->rodata_size);
 	debug("  Data segment: offset = 0x%x, size = %u bytes\n", header->data_offset, header->data_size);
 	debug("  BSS segment size: %u bytes\n", header->bss_size);
 	debug("  Stack size: %u bytes\n", header->stack_size);
 	debug("  Heap size: %u bytes\n", header->heap_size);
-	debug("  Entry point offset: 0x%x\n", header->entry_point);
+	debug("  Alignment: %u bytes\n", header->alignment);
 
 	/* 加载各段 */
-	memcpy(mem, buf + header->code_offset, header->code_size);							/* 代码段 */
-	memcpy(mem + header->code_size, buf + header->rodata_offset, header->rodata_size);	/* 只读数据段 */
-	memcpy(mem + code_segment_size, buf + header->data_offset, header->data_size);		/* 数据段 */
+	memcpy(mem, buf + header->code_offset, code_segment_size + data_segment_size - header->bss_size - header->heap_size - header->stack_size);
+
+	/* 设置任务的段基址和界限 */
+	task->code_base = (uint32_t) mem;
+	task->code_limit = code_segment_size - 1;
+	task->data_base = (uint32_t) mem + ALIGN_UP(header->code_size, header->alignment);
+	task->data_limit = data_segment_size - 1;
 
 	/* BSS 段、堆和栈清零 */
 	memset(mem + code_segment_size + header->data_size, 0, header->bss_size + header->heap_size + header->stack_size);
 
 	/* 设置 LDT 描述符 */
-	set_ldt_descriptor(&task->ldt[0], (uint32_t) mem, code_segment_size - 1, AR_3_CODE32_ER);
-	set_ldt_descriptor(&task->ldt[1], (uint32_t) mem + code_segment_size, data_segment_size - 1, AR_3_DATA32_RW);
+	set_ldt_descriptor(&task->ldt[0], task->code_base, task->code_limit, AR_3_CODE32_ER);
+	set_ldt_descriptor(&task->ldt[1], task->data_base, task->data_limit, AR_3_DATA32_RW);
 
 	/* 设置 LDT 选择子 */
 	task->tss.ldtr = task->selector + (MAX_TASKS * 8);
@@ -175,7 +189,7 @@ int32_t app_start(FAT_FILE *file, const char *cmdline)
 	/* 释放文件缓冲区 */
 	kfree(buf);
 	buf = NULL;
-	
+
 	/* 启动服务 */
 	asm volatile("lldt %0"::"m" (task->tss.ldtr));
 	service_start(header->entry_point, code_selector, user_esp_offset, data_selector, &task->tss.esp0);

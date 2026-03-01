@@ -37,12 +37,33 @@ bool check_cpuid_support(void)
 		"pushl %0\n"
 		"popfl\n"
 
-		: "=&r"(eflags_orig), "=&r"(eflags_mod)
+		:"=&r"(eflags_orig), "=&r"(eflags_mod)
 		:
-		: "cc");
+		:"cc");
 
 	/* 如果原始值和修改后值不同，即 ID 位可修改，支持 CPUID */
 	return (eflags_orig ^ eflags_mod) & 0x200000;
+}
+
+/*
+	@brief 执行 CPUID 指令。
+	@param function CPUID 功能号
+	@param eax 存储 EAX 输出的指针
+	@param ebx 存储 EBX 输出的指针
+	@param ecx 存储 ECX 输出的指针
+	@param edx 存储 EDX 输出的指针
+	@return true - 成功执行 CPUID 并获取结果；false - 不支持 CPUID
+*/
+bool cpuid(uint32_t function, uint32_t *eax, uint32_t *ebx, uint32_t *ecx, uint32_t *edx)
+{
+	if (!check_cpuid_support()) return false;
+
+	asm volatile(
+		"cpuid"
+		:"=a"(*eax), "=b"(*ebx), "=c"(*ecx), "=d"(*edx)
+		:"a"(function));
+
+	return true;
 }
 
 /*
@@ -51,18 +72,12 @@ bool check_cpuid_support(void)
 */
 bool check_tsc_support(void)
 {
-	if (!check_cpuid_support()) return false;
-
 	uint32_t eax, ebx, ecx, edx;
 
-	/* 使用 CPUID 功能 1 */
-	asm volatile(
-		"cpuid"
-		:"=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
-		:"a"(1));
+	if (!cpuid(1, &eax, &ebx, &ecx, &edx))
+		return false;
 
-	/* 检查 EDX 的第 4 位 (TSC 标志) */
-	return (edx & (1 << 4)) != 0;
+	return (edx & (1 << 4)) != 0; /* EDX 的第 4 位表示 TSC 支持 */
 }
 
 /*
@@ -157,7 +172,7 @@ int32_t get_cache_count()
 {
 	uint32_t eax, ebx, ecx, edx;
 	int32_t count = 0;
-	
+
 	for (int32_t i = 0; i < 256; i++) {
 		asm volatile("cpuid"
 					 :"=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
@@ -181,7 +196,7 @@ int32_t get_cache_count()
 int32_t get_cache_info(int32_t index, cache_info_t *buf)
 {
 	uint32_t eax, ebx, ecx, edx;
-	
+
 	asm volatile("cpuid"
 				 :"=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
 				 :"a"(4), "c"(index)); /* EAX = 4，ECX = 缓存索引 */
@@ -211,7 +226,7 @@ bool generate_random(uint32_t *rand)
 {
 	unsigned char res;
 	asm volatile("rdrand %0; setc %1" : "=r"(*rand), "=qm"(res));
-	return  res;
+	return res;
 }
 
 /*

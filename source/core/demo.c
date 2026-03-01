@@ -23,7 +23,7 @@
 #include <ClassiX/task.h>
 #include <ClassiX/timer.h>
 #include <ClassiX/typedef.h>
-#include <ClassiX/widgets.h>
+#include <ClassiX/window.h>
 
 #include <stdarg.h>
 #include <string.h>
@@ -35,7 +35,7 @@ typedef struct {
 	char prompt[20];		/* 提示符 */
 	char cmdline[256];		/* 命令行缓冲区 */
 	int cmdline_pos;		/* 命令行缓冲区位置 */
-	WINDOW hWnd;			/* 窗口句柄 */
+	WINDOW window;			/* 窗口 */
 } TERMINAL;
 
 void terminal_putchar(TERMINAL *terminal, char c, bool move_cursor);
@@ -56,7 +56,7 @@ static void layer_draw_string(LAYER *layer, int32_t x, int32_t y, COLOR fc, COLO
 /* help 命令 */
 static void terminal_cmd_help(TERMINAL *terminal)
 {
-	terminal_printf(terminal, "Available commands:\n");
+	terminal_printf(terminal, "z:%d\n", terminal->window.layer->z);
 	terminal_printf(terminal, "  cat      - Display file content\n");
 	terminal_printf(terminal, "  clear    - Clear screen\n");
 	terminal_printf(terminal, "  echo     - Echo arguments\n");
@@ -64,20 +64,21 @@ static void terminal_cmd_help(TERMINAL *terminal)
 	terminal_printf(terminal, "  ls       - List directory contents\n");
 	terminal_printf(terminal, "  sysinfo  - Display system information\n");
 	terminal_printf(terminal, "  time     - Show current time\n");
+	window_inactivate(&terminal->window);
 }
 
 /* clear 命令 */
 static void terminal_cmd_clear(TERMINAL *terminal)
 {
 	fill_rectangle(
-		terminal->hWnd.layer->buf,
-		terminal->hWnd.layer->width,
+		terminal->window.layer->buf,
+		terminal->window.layer->width,
 		1,
 		19,
-		terminal->hWnd.layer->width - 2,
-		terminal->hWnd.layer->height - 20,
+		terminal->window.layer->width - 2,
+		terminal->window.layer->height - 20,
 		COLOR_CGA_BLACK);
-	layer_refresh(terminal->hWnd.layer, 1, 19, terminal->hWnd.layer->width - 2, terminal->hWnd.layer->height - 2);
+	layer_refresh(terminal->window.layer, 1, 19, terminal->window.layer->width - 2, terminal->window.layer->height - 2);
 	terminal->cursor_x = 1;
 	terminal->cursor_y = 19;
 }
@@ -87,7 +88,7 @@ static void terminal_cmd_time(TERMINAL *terminal)
 {
 	const char *day_names[] = {
 		"Sunday", "Monday", "Tuesday", "Wednesday",
-		"Thursday", "Friday", "Saturday"};
+		"Thursday", "Friday", "Saturday" };
 
 	terminal_printf(terminal,
 		"%04d/%02d/%02d %02d:%02d:%02d  %s\n",
@@ -305,12 +306,12 @@ static void terminal_cmd_sysinfo(TERMINAL *terminal)
 	size_t used_memory = total_memory - free_memory;
 
 	/* 计算使用率 */
-	int usage_percent = (used_memory * 100) / total_memory;
+	float usage_percent = used_memory * 100.0 / total_memory;
 
 	terminal_printf(terminal, "  Total Memory: %u MiB\n", total_memory / (1024 * 1024));
 	terminal_printf(terminal, "  Used Memory: %u MiB\n", used_memory / (1024 * 1024));
 	terminal_printf(terminal, "  Free Memory: %u MiB\n", free_memory / (1024 * 1024));
-	terminal_printf(terminal, "  Usage: %d%%\n", usage_percent);
+	terminal_printf(terminal, "  Usage: %.1f%%\n", usage_percent);
 }
 
 /* run 命令 */
@@ -352,7 +353,7 @@ static void terminal_process_cmdline(TERMINAL *terminal)
 		terminal_cmd_run(terminal);
 	else if (terminal->cmdline[0] != '\0')
 		terminal_cmd_unknown(terminal);
-		
+
 	terminal_printf(terminal, "\n");
 }
 
@@ -360,27 +361,21 @@ void __attribute__((noreturn)) task_terminal_entry(void)
 {
 	TASK *task = task_get_current();
 	TERMINAL terminal;
+	uint32_t rand;
+	generate_random(&rand);
 
 	window_create(
-		&terminal.hWnd,
-		48,
-		48,
-		482,
-		320,
-		WINSTYLE_SYSCONTROL | WINSTYLE_MOVEABLE,
+		&terminal.window,
+		0,
+		0,
+		480,
+		300,
+		WINSTYLE_SYSCONTROL | WINSTYLE_MOVEABLE | WINSTYLE_MINIMIZABLE,
+		STARTUP_POS_CASCADE,
 		"Terminal",
 		task
 	);
-	fill_rectangle(
-		terminal.hWnd.layer->buf,
-		terminal.hWnd.layer->width,
-		1,
-		19,
-		terminal.hWnd.layer->width - 2,
-		terminal.hWnd.layer->height - 20,
-		COLOR_CGA_BLACK
-	);
-	layer_refresh(terminal.hWnd.layer, 0, 0, terminal.hWnd.layer->width, terminal.hWnd.layer->height);
+	window_activate(&terminal.window);
 
 	terminal.cursor_x = 1;
 	terminal.cursor_y = 19;
@@ -388,21 +383,34 @@ void __attribute__((noreturn)) task_terminal_entry(void)
 	terminal.cmdline_pos = 0;
 	strcpy(terminal.prompt, "ClassiX> ");
 
-	/* 显示提示符 */
-	terminal_puts(&terminal, terminal.prompt);
-
 	for (;;) {
 		cli();
 		if (fifo_status(&task->fifo) == 0) {
 			sti();
 			task_sleep(task);
 		} else {
-			uint32_t _data = fifo_pop(&task->fifo);
+			EVENT event;
+			fifo_pop_event(&task->fifo, &event);
 			sti();
-			if (KEYBOARD_DATA0 <= _data && _data < MOUSE_DATA0) {
-				/* 键盘数据 */
-				char key = _data - KEYBOARD_DATA0;
-				
+			if (event.id == EVENT_WINDOW_PAINT) {
+				debug("Client x=%d, y=%d, width=%d, height=%d\n",
+					terminal.window.client_x,
+					terminal.window.client_y,
+					terminal.window.client_width,
+					terminal.window.client_height);
+				client_fill_rectangle(
+					&terminal.window,
+					0,
+					0,
+					terminal.window.client_width,
+					terminal.window.client_height,
+					COLOR_CGA_BLACK
+				);
+				layer_refresh(terminal.window.layer, 0, 0, terminal.window.layer->width, terminal.window.layer->height);
+				/* 显示提示符 */
+				terminal_puts(&terminal, terminal.prompt);
+			} else if (event.id == EVENT_KEYBOARD_KEYPRESS) {
+				char key = event.param;
 				if (key == 0x08) {
 					/* 退格键 */
 					if (terminal.cmdline_pos > 0) {
@@ -414,15 +422,16 @@ void __attribute__((noreturn)) task_terminal_entry(void)
 					/* 回车键 */
 					/* 处理命令行 */
 					terminal_process_cmdline(&terminal);
-					
+
 					/* 重置命令行缓冲区 */
 					terminal.cmdline[0] = '\0';
 					terminal.cmdline_pos = 0;
-					
+
 					/* 显示新提示符 */
 					terminal_puts(&terminal, terminal.prompt);
-				} else if (key == 0x09) {	/* 制表符 */
-					/* 可以添加Tab补全功能 */
+				} else if (key == 0x09) {
+					/* 制表符 */
+					/* 可以添加 Tab 补全功能 */
 					terminal_putchar(&terminal, '\t', 1);
 				} else {
 					/* 普通字符 */
@@ -431,11 +440,25 @@ void __attribute__((noreturn)) task_terminal_entry(void)
 						terminal.cmdline[terminal.cmdline_pos] = key;
 						terminal.cmdline_pos++;
 						terminal.cmdline[terminal.cmdline_pos] = '\0';
-						
+
 						/* 显示字符 */
 						terminal_putchar(&terminal, key, 1);
 					}
 				}
+			} else if (event.id == EVENT_MOUSE_LBTNDOWN) {
+				debug("Mouse LBTNDOWN: x=%d, y=%d\n", event.point.x, event.point.y);
+			} else if (event.id == EVENT_MOUSE_LBTNUP) {
+				debug("Mouse LBTNUP: x=%d, y=%d\n", event.point.x, event.point.y);
+			} else if (event.id == EVENT_MOUSE_LCLICK) {
+				debug("Mouse Single Click: x=%d, y=%d\n", event.point.x, event.point.y);
+			} else if (event.id == EVENT_MOUSE_LDBCLK) {
+				debug("Mouse Double Click: x=%d, y=%d\n", event.point.x, event.point.y);
+			} else if (event.id == EVENT_MOUSE_WHEEL) {
+				debug("Mouse Wheel: %d\n", event.param);
+			} else if (event.id == EVENT_WINDOW_GOTFOCUS) {
+				debug("Got focus.\n");
+			} else if (event.id == EVENT_WINDOW_LOSTFOCUS) {
+				debug("Lost focus.\n");
 			}
 		}
 	}
@@ -444,7 +467,7 @@ void __attribute__((noreturn)) task_terminal_entry(void)
 TASK *demo_terminal(void)
 {
 	TASK *task_terminal = task_alloc();
-	task_terminal->tss.esp = (uint32_t) kmalloc(DEFAULT_USER_STACK) + DEFAULT_USER_STACK;
+	task_terminal->tss.esp = (uint32_t) memory_alloc(&g_mp, DEFAULT_USER_STACK, task_terminal) + DEFAULT_USER_STACK;
 	task_terminal->tss.eip = (uint32_t) &task_terminal_entry;
 	task_terminal->tss.es = 0x10;
 	task_terminal->tss.cs = 0x08;
@@ -453,24 +476,24 @@ TASK *demo_terminal(void)
 	task_terminal->tss.fs = 0x10;
 	task_terminal->tss.gs = 0x10;
 	task_register(task_terminal, PRIORITY_NORMAL);
-	fifo_init(&task_terminal->fifo, 128, kmalloc(128 * sizeof(uint32_t)), task_terminal);
+	fifo_init(&task_terminal->fifo, 128, memory_alloc(&g_mp, 128 * sizeof(uint32_t), task_terminal), task_terminal);
 	return task_terminal;
 }
 
 void terminal_putchar(TERMINAL *terminal, char c, bool move_cursor)
 {
 	char s[2] = { c, 0 };
-	
+
 	switch (c) {
 		case 0x08:	/* 退格 */
 			if (terminal->cursor_x > (1 + (signed int) strlen(terminal->prompt) * 6))
 				terminal->cursor_x -= 6;
 			break;
-		
+
 		case 0x09:	/* 制表符 */
 			for (;;) {
 				layer_draw_string(
-					terminal->hWnd.layer,
+					terminal->window.layer,
 					terminal->cursor_x,
 					terminal->cursor_y,
 					COLOR_CGA_LIGHTGRAY,
@@ -495,7 +518,7 @@ void terminal_putchar(TERMINAL *terminal, char c, bool move_cursor)
 
 		default:	/* 其他字符 */
 			layer_draw_string(
-				terminal->hWnd.layer,
+				terminal->window.layer,
 				terminal->cursor_x,
 				terminal->cursor_y,
 				COLOR_CGA_LIGHTGRAY,
@@ -516,46 +539,45 @@ void terminal_newline(TERMINAL *terminal)
 {
 	/* 计算当前行号 (0-based) */
 	int current_line = (terminal->cursor_y - 19) / 12;
-	
+
 	if (current_line >= 24) {
 		/* 滚动一行 */
 		int src_y = 19 + 12;
 		int dst_y = 19;
 		int height = 24 * 12;
-		
+
 		/* 复制像素数据 */
 		for (int y = 0; y < height; y++) {
 			for (int x = 1; x < 1 + 80 * 6; x++) {
 				COLOR pixel = GET_PIXEL32(
-					terminal->hWnd.layer->buf,
-					terminal->hWnd.layer->width,
+					terminal->window.layer->buf,
+					terminal->window.layer->width,
 					x,
 					src_y + y
 				);
 				SET_PIXEL32(
-					terminal->hWnd.layer->buf,
-					terminal->hWnd.layer->width,
+					terminal->window.layer->buf,
+					terminal->window.layer->width,
 					x,
 					dst_y + y,
 					pixel
 				);
 			}
 		}
-		
+
 		/* 清除最后一行 */
-		fill_rectangle(
-			terminal->hWnd.layer->buf,
-			terminal->hWnd.layer->width,
-			1,
-			19 + 24 * 12,
-			480,
+		client_fill_rectangle(
+			&terminal->window,
+			0,
+			24 * 12,
+			terminal->window.client_width,
 			12,
 			COLOR_CGA_BLACK
 		);
-		
+
 		/* 刷新整个显示区域 */
 		layer_refresh(
-			terminal->hWnd.layer,
+			terminal->window.layer,
 			1,
 			19,
 			480,
@@ -564,7 +586,7 @@ void terminal_newline(TERMINAL *terminal)
 	} else {
 		terminal->cursor_y += 12;
 	}
-	
+
 	/* 无论是否滚动，光标都移动到行首 */
 	terminal->cursor_x = 1;
 }

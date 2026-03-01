@@ -160,7 +160,7 @@ static void layer_refreshsub(int32_t vx0, int32_t vy0, int32_t vx1, int32_t vy1,
 	for (int32_t z = z0; z <= z1; z++) {
 		layer = g_lm.layers[z];
 		id = layer - g_lm.layers0;
-		
+
 		bx0 = vx0 - layer->x;
 		by0 = vy0 - layer->y;
 		bx1 = vx1 - layer->x;
@@ -296,7 +296,7 @@ void layer_free(LAYER *layer)
 {
 	if (layer->z >= 0)
 		layer_set_z(layer, -1);
-	
+
 	layer->flags = LAYER_FREE;
 	kfree(layer->buf);
 	return;

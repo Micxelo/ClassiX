@@ -60,5 +60,5 @@ _service_start:
 	mov ds, bx
 	mov fs, bx
 	mov gs, bx
-	
+
 	iretd

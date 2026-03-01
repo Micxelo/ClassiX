@@ -42,7 +42,7 @@ void gdt_set_gate(int32_t num, uint32_t base, uint32_t limit, uint8_t access, ui
 	gdt_entries[num].base_low = (base & 0xffff);
 	gdt_entries[num].base_mid = (base >> 16) & 0xff;
 	gdt_entries[num].access = access;
-	gdt_entries[num].granularity = ((limit >> 16) & 0x0f) | ((gran << 4) & 0xf0);	
+	gdt_entries[num].granularity = ((limit >> 16) & 0x0f) | ((gran << 4) & 0xf0);
 	gdt_entries[num].base_high = (base >> 24) & 0xff;
 }
 
@@ -58,7 +58,7 @@ void init_gdt(void)
 	for (int32_t i = 0; i < GDT_LIMIT; i++)
 		gdt_set_gate(i, 0, 0, 0, 0);
 
-	/* 设置 GDT */	
+	/* 设置 GDT */
 	gdt_set_gate(1, 0, 0xffffffff, AR_0_CODE32_ER & 0xff, AR_0_CODE32_ER >> 8); /* 内核代码段 */
 	gdt_set_gate(2, 0, 0xffffffff, AR_0_DATA32_RW & 0xff, AR_0_DATA32_RW >> 8);	/* 内核数据段 */
 

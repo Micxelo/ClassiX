@@ -70,18 +70,18 @@ static int32_t ide_wait_status(bool primary, uint8_t mask, uint8_t value)
 
 	while (timeout--) {
 		status = in8(base + IDE_REG_STATUS);
-		
+
 		/* 检查错误状态 */
 		if (status & (IDE_STATUS_DF | IDE_STATUS_ERR)) {
 			uint8_t error = in8(base + IDE_REG_ERROR);
 			debug("HD: IDE status error: status=0x%02X, error=0x%02X.\n", status, error);
 			return BD_NOT_READY;
 		}
-		
+
 		if ((status & mask) == value)
 			return BD_SUCCESS;
 	}
-	
+
 	return BD_TIMEOUT;
 }
 
@@ -116,7 +116,7 @@ static int32_t ide_identify(IDE_DEVICE *dev)
 	uint16_t buffer[256];
 
 	/* 选择驱动器 */
-	out8(base + IDE_REG_DRIVE_SELECT, 
+	out8(base + IDE_REG_DRIVE_SELECT,
 		(dev->master ? IDE_DRIVE_MASTER : IDE_DRIVE_SLAVE) | IDE_DRIVE_LBA_MODE);
 
 	int32_t err = ide_wait_ready(dev->primary);
@@ -176,9 +176,9 @@ static int32_t ide_identify(IDE_DEVICE *dev)
 	/* 获取能力信息 */
 	dev->capabilities = (buffer[49] << 16) | buffer[0];
 
-	debug("HD: IDE device detected: %s %s, sectors: %llu.\n", 
+	debug("HD: IDE device detected: %s %s, sectors: %llu.\n",
 		  dev->model, dev->serial, dev->sectors);
-	
+
 	return BD_SUCCESS;
 }
 
@@ -189,18 +189,18 @@ static int32_t ide_identify(IDE_DEVICE *dev)
 uint32_t ide_init(void)
 {
 	uint32_t count = 0;
-	
+
 	for (int32_t i = 0; i < IDE_DEVICE_COUNT; i++) {
 		if (ide_identify(&ide_devices[i]) == BD_SUCCESS) {
 			count++;
 			debug("HD: IDE device %d initialized: %s\n", i, ide_devices[i].model);
 		} else {
-			debug("HD: No IDE device at %s %s.\n", 
+			debug("HD: No IDE device at %s %s.\n",
 				  ide_devices[i].primary ? "primary" : "secondary",
 				  ide_devices[i].master ? "master" : "slave");
 		}
 	}
-	
+
 	return count;
 }
 

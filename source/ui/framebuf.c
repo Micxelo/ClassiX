@@ -47,9 +47,9 @@ int32_t init_framebuffer(const multiboot_info_t *mbi)
 	g_fb.blue_field_position = mbi->framebuffer_blue_field_position;
 	g_fb.blue_mask_size = mbi->framebuffer_blue_mask_size;
 
-	if (g_fb.bpp == 32 && 
-		g_fb.red_field_position == 16 && 
-		g_fb.green_field_position == 8 && 
+	if (g_fb.bpp == 32 &&
+		g_fb.red_field_position == 16 &&
+		g_fb.green_field_position == 8 &&
 		g_fb.blue_field_position == 0) {
 		/* 32位 ARGB 颜色 */
 		get_pixel_ptr = get_pixel_argb;

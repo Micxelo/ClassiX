@@ -15,7 +15,7 @@
 
 #define MAX_TASKS							(1000)
 
-#define DEFAULT_USER_STACK					(4 * 1024)
+#define DEFAULT_USER_STACK					(64 * 1024)
 #define TIME_SLICE_BASE_PER_PRIORITY_MS		(1)
 
 typedef enum {
@@ -54,7 +54,12 @@ typedef struct TASK {
 	FIFO fifo;					/* 任务专用 FIFO */
 	TSS tss;					/* 任务状态段 */
 	SEGMENT_DESCRIPTOR ldt[2];	/* 代码段和数据段描述符 */
-	uint32_t ds_base;			/* 数据段基址 */
+	uint32_t code_base;			/* 代码段基址 */
+	uint32_t code_limit;		/* 代码段界限 */
+	uint32_t data_base;			/* 数据段基址 */
+	uint32_t data_limit;		/* 数据段界限 */
+	bool fpu_used;				/* 是否使用过 FPU */
+	uint8_t fpu_state[512] __attribute__((aligned(16)));	/* FPU 数据 */
 } TASK;
 
 #define TID(task)							(((task)->selector) / 8)

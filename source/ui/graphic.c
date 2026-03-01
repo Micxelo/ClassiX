@@ -37,7 +37,7 @@ void draw_rectangle(uint32_t *buf, uint16_t bx, uint16_t x, uint16_t y, uint16_t
 void draw_rectangle_by_corners(uint32_t *buf, uint16_t bx, uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t thickness, COLOR color)
 {
 	if (thickness == 0) return;
-	
+
 	/* 确保坐标顺序正确 */
 	if (x0 > x1) {
 		uint32_t temp = x0;
@@ -200,7 +200,7 @@ void draw_circle(uint32_t *buf, uint16_t bx, int32_t x0, int32_t y0, int32_t rad
 	while (x < y) {
 		x++;
 		if (d < 0) {
-			d += 2 * x + 1; /* 选择上方的点 */ 
+			d += 2 * x + 1; /* 选择上方的点 */
 		} else {
 			y--; /* 选择右下方的点 */
 			d += 2 * (x - y) + 1;
@@ -359,11 +359,11 @@ static void _draw_font_char(uint32_t *buf, uint16_t bx, uint16_t x, uint16_t y, 
 
 	for (uint32_t row = 0; row < height; row++) {
 		const uint8_t *row_data = font_data + row * bytes_per_row;
-		
+
 		for (uint32_t col = 0; col < width; col++) {
 			uint32_t byte_index = col / 8;
 			uint32_t bit_index = 7 - (col % 8);  /* PSF 格式是高位在前 */
-			
+
 			if (row_data[byte_index] & (1 << bit_index))
 				SET_PIXEL32(buf, bx, x + col, y + row, color);
 		}
@@ -409,7 +409,7 @@ void draw_unicode_string(uint32_t *buf, uint16_t bx, uint16_t x, uint16_t y, COL
 		uint32_t unicode = 0;
 		uint8_t first_byte = (uint8_t)*str;
 		int32_t bytes_to_skip = 1;
-		
+
 		/* 解码 UTF-8 */
 		if ((first_byte & 0x80) == 0) {
 			/* 单字节 UTF-8 (ASCII) */
@@ -433,20 +433,20 @@ void draw_unicode_string(uint32_t *buf, uint16_t bx, uint16_t x, uint16_t y, COL
 				bytes_to_skip = 4;
 			}
 		}
-		
+
 		if (unicode == 0) {
 			/* 无效的 UTF-8，跳过当前字节 */
 			str++;
 			continue;
 		}
-		
+
 		/* 查找字符索引 */
 		uint32_t char_index = psf_find_char_index(font, unicode);
-		
+
 		/* 绘制字符 */
 		const uint8_t *char_data = font->buf + char_index * font->charsize;
 		_draw_font_char(buf, bx, current_x, y, color, char_data, font->width, font->height);
-		
+
 		current_x += font->width;
 		str += bytes_to_skip;
 	}

@@ -9,6 +9,7 @@
 	extern "C" {
 #endif
 
+#include <ClassiX/task.h>
 #include <ClassiX/typedef.h>
 
 #define ALLOC_ALIGNMENT					(128)
@@ -23,7 +24,7 @@ typedef struct {
 extern MEMORY_POOL g_mp;
 
 void memory_init(MEMORY_POOL *pool, void *base, size_t size);
-void *memory_alloc(MEMORY_POOL *pool, size_t size);
+void *memory_alloc(MEMORY_POOL *pool, size_t size, TASK *task);
 void memory_free(MEMORY_POOL *pool, void *ptr);
 
 void *kmalloc(size_t size);

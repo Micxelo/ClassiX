@@ -10,6 +10,7 @@
 #endif
 
 #include <ClassiX/typedef.h>
+#include <ClassiX/window.h>
 
 typedef struct TASK TASK;
 
@@ -24,6 +25,8 @@ void fifo_init(FIFO *fifo, size_t size, uint32_t *buf, TASK *task);
 int32_t fifo_push(FIFO *fifo, uint32_t data);
 uint32_t fifo_pop(FIFO *fifo);
 int32_t fifo_status(FIFO *fifo);
+int32_t fifo_push_event(FIFO *fifo, const EVENT *event);
+int32_t fifo_pop_event(FIFO *fifo, EVENT *event);
 
 #ifdef __cplusplus
 	}

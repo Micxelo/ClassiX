@@ -41,6 +41,7 @@ extern uint32_t pit_frequency;
 
 void init_pit(uint32_t frequency);
 uint64_t get_system_ticks(void);
+uint64_t get_system_milliseconds(void);
 void reset_system_ticks(void);
 void delay(uint32_t ms);
 

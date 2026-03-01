@@ -190,12 +190,12 @@ typedef union {
 #define COLOR_YELLOW							COLOR32(0xffffff00)	/* 黄色 */
 #define COLOR_YELLOWGREEN						COLOR32(0xff9acd32)	/* 黄绿色 */
 
-#define COLOR_SYSTEM_WIDGET_FRAME				COLOR32(0xff646464)	/* 系统部件边框色 */
-#define COLOR_SYSTEM_WIDGET_BACKGROUND			COLOR32(0xfff0f0f0)	/* 系统部件背景色 */
-#define COLOR_SYSTEM_WIDGET_TEXT_ACTIVE			COLOR32(0xff000000)	/* 系统部件活动文字色 */
-#define COLOR_SYSTEM_WIDGET_TEXT_INACTIVE		COLOR32(0xff808080)	/* 系统部件非活动文字色 */
-#define COLOR_SYSTEM_WIDGET_TITLEBAR_ACTIVE		COLOR32(0xffd1d1d1)	/* 系统部件活动标题栏色 */
-#define COLOR_SYSTEM_WIDGET_TITLEBAR_INACTIVE	COLOR32(0xffbdbdbd)	/* 系统部件非活动标题栏色 */
+#define COLOR_SYSTEM_WINDOW_FRAME				COLOR32(0xff646464)	/* 系统部件边框色 */
+#define COLOR_SYSTEM_WINDOW_BACKGROUND			COLOR32(0xfff0f0f0)	/* 系统部件背景色 */
+#define COLOR_SYSTEM_WINDOW_TEXT_ACTIVE			COLOR32(0xff000000)	/* 系统部件活动文字色 */
+#define COLOR_SYSTEM_WINDOW_TEXT_INACTIVE		COLOR32(0xff808080)	/* 系统部件非活动文字色 */
+#define COLOR_SYSTEM_WINDOW_TITLEBAR_ACTIVE		COLOR32(0xffd1d1d1)	/* 系统部件活动标题栏色 */
+#define COLOR_SYSTEM_WINDOW_TITLEBAR_INACTIVE	COLOR32(0xffbdbdbd)	/* 系统部件非活动标题栏色 */
 
 COLOR alpha_blend(COLOR fg, COLOR bg);
 

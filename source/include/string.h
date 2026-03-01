@@ -230,7 +230,7 @@ static inline void *memchr(void *s, uint8_t c, size_t n)
 	while (n-- != 0)
 		if (c == *p++)
 			return (void *) (p - 1);
-		
+
 	return NULL;
 }
 

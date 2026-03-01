@@ -71,10 +71,10 @@ static void parse_psf1_unicode_table(const BITMAP_FONT *font, const uint8_t *tab
 	while (i < table_size && current_char < font->count) {
 		if (i + 1 >= table_size)
 			break;
-		
+
 		uint16_t unicode = (table_data[i] << 8) | table_data[i + 1];
 		i += 2;
-		
+
 		if (unicode == PSF1_SEPARATOR)
 			/* 分隔符 */
 			current_char++;
@@ -104,7 +104,7 @@ static void parse_psf2_unicode_table(const BITMAP_FONT *font, const uint8_t *tab
 		while (i < table_size) {
 			uint16_t unicode = 0;
 			uint8_t byte = table_data[i++];
-			
+
 			if (byte == PSF2_SEPARATOR) {
 				/* 分隔符，移动到下一个字符 */
 				current_char++;
@@ -124,7 +124,7 @@ static void parse_psf2_unicode_table(const BITMAP_FONT *font, const uint8_t *tab
 					uint8_t byte3 = table_data[i++];
 					unicode = ((byte & 0x0F) << 12) | ((byte2 & 0x3F) << 6) | (byte3 & 0x3F);
 				}
-				
+
 				if (unicode > 0 && current_char < font->count)
 					font->unicode_map[current_char] = unicode;
 			}
@@ -141,54 +141,54 @@ static void parse_psf2_unicode_table(const BITMAP_FONT *font, const uint8_t *tab
 BITMAP_FONT psf_load(const uint8_t *buf, size_t size)
 {
 	BITMAP_FONT font = { };
-	if (!buf || size == 0) 
+	if (!buf || size == 0)
 		return font;
 
 	uint32_t version = psf_validator(buf);
 	if (version == 1) {
 		const PSF1_HEADER *p1 = (const PSF1_HEADER *) buf;
-		
+
 		/* 检查文件大小是否足够容纳头部 */
 		if (size < sizeof(PSF1_HEADER))
 			return font;
-		
+
 		font.width = 8;
 		font.height = p1->charsize;
 		font.charsize = p1->charsize;
 		font.version = 1;
-		
+
 		/* 计算字符数量 */
 		font.count = p1->mode & PSF1_MODE512 ? 512 : 256;
-		
+
 		/* 计算字符数据大小 */
 		uint32_t data_size = font.count * font.charsize;
-		
+
 		/* 检查文件大小是否足够容纳字符数据 */
 		if (size < sizeof(PSF1_HEADER) + data_size) {
 			/* 文件大小不足，重新计算字符数量 */
 			font.count = (size - sizeof(PSF1_HEADER)) / font.charsize;
 			data_size = font.count * font.charsize;
 		}
-		
+
 		/* 分配字符数据缓冲区 */
 		font.buf = (uint8_t*) kmalloc(data_size);
 		if (font.buf)
 			memcpy(font.buf, buf + sizeof(PSF1_HEADER), data_size);
-		
+
 		/* 检查是否有 Unicode 表 */
 		font.has_unicode = (p1->mode & PSF1_MODEHASTAB) != 0;
-		
+
 		/* 分配并初始化 Unicode 映射表 */
 		font.unicode_map = (uint32_t*) kmalloc(font.count * sizeof(uint32_t));
 		if (font.unicode_map) {
 			/* 初始化为 0xFFFFFFFF（无效值） */
 			for (uint32_t i = 0; i < font.count; i++)
 				font.unicode_map[i] = 0xFFFFFFFF;
-			
+
 			/* 解析 Unicode 表 */
 			if (font.has_unicode) {
 				uint32_t unicode_table_offset = sizeof(PSF1_HEADER) + data_size;
-				
+
 				/* 检查 Unicode 表是否在文件范围内 */
 				if (unicode_table_offset < size) {
 					const uint8_t *unicode_table = buf + unicode_table_offset;
@@ -197,51 +197,51 @@ BITMAP_FONT psf_load(const uint8_t *buf, size_t size)
 				}
 			}
 		}
-		
+
 	} else if (version == 2) {
 		const PSF2_HEADER *p2 = (const PSF2_HEADER *) buf;
-		
+
 		/* 检查文件大小是否足够容纳头部 */
 		if (size < sizeof(PSF2_HEADER))
 			return font;
-		
+
 		font.width = p2->width;
 		font.height = p2->height;
 		font.charsize = p2->charsize;
 		font.count = p2->length;
 		font.version = 2;
 		font.has_unicode = (p2->flags & PSF2_HAS_UNICODE_TABLE) != 0;
-		
+
 		/* 检查头部大小是否合理 */
 		if (p2->headersize < sizeof(PSF2_HEADER) || p2->headersize > size)
 			return font;
-		
+
 		/* 计算字符数据大小 */
 		uint32_t data_size = font.count * font.charsize;
-		
+
 		/* 检查文件大小是否足够容纳字符数据 */
 		if (size < p2->headersize + data_size) {
 			/* 文件大小不足，重新计算字符数量 */
 			font.count = (size - p2->headersize) / font.charsize;
 			data_size = font.count * font.charsize;
 		}
-		
+
 		/* 分配字符数据缓冲区 */
 		font.buf = (uint8_t*) kmalloc(data_size);
 		if (font.buf)
 			memcpy(font.buf, buf + p2->headersize, data_size);
-		
+
 		/* 分配并初始化 Unicode 映射表 */
 		font.unicode_map = (uint32_t*) kmalloc(font.count * sizeof(uint32_t));
 		if (font.unicode_map) {
 			/* 初始化为 0xFFFFFFFF（无效值） */
 			for (uint32_t i = 0; i < font.count; i++)
 				font.unicode_map[i] = 0xFFFFFFFF;
-			
+
 			/* 解析 Unicode 表 */
 			if (font.has_unicode) {
 				uint32_t unicode_table_offset = p2->headersize + data_size;
-				
+
 				/* 检查 Unicode 表是否在文件范围内 */
 				if (unicode_table_offset < size) {
 					const uint8_t *unicode_table = buf + unicode_table_offset;

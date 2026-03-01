@@ -260,7 +260,7 @@ static int32_t fdc_read_sector(FD_DEVICE *dev, uint32_t lba, uint8_t *buffer)
 		head >= dev->spec->heads ||
 		sector == 0 || sector > dev->spec->sectors_per_track)
 		return BD_INVALID_PARAM; /* 参数无效 */
-	
+
 	/* 重新校正 */
 	fdc_recalibrate(dev->drive);
 
@@ -302,7 +302,7 @@ static int32_t fdc_write_sector(FD_DEVICE *dev, uint32_t lba, uint8_t *buffer)
 		head >= dev->spec->heads ||
 		sector == 0 || sector > dev->spec->sectors_per_track)
 		return BD_INVALID_PARAM; /* 参数无效 */
-	
+
 	/* 重新校正 */
 	fdc_recalibrate(dev->drive);
 
@@ -330,7 +330,7 @@ static int32_t fdc_write_sector(FD_DEVICE *dev, uint32_t lba, uint8_t *buffer)
 #define immout8_p(val, port) \
 	asm volatile ("outb %0, %1\njmp 1f\n1:jmp 1f\n1:"::"a"((uint8_t) (val)), "Nd"((uint16_t) (port)))
 
-/* 16 位带延迟输出 */  
+/* 16 位带延迟输出 */
 #define immout16_p(val, port) \
 	asm volatile ("outw %0, %1\njmp 1f\n1:jmp 1f\n1:"::"a"((uint16_t) (val)), "Nd"((uint16_t) (port)))
 

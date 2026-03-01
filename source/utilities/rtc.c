@@ -87,7 +87,7 @@ inline void set_day_of_month(uint32_t day_of_month)
 */
 uint32_t get_day_of_week(void)
 {
-	return BCD_TO_HEX(cmos_read(CMOS_WEEK_DAY));
+	return BCD_TO_HEX(cmos_read(CMOS_WEEK_DAY)) - 1;
 }
 
 /*
@@ -96,7 +96,7 @@ uint32_t get_day_of_week(void)
 */
 inline void set_day_of_week(uint32_t day_of_week)
 {
-	cmos_write(CMOS_WEEK_DAY, HEX_TO_BCD(day_of_week));
+	cmos_write(CMOS_WEEK_DAY, HEX_TO_BCD(day_of_week + 1));
 }
 
 /*

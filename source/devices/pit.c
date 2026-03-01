@@ -25,7 +25,7 @@ void init_pit(uint32_t frequency)
 	pit_frequency = frequency;
 
 	if (divisor == 0) {
-		divisor = 1;		/* 最低分频值*/
+		divisor = 1; /* 最低分频值*/
 		pit_frequency = PIT_BASE_FREQ;
 		debug("PIT: PIT frequency too high, setting to max frequency.\n");
 	}
@@ -64,9 +64,18 @@ void isr_pit(ISR_PARAMS *params)
 	@brief 获取当前系统时钟滴答计数。
 	@return 当前系统时钟滴答计数
 */
-inline uint64_t get_system_ticks(void)
+uint64_t get_system_ticks(void)
 {
 	return system_ticks;
+}
+
+/*
+	@brief 获取系统运行时间（毫秒）。
+	@return 系统运行时间（毫秒）
+*/
+uint64_t get_system_milliseconds(void)
+{
+	return system_ticks * 1000 / pit_frequency;
 }
 
 /*
@@ -81,9 +90,8 @@ void reset_system_ticks(void)
 	@brief 阻塞延时。
 	@param ms 延时时长（毫秒）
 */
-inline void delay(uint32_t ms)
+void delay(uint32_t ms)
 {
 	uint64_t end_tick = ms * pit_frequency / 1000 + system_ticks;
-	while (system_ticks < end_tick)
-		hlt();
+	while (system_ticks < end_tick) { }
 }

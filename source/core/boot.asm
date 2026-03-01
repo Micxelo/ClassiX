@@ -69,7 +69,7 @@ align 4
 global start
 start:
 	; GRUB 已切换至 32 位保护模式、禁用中断和分页
-	
+
 	; 清零 BSS
 	pushad
 	extern bss_start_phys

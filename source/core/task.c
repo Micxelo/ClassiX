@@ -16,6 +16,7 @@
 volatile uint64_t next_schedule_tick;			/* 下一次进行任务调度的系统滴答数 */
 
 static uint32_t ticks_per_priority_unit = 10;	/* 每单位优先级对应的系统滴答数 */
+static bool multitasking_initialized = false;	/* 多任务是否已初始化 */
 
 static struct TASK_MANAGER {
 	uint32_t running;		/* 正在运行的任务数量 */
@@ -84,6 +85,7 @@ TASK *init_multitasking(void)
 	next_schedule_tick = get_system_ticks() + ktask->priority * ticks_per_priority_unit;
 
 	debug("TASK: Multitasking initialized.\n");
+	multitasking_initialized = true;
 	return ktask;
 }
 
@@ -118,7 +120,7 @@ TASK *task_alloc(void)
 			return task;
 		}
 	}
-	
+
 	debug("TASK: Failed to allocate free task.\n");
 	return NULL; /* 无空闲任务 */
 }
@@ -202,5 +204,5 @@ void task_sleep(TASK *task)
 */
 TASK *task_get_current(void)
 {
-	return task_manager->tasks[task_manager->now];
+	return multitasking_initialized ? task_manager->tasks[task_manager->now] : NULL;
 }

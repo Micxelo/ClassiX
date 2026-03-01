@@ -9,11 +9,14 @@
 	extern "C" {
 #endif
 
+#include <stdint.h>
+
 #ifndef NULL
 	#define NULL							((void *) 0)
 #endif
 
 typedef unsigned long size_t;
+typedef int64_t ssize_t;
 
 #ifdef __cplusplus
 	}

@@ -97,13 +97,15 @@ sudo apt install qemu-system
 ### 运行虚拟机
 
 ```shell
-qemu-system-i386 -m 128M -vga std -serial stdio -nic none -drive if=ide,file=/path/to/hd.img,format=raw -drive if=floppy,file=/path/to/fd.img,format=raw
+qemu-system-i386 -cpu IvyBridge,-tsc-deadline,-lm -machine pc,acpi=on -m 128M -vga std -drive if=ide,file=/path/to/hd.img,format=raw -drive if=floppy,file=/path/to/fd.img,format=raw -serial stdio -nic none
 ```
 
 |选项|含义|
 |:-:|:-|
+|`-cpu IvyBridge,-tsc-deadline,-lm`|使用 Ivy Bridge CPU 模拟，禁用 TSC deadline timer 和长模式|
+|`-machine pc,acpi=on`|使用标准 PC 机器类型，启用 ACPI 支持|
 |`-m 128M`|分配 128 MiB 内存|
 |`-vga std`|使用标准 VGA 显卡|
+|`-drive`|使用指定的镜像文件|
 |`-serial stdio`|将串口输出重定向到标准输入输出|
 |`-nic none`|禁用网络接口|
-|`-drive`|使用指定的镜像文件|

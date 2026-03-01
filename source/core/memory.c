@@ -2,6 +2,7 @@
 	core/memory.c
 */
 
+#include <ClassiX/debug.h>
 #include <ClassiX/memory.h>
 #include <ClassiX/task.h>
 #include <ClassiX/typedef.h>
@@ -66,9 +67,10 @@ void memory_init(MEMORY_POOL *pool, void *base, size_t size)
 	@brief 分配内存。
 	@param pool 待操作的内存池
 	@param size 需要分配的字节数
+	@param task 使用此内存的任务
 	@return 分配的内存指针，失败返回 NULL
 */
-void *memory_alloc(MEMORY_POOL *pool, size_t size)
+void *memory_alloc(MEMORY_POOL *pool, size_t size, TASK *task)
 {
 	if (size == 0) return NULL;
 
@@ -119,7 +121,7 @@ void *memory_alloc(MEMORY_POOL *pool, size_t size)
 			}
 
 			header->state = BLOCK_USED;
-			header->task = NULL;
+			header->task = task;
 			return (void *) ((uint8_t *) header + sizeof(block_header_t));
 		}
 		current = current->next;
@@ -196,7 +198,7 @@ void memory_free(MEMORY_POOL *pool, void *ptr)
 */
 void *kmalloc(size_t size)
 {
-	return memory_alloc(&g_mp, size);
+	return memory_alloc(&g_mp, size, task_get_current());
 }
 
 /*
@@ -207,10 +209,10 @@ void *kmalloc(size_t size)
 */
 void *krealloc(void *ptr, size_t new_size)
 {
-	if (ptr == NULL) 
+	if (ptr == NULL)
 		/* 等价于 kmalloc */
 		return kmalloc(new_size);
-		
+
 	if (new_size == 0) {
 		/* 等价于 kfree */
 		kfree(ptr);

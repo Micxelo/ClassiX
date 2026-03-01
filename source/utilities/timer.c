@@ -6,34 +6,12 @@
 #include <ClassiX/io.h>
 #include <ClassiX/memory.h>
 #include <ClassiX/pit.h>
+#include <ClassiX/spinlock.h>
 #include <ClassiX/timer.h>
 #include <ClassiX/typedef.h>
 
-static TIMER *timer_head = NULL;			/* 定时器链表的头指针 */
-static volatile int32_t timer_lock = 0;		/* 互斥锁 */
-
-/*
-	@brief 获取定时器锁。
-*/
-static void timer_lock_acquire(void)
-{
-	uint32_t eflags = load_eflags();
-	cli();
-	while (__sync_lock_test_and_set(&timer_lock, 1))
-		pause(); /* 自旋等待 */
-	store_eflags(eflags);
-}
-
-/*
-	@brief 释放定时器锁。
-*/
-static void timer_lock_release(void)
-{
-	uint32_t eflags = load_eflags();
-	cli();
-	__sync_lock_release(&timer_lock);
-	store_eflags(eflags);
-}
+static TIMER *timer_head = NULL;						/* 定时器链表的头指针 */
+static spinlock_t timer_lock = SPINLOCK_INITIALIZER;	/* 自旋锁，保护定时器链表 */
 
 /*
 	@brief 创建一个新的定时器。
@@ -47,15 +25,15 @@ TIMER *timer_create(TIMER_CALLBACK callback, void *arg)
 		debug("TIMER: Invalid timer parameters.\n");
 		return 0; /* 无效参数 */
 	}
-	
+
 	TIMER *new_timer = (TIMER *) kmalloc(sizeof(TIMER));
 	if (!new_timer) {
 		debug("TIMER: Failed to allocate memory for new timer.\n");
 		return NULL; /* 内存分配失败 */
 	}
 
-	timer_lock_acquire();
-	
+	uint32_t eflags = spinlock_acquire_irqsave(&timer_lock);
+
 	new_timer->expire_tick = 0;		/* 尚未设置到期时间 */
 	new_timer->callback = callback;
 	new_timer->arg = arg;
@@ -72,8 +50,8 @@ TIMER *timer_create(TIMER_CALLBACK callback, void *arg)
 		}
 		current->next = new_timer;
 	}
-	
-	timer_lock_release();
+
+	spinlock_release_irqrestore(&timer_lock, eflags);
 	debug("TIMER: Created timer %p.\n", new_timer);
 	return new_timer;
 }
@@ -87,21 +65,21 @@ TIMER *timer_create(TIMER_CALLBACK callback, void *arg)
 */
 int32_t timer_start(TIMER *timer, uint64_t interval, int32_t repetition)
 {
-	timer_lock_acquire();
+	uint32_t eflags = spinlock_acquire_irqsave(&timer_lock);
 
 	TIMER *current = timer_head;
 	while (current) {
 		if (current == timer) {
 			if (current->state == TIMER_ACTIVE) {
 				debug("TIMER: Timer %p is already active.\n", timer);
-				timer_lock_release();
+				spinlock_release_irqrestore(&timer_lock, eflags);
 				return -1; /* 定时器已激活 */
 			}
 			current->interval = interval;
 			current->repetition = repetition;
 			current->expire_tick = get_system_ticks() + interval;
 			current->state = TIMER_ACTIVE;
-			timer_lock_release();
+			spinlock_release_irqrestore(&timer_lock, eflags);
 			debug("TIMER: Started timer %p, interval %llu ticks, expires at tick %llu, repeats %d times.\n",
 				current, current->interval, current->expire_tick, repetition);
 			return 0; /* 成功启动定时器 */
@@ -109,7 +87,7 @@ int32_t timer_start(TIMER *timer, uint64_t interval, int32_t repetition)
 		current = current->next;
 	}
 
-	timer_lock_release();
+	spinlock_release_irqrestore(&timer_lock, eflags);
 	debug("TIMER: Timer %p not found.\n", timer);
 	return -1; /* 未找到定时器 */
 }
@@ -121,25 +99,25 @@ int32_t timer_start(TIMER *timer, uint64_t interval, int32_t repetition)
 */
 int32_t timer_stop(TIMER *timer)
 {
-	timer_lock_acquire();
+	uint32_t eflags = spinlock_acquire_irqsave(&timer_lock);
 
 	TIMER *current = timer_head;
 	while (current) {
 		if (current == timer) {
 			if (current->state != TIMER_ACTIVE) {
 				debug("TIMER: Timer %p is not active.\n", timer);
-				timer_lock_release();
+				spinlock_release_irqrestore(&timer_lock, eflags);
 				return -1; /* 定时器未激活 */
 			}
 			current->state = TIMER_INACTIVE;
-			timer_lock_release();
+			spinlock_release_irqrestore(&timer_lock, eflags);
 			debug("TIMER: Stopped timer %p.\n", timer);
 			return 0; /* 成功停止定时器 */
 		}
 		current = current->next;
 	}
 
-	timer_lock_release();
+	spinlock_release_irqrestore(&timer_lock, eflags);
 	debug("TIMER: Timer %p not found.\n", timer);
 	return -1; /* 未找到定时器 */
 }
@@ -151,8 +129,8 @@ int32_t timer_stop(TIMER *timer)
 */
 int32_t timer_delete(TIMER *timer)
 {
-	timer_lock_acquire();
-	
+	uint32_t eflags = spinlock_acquire_irqsave(&timer_lock);
+
 	TIMER *current = timer_head;
 	TIMER *prev = NULL;
 	while (current) {
@@ -162,7 +140,7 @@ int32_t timer_delete(TIMER *timer)
 			else
 				timer_head = current->next;
 			kfree(current);
-			timer_lock_release();
+			spinlock_release_irqrestore(&timer_lock, eflags);
 			debug("TIMER: Deleted timer %p.\n", timer);
 			return 0; /* 成功删除定时器 */
 		}
@@ -170,7 +148,7 @@ int32_t timer_delete(TIMER *timer)
 		current = current->next;
 	}
 
-	timer_lock_release();
+	spinlock_release_irqrestore(&timer_lock, eflags);
 	debug("TIMER: Timer %p not found.\n", timer);
 	return -1; /* 未找到定时器 */
 }
@@ -180,7 +158,7 @@ int32_t timer_delete(TIMER *timer)
 */
 void timer_process(void)
 {
-	timer_lock_acquire();
+	uint32_t eflags = spinlock_acquire_irqsave(&timer_lock);
 
 	uint64_t current_tick = get_system_ticks();
 	TIMER *current = timer_head;
@@ -189,14 +167,14 @@ void timer_process(void)
 			/* 定时器到期，调用回调函数 */
 			current->state = TIMER_EXPIRED;
 			debug("TIMER: Timer %p expired at tick %llu, invoking callback.\n", current, current_tick);
-			
-			/* 执行回调 */
+
+			/* 执行回调：暂时释放锁，允许其他操作 */
 			TIMER_CALLBACK callback = current->callback;
 			void *arg = current->arg;
-			timer_lock_release(); /* 释放锁以允许回调函数执行时其他操作 */
+			spinlock_release_irqrestore(&timer_lock, eflags);	/* 释放锁，恢复之前的中断状态 */
 			if (callback)
 				callback(arg);
-			timer_lock_acquire(); /* 重新获取锁 */
+			eflags = spinlock_acquire_irqsave(&timer_lock);		/* 重新获取锁，保存新的中断状态 */
 
 			/* 处理重复定时器 */
 			if (current->state == TIMER_EXPIRED) {
@@ -213,7 +191,7 @@ void timer_process(void)
 		current = current->next;
 	}
 
-	timer_lock_release();
+	spinlock_release_irqrestore(&timer_lock, eflags);
 
 	static uint64_t last_cleanup_tick = 0;
 	current_tick = get_system_ticks();
@@ -229,12 +207,12 @@ void timer_process(void)
 */
 void timer_cleanup(void)
 {
-	timer_lock_acquire();
-	
+	uint32_t eflags = spinlock_acquire_irqsave(&timer_lock);
+
 	uint32_t removed_count = 0;
 	TIMER *current = timer_head;
 	TIMER *prev = NULL;
-	while (current) {	
+	while (current) {
 		if (current->state == TIMER_INACTIVE) {
 			if (prev)
 				prev->next = current->next;
@@ -253,7 +231,7 @@ void timer_cleanup(void)
 		}
 	}
 
-	timer_lock_release();
+	spinlock_release_irqrestore(&timer_lock, eflags);
 	if (removed_count > 0)
 		debug("TIMER: Cleaned up %d inactive timers.\n", removed_count);
 }
@@ -265,7 +243,7 @@ void timer_cleanup(void)
 uint32_t timer_get_count(void)
 {
 	uint32_t count = 0;
-	timer_lock_acquire();
+	uint32_t eflags = spinlock_acquire_irqsave(&timer_lock);
 
 	TIMER *current = timer_head;
 	while (current) {
@@ -273,7 +251,7 @@ uint32_t timer_get_count(void)
 		current = current->next;
 	}
 
-	timer_lock_release();
+	spinlock_release_irqrestore(&timer_lock, eflags);
 	return count;
 }
 
@@ -284,7 +262,7 @@ uint32_t timer_get_count(void)
 uint32_t timer_get_active_count(void)
 {
 	uint32_t count = 0;
-	timer_lock_acquire();
+	uint32_t eflags = spinlock_acquire_irqsave(&timer_lock);
 
 	TIMER *current = timer_head;
 	while (current) {
@@ -293,6 +271,6 @@ uint32_t timer_get_active_count(void)
 		current = current->next;
 	}
 
-	timer_lock_release();
+	spinlock_release_irqrestore(&timer_lock, eflags);
 	return count;
 }
