@@ -86,6 +86,6 @@ void init_idt(void)
 	idt_set_gate(0x11, (uint32_t) asm_isr_ac,  0x08, AR_INTGATE32);	/* 对齐检查异常 */
 
 	/* 系统调用 */
-	extern void service_api(void);
-	idt_set_gate(0x40, (uint32_t) service_api, 0x08, AR_INTGATE32 + 0x60);
+	extern void program_api(void);
+	idt_set_gate(0x40, (uint32_t) program_api, 0x08, AR_INTGATE32 + 0x60);
 }

@@ -60,6 +60,9 @@ TASK *init_multitasking(void)
 			sizeof(task_manager->tasks0[i].ldt) - 1,
 			AR_LDT & 0xff,
 			AR_LDT >> 8);
+
+		task_manager->tasks0[i].argc = -1;
+		task_manager->tasks0[i].argv = NULL;
 	}
 
 	ktask = task_alloc();

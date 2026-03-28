@@ -1,9 +1,8 @@
 /*
 	linker.ld
-	ClassiX Kernel Linking Script
+	ClassiX Kernel Linker Script
 */
 
-OUTPUT_FORMAT("binary")
 ENTRY(start)
 
 PHYS_BASE = 0x00100000;				/* 1 MB */

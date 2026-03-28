@@ -13,7 +13,7 @@ CFLAGS		= -O2 -m32 -std=gnu99 \
 			  -nostartfiles -nostdinc
 ASFLAGS		= -f elf32
 LDSCRIPT	= ./source/linker.ld
-LDFLAGS		= -T $(LDSCRIPT) -melf_i386 -nostdlib -z noexecstack
+LDFLAGS		= -T $(LDSCRIPT) -melf_i386 -nostdlib -z noexecstack --oformat binary
 
 INCPATH		= ./source/include
 

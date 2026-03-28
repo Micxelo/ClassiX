@@ -48,18 +48,26 @@ typedef struct {
 } SEGMENT_DESCRIPTOR;
 
 typedef struct TASK {
+	/* 任务控制块 */
 	int32_t selector;			/* GDT 选择子 */
 	TASK_STATE state;			/* 任务状态 */
 	TASK_PRIORITY priority;		/* 任务优先级 */
 	FIFO fifo;					/* 任务专用 FIFO */
 	TSS tss;					/* 任务状态段 */
-	SEGMENT_DESCRIPTOR ldt[2];	/* 代码段和数据段描述符 */
+
+	/* 应用程序用参数 */
+	SEGMENT_DESCRIPTOR ldt[2];	/* 段描述符 */
 	uint32_t code_base;			/* 代码段基址 */
 	uint32_t code_limit;		/* 代码段界限 */
 	uint32_t data_base;			/* 数据段基址 */
 	uint32_t data_limit;		/* 数据段界限 */
-	bool fpu_used;				/* 是否使用过 FPU */
-	uint8_t fpu_state[512] __attribute__((aligned(16)));	/* FPU 数据 */
+	const char *path;			/* 应用程序路径 */
+	int32_t argc;				/* 参数数量 */
+	char **argv;				/* 参数数组 */
+
+	/* FPU 数据 */
+	bool fpu_used; /* 是否使用过 FPU */
+	uint8_t fpu_state[512] __attribute__((aligned(16))); /* FPU 数据 */
 } TASK;
 
 #define TID(task)							(((task)->selector) / 8)

@@ -99,7 +99,8 @@ static struct {
 
 uint64_t __udivmoddi4(uint64_t dividend, uint64_t divisor, uint64_t *remainder) {
 	if (divisor == 0) {
-		if (remainder) *remainder = 0;
+		if (remainder)
+			*remainder = 0;
 		return 0;
 	}
 
@@ -112,14 +113,16 @@ uint64_t __udivmoddi4(uint64_t dividend, uint64_t divisor, uint64_t *remainder) 
 		dividend <<= 1;
 		quotient <<= 1;
 
-		/* 如果余数 >= 除数，则减去除数并设置商的最低位 */
+		/* 如果余数大于等于除数，则减去除数并设置商的最低位 */
 		if (current_remainder >= divisor) {
 			current_remainder -= divisor;
 			quotient |= 1;
 		}
 	}
 
-	if (remainder) *remainder = current_remainder;
+	if (remainder)
+		*remainder = current_remainder;
+
 	return quotient;
 }
 
@@ -146,20 +149,59 @@ int64_t __divmoddi4(int64_t dividend, int64_t divisor, int64_t *remainder) {
 	const int32_t sign_remainder = sign_dividend;
 
 	/* 转换为无符号绝对值 */
-	uint64_t abs_dividend = sign_dividend ? (uint64_t)(-dividend) : (uint64_t)dividend;
-	uint64_t abs_divisor = sign_divisor ? (uint64_t)(-divisor) : (uint64_t)divisor;
+	uint64_t abs_dividend = sign_dividend ? (uint64_t) (-dividend) : (uint64_t) dividend;
+	uint64_t abs_divisor = sign_divisor ? (uint64_t) (-divisor) : (uint64_t) divisor;
 
 	/* 执行无符号除法 / 取模 */
 	uint64_t abs_remainder;
 	uint64_t abs_quotient = __udivmoddi4(abs_dividend, abs_divisor, &abs_remainder);
 
 	/* 应用符号到结果 */
-	int64_t final_quotient = sign_quotient ? -(int64_t)abs_quotient : (int64_t)abs_quotient;
-	if (remainder) {
-		*remainder = sign_remainder ? -(int64_t)abs_remainder : (int64_t)abs_remainder;
-	}
+	int64_t final_quotient = sign_quotient ? -(int64_t) abs_quotient : (int64_t) abs_quotient;
+	if (remainder)
+		*remainder = sign_remainder ? -(int64_t) abs_remainder : (int64_t) abs_remainder;
 
 	return final_quotient;
+}
+
+uint64_t __umoddi3(uint64_t a, uint64_t b)
+{
+	uint64_t rem;
+	__udivmoddi4(a, b, &rem);
+	return rem;
+}
+
+int64_t __moddi3(int64_t a, int64_t b)
+{
+	uint64_t ua = (a < 0) ? -(uint64_t) a : (uint64_t) a;
+	uint64_t ub = (b < 0) ? -(uint64_t) b : (uint64_t) b;
+	uint64_t rem;
+	__udivmoddi4(ua, ub, &rem);
+	return (a < 0) ? -(int64_t) rem : (int64_t) rem;
+}
+
+int64_t __divdi3(int64_t a, int64_t b)
+{
+	int neg = 0;
+	uint64_t ua, ub;
+
+	if (a < 0) {
+		ua = -(uint64_t) a;
+		neg = !neg;
+	} else {
+		ua = (uint64_t) a;
+	}
+
+	if (b < 0) {
+		ub = -(uint64_t) b;
+		neg = !neg;
+	} else {
+		ub = (uint64_t) b;
+	}
+
+	uint64_t rem;
+	uint64_t quot = __udivmoddi4(ua, ub, &rem);
+	return neg ? -(int64_t) quot : (int64_t) quot;
 }
 
 static void _lead_sign(uint32_t fl, char *sign)

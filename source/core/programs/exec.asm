@@ -1,9 +1,9 @@
 ;
-;	core/services/exec.asm
+;	core/programs/exec.asm
 ;
 
-global _service_api
-_service_api:
+global _program_api
+_program_api:
 	sti
 	push ds
 	push es
@@ -15,23 +15,23 @@ _service_api:
 	extern _system_call
 	call _system_call
 	cmp eax, 0
-	jne _service_end		; 结束应用程序
+	jne _program_end		; 结束应用程序
 	add esp, 32
 	popad
 	pop es
 	pop ds
 	iretd
 
-global _service_end
-_service_end:
+global _program_end
+_program_end:
 	mov esp, [eax]
 	mov dword [eax + 4], 0
 	popad					; 恢复寄存器
 	ret
 
-; void service_start(uint32_t eip, uint32_t cs, uint32_t esp, uint32_t ds, uint32_t *tss_esp0);
-global _service_start
-_service_start:
+; void program_start(uint32_t eip, uint32_t cs, uint32_t esp, uint32_t ds, uint32_t *tss_esp0);
+global _program_start
+_program_start:
 	pushad					; 保存寄存器
 
 	; 读取函数参数

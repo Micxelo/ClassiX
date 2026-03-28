@@ -11,52 +11,8 @@
 
 #include <stdint.h>
 
-/* ASCII 字符分类表 */
-static const uint16_t _ctype_table[256] = {
-	0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020,
-	0x0020, 0x0120, 0x0120, 0x0120, 0x0120, 0x0120, 0x0020, 0x0020,
-	0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020,
-	0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020,
-	0x00B0, 0x0200, 0x0200, 0x0200, 0x0200, 0x0200, 0x0200, 0x0200,
-	0x0200, 0x0200, 0x0200, 0x0200, 0x0200, 0x0200, 0x0200, 0x0200,
-	0x0204, 0x0204, 0x0204, 0x0204, 0x0204, 0x0204, 0x0204, 0x0204,
-	0x0204, 0x0204, 0x0200, 0x0200, 0x0200, 0x0200, 0x0200, 0x0200,
-	0x0200, 0x0241, 0x0241, 0x0241, 0x0241, 0x0241, 0x0241, 0x0241,
-	0x0241, 0x0241, 0x0241, 0x0241, 0x0241, 0x0241, 0x0241, 0x0241,
-	0x0241, 0x0241, 0x0241, 0x0241, 0x0241, 0x0241, 0x0241, 0x0241,
-	0x0241, 0x0241, 0x0241, 0x0200, 0x0200, 0x0200, 0x0200, 0x0200,
-	0x0200, 0x0242, 0x0242, 0x0242, 0x0242, 0x0242, 0x0242, 0x0242,
-	0x0242, 0x0242, 0x0242, 0x0242, 0x0242, 0x0242, 0x0242, 0x0242,
-	0x0242, 0x0242, 0x0242, 0x0242, 0x0242, 0x0242, 0x0242, 0x0242,
-	0x0242, 0x0242, 0x0242, 0x0200, 0x0200, 0x0200, 0x0200, 0x0020,
-	/* 扩展 ASCII 字符 */
-	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000
-};
-
-/* 位标志定义 */
-#define _CTYPE_U						0x01	/* 大写字母 */
-#define _CTYPE_L						0x02	/* 小写字母 */
-#define _CTYPE_N						0x04	/* 数字 */
-#define _CTYPE_S						0x08	/* 空格字符 */
-#define _CTYPE_P						0x10	/* 标点符号 */
-#define _CTYPE_C						0x20	/* 控制字符 */
-#define _CTYPE_X						0x40	/* 十六进制数字 */
-#define _CTYPE_B						0x80	/* 空白字符（空格和制表符） */
+static inline int32_t isalpha(int32_t c);
+static inline int32_t isdigit(int32_t c);
 
 /*
 	@brief 检查字符是否为字母或数字。
@@ -65,7 +21,7 @@ static const uint16_t _ctype_table[256] = {
 */
 static inline int32_t isalnum(int32_t c)
 {
-	return (c >= 0 && c < 256) && (_ctype_table[c] & (_CTYPE_U | _CTYPE_L | _CTYPE_N));
+	return isalpha(c) || isdigit(c);
 }
 
 /*
@@ -75,7 +31,7 @@ static inline int32_t isalnum(int32_t c)
 */
 static inline int32_t isalpha(int32_t c)
 {
-	return (c >= 0 && c < 256) && (_ctype_table[c] & (_CTYPE_U | _CTYPE_L));
+	return ((unsigned) c | 32) - 'a' < 26;
 }
 
 /*
@@ -85,7 +41,7 @@ static inline int32_t isalpha(int32_t c)
 */
 static inline int32_t isblank(int32_t c)
 {
-	return (c >= 0 && c < 256) && (_ctype_table[c] & _CTYPE_B);
+	return (c == ' ' || c == '\t');
 }
 
 /*
@@ -95,7 +51,7 @@ static inline int32_t isblank(int32_t c)
 */
 static inline int32_t iscntrl(int32_t c)
 {
-	return (c >= 0 && c < 256) && (_ctype_table[c] & _CTYPE_C);
+	return (unsigned) c < 0x20 || c == 0x7f;
 }
 
 /*
@@ -105,7 +61,7 @@ static inline int32_t iscntrl(int32_t c)
 */
 static inline int32_t isdigit(int32_t c)
 {
-	return (c >= 0 && c < 256) && (_ctype_table[c] & _CTYPE_N);
+	return (unsigned) c - '0' < 10;
 }
 
 /*
@@ -115,7 +71,7 @@ static inline int32_t isdigit(int32_t c)
 */
 static inline int32_t isgraph(int32_t c)
 {
-	return (c >= 0 && c < 256) && (_ctype_table[c] & (_CTYPE_U | _CTYPE_L | _CTYPE_N | _CTYPE_P));
+	return (unsigned) c - 0x21 < 0x5e;
 }
 
 /*
@@ -125,7 +81,7 @@ static inline int32_t isgraph(int32_t c)
 */
 static inline int32_t islower(int32_t c)
 {
-	return (c >= 0 && c < 256) && (_ctype_table[c] & _CTYPE_L);
+	return (unsigned) c - 'a' < 26;
 }
 
 /*
@@ -135,7 +91,7 @@ static inline int32_t islower(int32_t c)
 */
 static inline int32_t isprint(int32_t c)
 {
-	return (c >= 0 && c < 256) && (_ctype_table[c] & (_CTYPE_U | _CTYPE_L | _CTYPE_N | _CTYPE_P | _CTYPE_B));
+	return (unsigned) c - 0x20 < 0x5f;
 }
 
 /*
@@ -145,7 +101,7 @@ static inline int32_t isprint(int32_t c)
 */
 static inline int32_t ispunct(int32_t c)
 {
-	return (c >= 0 && c < 256) && (_ctype_table[c] & _CTYPE_P);
+	return isgraph(c) && !isalnum(c);
 }
 
 /*
@@ -155,7 +111,7 @@ static inline int32_t ispunct(int32_t c)
 */
 static inline int32_t isspace(int32_t c)
 {
-	return (c >= 0 && c < 256) && (_ctype_table[c] & _CTYPE_S);
+	return c == ' ' || (unsigned) c - '\t' < 5;
 }
 
 /*
@@ -165,7 +121,7 @@ static inline int32_t isspace(int32_t c)
 */
 static inline int32_t isupper(int32_t c)
 {
-	return (c >= 0 && c < 256) && (_ctype_table[c] & _CTYPE_U);
+	return (unsigned) c - 'A' < 26;
 }
 
 /*
@@ -175,7 +131,7 @@ static inline int32_t isupper(int32_t c)
 */
 static inline int32_t isxdigit(int32_t c)
 {
-	return (c >= 0 && c < 256) && (_ctype_table[c] & _CTYPE_X);
+	return isdigit(c) || ((unsigned) c | 32) - 'a' < 6;
 }
 
 /*
@@ -186,7 +142,7 @@ static inline int32_t isxdigit(int32_t c)
 static inline int32_t tolower(int32_t c)
 {
 	if (isupper(c))
-		return c + ('a' - 'A');
+		return c | 32;
 	return c;
 }
 
@@ -198,18 +154,9 @@ static inline int32_t tolower(int32_t c)
 static inline int32_t toupper(int32_t c)
 {
 	if (islower(c))
-		return c - ('a' - 'A');
+		return c & 0x5f;
 	return c;
 }
-
-#undef _CTYPE_U
-#undef _CTYPE_L
-#undef _CTYPE_N
-#undef _CTYPE_S
-#undef _CTYPE_P
-#undef _CTYPE_C
-#undef _CTYPE_X
-#undef _CTYPE_B
 
 #ifdef __cplusplus
 	}

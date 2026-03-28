@@ -17,6 +17,8 @@
 	#define NULL							((void *) 0)
 #endif
 
+#define ARRAY_SIZE(arr)						(sizeof(arr) / sizeof((arr)[0]))
+
 typedef void * HANDLE;
 
 #ifdef __cplusplus

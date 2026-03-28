@@ -20,11 +20,13 @@
 #include <ClassiX/pci.h>
 #include <ClassiX/pit.h>
 #include <ClassiX/rtc.h>
+#include <ClassiX/programs.h>
 #include <ClassiX/task.h>
 #include <ClassiX/timer.h>
 #include <ClassiX/typedef.h>
 #include <ClassiX/window.h>
 
+#include <ctype.h>
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
@@ -42,6 +44,132 @@ void terminal_putchar(TERMINAL *terminal, char c, bool move_cursor);
 void terminal_newline(TERMINAL *terminal);
 void terminal_puts(TERMINAL *terminal, const char *s);
 int32_t terminal_printf(TERMINAL *terminal, const char *format, ...);
+
+/*
+	@brief 从命令行字符串中解析参数。
+	@param input 输入的命令行字符串
+	@param argv 输出参数数组指针，调用者负责释放内存
+	@return 参数个数，或负值表示错误
+*/
+int32_t split_command_line(const char *input, char ***argv)
+{
+	if (!input) {
+		*argv = NULL;
+		return 0;
+	}
+
+	int32_t i, argc = 0;
+	size_t total_chars = 0;
+
+	/* 统计参数个数和总字符数 */
+	i = 0;
+	while (input[i]) {
+		/* 跳过空白 */
+		while (input[i] && isspace(input[i])) i++;
+		if (!input[i])
+			break;
+
+		argc++;
+		bool in_single = false, in_double = false; /* 引号状态 */
+
+		for (;;) {
+			char c = input[i];
+			if (c == '\0') break;
+
+			/* 处理转义 */
+			if (!in_single && c == '\\') {
+				if (input[i] == '\0')
+					break; /* 忽略末尾的反斜杠 */
+				total_chars++;
+				i++;
+				continue;
+			}
+
+			/* 双引号切换 */
+			if (!in_single && c == '\"') {
+				in_double = !in_double;
+				i++;
+				continue;
+			}
+
+			/* 单引号切换 */
+			if (!in_double && c == '\'') {
+				in_single = !in_single;
+				i++;
+				continue;
+			}
+
+			/* 普通状态遇到空白则结束当前参数 */
+			if (!in_single && !in_double && isspace(c))
+				break;
+
+			/* 普通字符计入 */
+			total_chars++;
+			i++;
+		}
+	}
+
+	/* 分配内存 */
+	size_t ptr_array_size = (argc + 1) * sizeof(char *);
+	size_t string_storage_size = total_chars + argc; /* 参数末尾的 '\0' */
+	char **argv_mem = kmalloc(ptr_array_size + string_storage_size);
+	if (!argv_mem) {
+		*argv = NULL;
+		return -1;
+	}
+
+	char *data = (char *)argv_mem + ptr_array_size;
+	argv_mem[argc] = NULL; /* 以 NULL 结尾 */
+
+	/* 填充 argv */
+	i = 0;
+	int32_t arg_idx = 0;
+	while (input[i]) {
+		while (input[i] && isspace(input[i])) i++;
+		if (!input[i])
+			break;
+
+		argv_mem[arg_idx] = data;
+
+		bool in_single = false, in_double = false;
+		for (;;) {
+			char c = input[i];
+			if (c == '\0') break;
+
+			if (!in_single && c == '\\') {
+				i++;
+				if (input[i] == '\0') break;
+				*data++ = input[i];
+				i++;
+				continue;
+			}
+
+			if (!in_single && c == '\"') {
+				in_double = !in_double;
+				i++;
+				continue;
+			}
+
+			if (!in_double && c == '\'') {
+				in_single = !in_single;
+				i++;
+				continue;
+			}
+
+			if (!in_single && !in_double && isspace(c))
+				break;
+
+			*data++ = c;
+			i++;
+		}
+
+		*data++ = '\0';
+		arg_idx++;
+	}
+
+	*argv = argv_mem;
+	return argc;
+}
 
 /* 绘制字符串并刷新 */
 static void layer_draw_string(LAYER *layer, int32_t x, int32_t y, COLOR fc, COLOR bc, const char *s, const BITMAP_FONT *font)
@@ -314,15 +442,6 @@ static void terminal_cmd_sysinfo(TERMINAL *terminal)
 	terminal_printf(terminal, "  Usage: %.1f%%\n", usage_percent);
 }
 
-/* run 命令 */
-static void terminal_cmd_run(TERMINAL *terminal)
-{
-	FAT_FILE file;
-	fatfs_open_file(&file, g_fs, "/system/hello.srv");
-	extern int32_t app_start(FAT_FILE *file, const char *cmdline);
-	app_start(&file, NULL);
-}
-
 /* unknown 命令 */
 static void terminal_cmd_unknown(TERMINAL *terminal)
 {
@@ -349,10 +468,19 @@ static void terminal_process_cmdline(TERMINAL *terminal)
 		terminal_cmd_ls(terminal);
 	else if (strcmp(terminal->cmdline, "sysinfo") == 0)
 		terminal_cmd_sysinfo(terminal);
-	else if (strcmp(terminal->cmdline, "run") == 0)
-		terminal_cmd_run(terminal);
-	else if (terminal->cmdline[0] != '\0')
-		terminal_cmd_unknown(terminal);
+	else if (terminal->cmdline[0] != '\0') {
+		char **argv;
+		int32_t argc = split_command_line(terminal->cmdline, &argv);
+		if (argc > 0) {
+			int32_t result = program_exec(argc, argv);
+			if (result == SRV_NOT_FOUND) {
+				terminal_cmd_unknown(terminal);
+			} else if (result != SRV_SUCCESS) {
+				terminal_printf(terminal, "Application execution failed: %d\n", result);
+			}
+			kfree(argv);
+		}
+	}
 
 	terminal_printf(terminal, "\n");
 }

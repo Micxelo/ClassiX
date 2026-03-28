@@ -16,14 +16,16 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static inline char *strcpy(char *dest, const char *src)
+static inline int32_t memcmp(const void *cs, const void *ct, size_t count);
+
+static inline char *strcpy(char *restrict dest, const char *restrict src)
 {
 	char *tmp = dest;
 	while ((*dest++ = *src++) != '\0') { }
 	return tmp;
 }
 
-static inline char *strncpy(char *dest, const char *src, size_t count)
+static inline char *strncpy(char *restrict dest, const char *restrict src, size_t count)
 {
 	char *tmp = dest;
 
@@ -37,7 +39,7 @@ static inline char *strncpy(char *dest, const char *src, size_t count)
 	return dest;
 }
 
-static inline char *strcat(char *dest, const char *src)
+static inline char *strcat(char *restrict dest, const char *restrict src)
 {
 	char *tmp = dest;
 
@@ -48,7 +50,7 @@ static inline char *strcat(char *dest, const char *src)
 	return tmp;
 }
 
-static inline char *strncat(char *dest, const char *src, size_t count)
+static inline char *strncat(char *restrict dest, const char *restrict src, size_t count)
 {
 	char *tmp = dest;
 
@@ -64,6 +66,13 @@ static inline char *strncat(char *dest, const char *src, size_t count)
 	}
 
 	return tmp;
+}
+
+static inline size_t strlen(const char *s)
+{
+	const char *sc;
+	for (sc = s; *sc != '\0'; ++sc) { }
+	return sc - s;
 }
 
 static inline int32_t strcmp(const char *cs, const char *ct)
@@ -99,7 +108,7 @@ static inline int32_t strncmp(const char *cs, const char *ct, size_t count)
 	return 0;
 }
 
-static inline char *strchr(const char *s, char c)
+static inline char *strchr(const char *s, int c)
 {
 	for (; *s != c; ++s)
 		if (*s == '\0')
@@ -108,7 +117,7 @@ static inline char *strchr(const char *s, char c)
 	return (char *) s;
 }
 
-static inline char *strrchr(const char *s, char c)
+static inline char *strrchr(const char *s, int c)
 {
 	const char *last = NULL;
 
@@ -118,25 +127,6 @@ static inline char *strrchr(const char *s, char c)
 	} while (*s++);
 
 	return (char *) last;
-}
-
-static inline size_t strlen(const char *s)
-{
-	const char *sc;
-	for (sc = s; *sc != '\0'; ++sc) { }
-	return sc - s;
-}
-
-static inline int32_t memcmp(const void *cs, const void *ct, size_t count)
-{
-	const unsigned char *su1, *su2;
-	int res = 0;
-
-	for (su1 = cs, su2 = ct; 0 < count; ++su1, ++su2, count--)
-		if ((res = *su1 - *su2) != 0)
-			break;
-
-	return res;
 }
 
 static inline size_t strspn(const char *s, const char *accept)
@@ -190,7 +180,38 @@ static inline char *strstr(const char *s1, const char *s2)
 	return NULL;
 }
 
-static inline void *memcpy(void *dest, const void *src, size_t count)
+static inline char *strtok(char *restrict s, const char *restrict delim)
+{
+	static char *p;
+	if (!s && !(s = p))
+		return NULL;
+
+	s += strspn(s, delim);
+	if (!*s)
+		return p = 0;
+
+	p = s + strcspn(s, delim);
+	if (*p)
+		*p++ = 0;
+	else
+		p = 0;
+
+	return s;
+}
+
+static inline int32_t memcmp(const void *cs, const void *ct, size_t count)
+{
+	const unsigned char *su1, *su2;
+	int res = 0;
+
+	for (su1 = cs, su2 = ct; 0 < count; ++su1, ++su2, count--)
+		if ((res = *su1 - *su2) != 0)
+			break;
+
+	return res;
+}
+
+static inline void *memcpy(void *restrict dest, const void *restrict src, size_t count)
 {
 	char *tmp = dest;
 	const char *s = src;

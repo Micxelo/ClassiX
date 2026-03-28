@@ -2,11 +2,7 @@
 	utilities/crc.c
 */
 
-/*
-	File: Source/method/crc32.h.c
-	Author: Micxelo
-*/
-
+#include <ClassiX/crc.h>
 #include <ClassiX/typedef.h>
 
 static const uint32_t crc32tab[] = {
