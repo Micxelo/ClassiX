@@ -91,7 +91,7 @@ static void layer_refreshmap(int32_t vx0, int32_t vy0, int32_t vx1, int32_t vy1,
 {
 	int32_t bx0, by0, bx1, by1;
 	uint8_t id;
-	LAYER *layer;
+	const LAYER *layer;
 
 	if (vx0 < 0) vx0 = 0;
 	if (vy0 < 0) vy0 = 0;
@@ -149,7 +149,7 @@ static void layer_refreshsub(int32_t vx0, int32_t vy0, int32_t vx1, int32_t vy1,
 {
 	int32_t bx0, by0, bx1, by1;
 	uint8_t id;
-	LAYER *layer;
+	const LAYER *layer;
 
 	/* 修正超过画面范围的值 */
 	if (vx0 < 0) vx0 = 0;
@@ -262,7 +262,7 @@ void layer_set_z(LAYER *layer, int32_t z1)
 	@param x1 区域右下角 X 坐标。
 	@param y1 区域右下角 Y 坐标。
 */
-void layer_refresh(LAYER *layer, int32_t x0, int32_t y0, int32_t x1, int32_t y1)
+void layer_refresh(const LAYER *layer, int32_t x0, int32_t y0, int32_t x1, int32_t y1)
 {
 	if (layer->z >= 0)
 		layer_refreshsub(layer->x + x0, layer->y + y0, layer->x + x1, layer->y + y1, layer->z, layer->z);

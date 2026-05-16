@@ -30,6 +30,14 @@ cd ClassiX
 make
 ```
 
+## 静态检查
+
+使用 `cppcheck` 进行静态代码分析，输出结果到 `cppcheck.log` 中。
+
+```shell
+make check
+```
+
 ## 清理
 
 ```shell

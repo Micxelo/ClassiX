@@ -6,6 +6,7 @@ CC			= gcc
 AS			= nasm
 LD			= ld
 OBJCOPY		= objcopy
+CCHK		= cppcheck
 
 CFLAGS		= -O2 -m32 -std=gnu99 \
 			  -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Werror=parentheses \
@@ -14,6 +15,8 @@ CFLAGS		= -O2 -m32 -std=gnu99 \
 ASFLAGS		= -f elf32
 LDSCRIPT	= ./source/linker.ld
 LDFLAGS		= -T $(LDSCRIPT) -melf_i386 -nostdlib -z noexecstack --oformat binary
+CCHKFLAGS	= -q --enable=all --platform=unix32 --std=c99 --language=c -I $(INCPATH) \
+			  --suppress=missingIncludeSystem --suppress=unusedFunction --suppress=variableScope
 
 INCPATH		= ./source/include
 
@@ -55,4 +58,14 @@ $(TARGET) : $(DEPS)
 clean:
 	@find . -name "*.obj" -delete
 	@rm -f $(TARGET)
+	@find . -name "cppcheck.log" -delete
 	@echo "\tRM\t$(TARGET)"
+
+.PHONY : check
+check:
+	@if command -v cppcheck >/dev/null 2>&1; then \
+		$(CCHK) $(CCHKFLAGS) $(C_SOURCES) > cppcheck.log 2>&1 || true; \
+		echo "\tCHECK\tDone"; \
+	else \
+		echo "\tCHECK\tcppcheck not found, skipping static analysis"; \
+	fi

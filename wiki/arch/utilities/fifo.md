@@ -95,7 +95,7 @@ uint32_t fifo_pop(
 
 ```c
 int32_t fifo_status(
-	FIFO *fifo
+	const FIFO *fifo
 );
 ```
 
@@ -106,3 +106,49 @@ int32_t fifo_status(
 |返回值|描述|
 |:-:|:-:|
 |`int32_t`|缓冲区中的数据数量|
+
+### `fifo_push_event`
+
+向 FIFO 缓冲区写入一个事件，并在写入后唤醒关联任务（如有）。此函数通过三次 `fifo_push` 调用写入窗口句柄、事件类型和事件参数。
+
+**函数原型**
+
+```c
+int32_t fifo_push_event(
+	FIFO *fifo,
+	const EVENT *event
+);
+```
+
+|参数|描述|
+|:-:|:-:|
+|`fifo`|FIFO 结构体指针|
+|`event`|要写入的事件指针|
+
+|返回值|描述|
+|:-:|:-:|
+|`0`|写入成功|
+|`-1`|缓冲区已满，写入失败|
+
+### `fifo_pop_event`
+
+从 FIFO 缓冲区读取一个事件。此函数通过三次 `fifo_pop` 调用读取窗口句柄（丢弃）、事件类型和事件参数，并将它们存储在提供的 `EVENT` 结构体中。
+
+**函数原型**
+
+```c
+int32_t fifo_pop_event(
+	FIFO *fifo,
+	EVENT *event
+);
+```
+
+|参数|描述|
+|:-:|:-:|
+|`fifo`|FIFO 结构体指针|
+|`event`|用于存储读取事件的 `EVENT` 结构体指针
+
+|返回值|描述|
+|:-:|:-:|
+|`0`|读取成功|
+|`-1`|缓冲区不足以读取一个完整事件，读取失败|

@@ -11,6 +11,8 @@
 
 #include <ClassiX/typedef.h>
 
+uint8_t crc8(const void *buf, size_t size);
+uint16_t crc16(const void *buf, size_t size);
 uint32_t crc32(const void *buf, size_t size);
 
 #ifdef __cplusplus

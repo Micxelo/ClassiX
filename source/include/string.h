@@ -79,7 +79,7 @@ static inline int32_t strcmp(const char *cs, const char *ct)
 {
 	char c1, c2;
 
-	while (1) {
+	for (;;) {
 		c1 = *cs++;
 		c2 = *ct++;
 		if (c1 != c2)

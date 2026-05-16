@@ -444,7 +444,7 @@ void window_get_cascade_position(int16_t *x, int16_t *y, uint16_t width, uint16_
 	@param y 相对于窗口左上角的 Y 坐标
 	@return 命中测试结果
 */
-HIT_RESULT window_hit_test(WINDOW *window, int16_t x, int16_t y)
+HIT_RESULT window_hit_test(const WINDOW *window, int16_t x, int16_t y)
 {
 	if (!window)
 		return HIT_NONE;

@@ -69,7 +69,7 @@ int32_t init_framebuffer(const multiboot_info_t *mbi)
 /* 适用于 ARGB 颜色格式缓冲区的 Get Pixel */
 static inline COLOR get_pixel_argb(uint16_t x, uint16_t y)
 {
-	uint32_t *buf = (uint32_t *) g_fb.addr;
+	const uint32_t *buf = (uint32_t *) g_fb.addr;
 	return GET_PIXEL32(buf, g_fb.width, x, y);
 }
 

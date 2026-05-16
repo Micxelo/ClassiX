@@ -44,7 +44,7 @@ extern LAYER_MANAGER g_lm;
 int32_t layer_init(uint32_t *fb, uint16_t width, uint16_t height);
 LAYER *layer_alloc(uint16_t width, uint16_t height, bool allow_inv);
 void layer_set_z(LAYER *layer, int32_t z1);
-void layer_refresh(LAYER *layer, int32_t x0, int32_t y0, int32_t x1, int32_t y1);
+void layer_refresh(const LAYER *layer, int32_t x0, int32_t y0, int32_t x1, int32_t y1);
 void layer_move(LAYER *layer, int32_t x, int32_t y);
 void layer_free(LAYER *layer);
 

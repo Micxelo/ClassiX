@@ -52,7 +52,7 @@ DECLARE_ASSET(fonts, terminus16b_psf);
 
 /* 获取资源大小 */
 #define ASSET_SIZE(type, name) \
-	((size_t) (binary_source_assets_##type##_##name##_end - binary_source_assets_##type##_##name##_start))
+	((size_t) ((uintptr_t) binary_source_assets_##type##_##name##_end - (uintptr_t) binary_source_assets_##type##_##name##_start))
 
 #ifdef __cplusplus
 	}

@@ -13,7 +13,7 @@
 static FATFS rootfs;
 FATFS * const g_fs = &rootfs;
 
-int32_t fat12_get_next_cluster(FATFS *fs, uint16_t cluster, uint16_t *next_cluster);
+int32_t fat12_get_next_cluster(const FATFS *fs, uint16_t cluster, uint16_t *next_cluster);
 int32_t fat12_init(FATFS *fs, BLKDEV *device);
 int32_t fat12_close(FATFS *fs);
 int32_t fat12_open_file(FAT_FILE *file, FATFS *fs, const char *path);
@@ -26,7 +26,7 @@ int32_t fat12_create_directory(FATFS *fs, const char *path);
 int32_t fat12_delete_directory(FATFS *fs, const char *path);
 int32_t fat12_get_directory_entries(FATFS *fs, const char *path, FAT_DIRENTRY *entries, int32_t max_entries, int32_t *entries_read);
 
-int32_t fat16_get_next_cluster(FATFS *fs, uint16_t cluster, uint16_t *next_cluster);
+int32_t fat16_get_next_cluster(const FATFS *fs, uint16_t cluster, uint16_t *next_cluster);
 int32_t fat16_init(FATFS *fs, BLKDEV *device);
 int32_t fat16_close(FATFS *fs);
 int32_t fat16_open_file(FAT_FILE *file, FATFS *fs, const char *path);

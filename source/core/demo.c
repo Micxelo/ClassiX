@@ -78,8 +78,6 @@ int32_t split_command_line(const char *input, char ***argv)
 
 			/* 处理转义 */
 			if (!in_single && c == '\\') {
-				if (input[i] == '\0')
-					break; /* 忽略末尾的反斜杠 */
 				total_chars++;
 				i++;
 				continue;
@@ -184,7 +182,6 @@ static void layer_draw_string(LAYER *layer, int32_t x, int32_t y, COLOR fc, COLO
 /* help 命令 */
 static void terminal_cmd_help(TERMINAL *terminal)
 {
-	terminal_printf(terminal, "z:%d\n", terminal->window.layer->z);
 	terminal_printf(terminal, "  cat      - Display file content\n");
 	terminal_printf(terminal, "  clear    - Clear screen\n");
 	terminal_printf(terminal, "  echo     - Echo arguments\n");
@@ -192,7 +189,6 @@ static void terminal_cmd_help(TERMINAL *terminal)
 	terminal_printf(terminal, "  ls       - List directory contents\n");
 	terminal_printf(terminal, "  sysinfo  - Display system information\n");
 	terminal_printf(terminal, "  time     - Show current time\n");
-	window_inactivate(&terminal->window);
 }
 
 /* clear 命令 */

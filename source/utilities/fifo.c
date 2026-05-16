@@ -79,7 +79,7 @@ uint32_t fifo_pop(FIFO *fifo)
 	@param fifo FIFO 结构体指针
 	@return FIFO 中的数据数量。
 */
-int32_t fifo_status(FIFO *fifo)
+int32_t fifo_status(const FIFO *fifo)
 {
 	return fifo->size - fifo->free;
 }

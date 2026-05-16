@@ -97,7 +97,7 @@ sudo apt install qemu-system
 ### 运行虚拟机
 
 ```shell
-qemu-system-i386 -cpu IvyBridge,-tsc-deadline,-lm -machine pc,acpi=on -m 128M -vga std -drive if=ide,file=/path/to/hd.img,format=raw -drive if=floppy,file=/path/to/fd.img,format=raw -serial stdio -nic none
+qemu-system-i386 -cpu IvyBridge,-tsc-deadline,-lm -machine pc,acpi=on -m 128M -vga std -drive if=ide,file=/path/to/hd.img,format=raw -drive if=floppy,file=/path/to/fd.img,format=raw -serial stdio -nic none -audiodev dsound,id=audio0
 ```
 
 |选项|含义|
@@ -109,3 +109,4 @@ qemu-system-i386 -cpu IvyBridge,-tsc-deadline,-lm -machine pc,acpi=on -m 128M -v
 |`-drive`|使用指定的镜像文件|
 |`-serial stdio`|将串口输出重定向到标准输入输出|
 |`-nic none`|禁用网络接口|
+|`-audiodev dsound,id=audio0`|使用 DirectSound 音频后端，ID 为 audio0|

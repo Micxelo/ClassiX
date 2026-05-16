@@ -93,7 +93,7 @@ static int32_t fd_write(void *dev, uint32_t lba, uint32_t count, const void *buf
 	@param dev 块设备结构体指针
 	@return 错误码
 */
-static int32_t register_device(BLKDEV *dev)
+static int32_t register_device(const BLKDEV *dev)
 {
 	if (blkdev_count >= (signed) (sizeof(blkdev_list) / sizeof(blkdev_list[0])))
 		return BD_INVALID_PARAM;

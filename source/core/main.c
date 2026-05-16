@@ -46,28 +46,27 @@
 #define MODIFIER_ALT						(MODIFIER_LALT | MODIFIER_RALT)
 #define MODIFIER_META						(MODIFIER_LMETA | MODIFIER_RMETA)
 
-#define DBLCLK_THRESHOLD_MS					(500)		/* 双击最大时间间隔（毫秒） */
-#define DBLCLK_THRESHOLD_DIST 				(4)			/* 双击最大移动距离（像素）) */
+#define DBLCLK_THRESHOLD_MS					(500)	/* 双击最大时间间隔（毫秒） */
+#define DBLCLK_THRESHOLD_DIST 				(4)		/* 双击最大移动距离（像素）) */
 
-extern uintptr_t kernel_start_phys;						/* 内核起始物理地址 */
-extern uintptr_t kernel_end_phys;						/* 内核结束物理地址 */
-extern uintptr_t bss_start_phys;						/* BSS 段起始地址 */
-extern uintptr_t bss_end_phys;							/* BSS 段结束地址 */
+extern uintptr_t kernel_start_phys;					/* 内核起始物理地址 */
+extern uintptr_t kernel_end_phys;					/* 内核结束物理地址 */
+extern uintptr_t bss_start_phys;					/* BSS 段起始地址 */
+extern uintptr_t bss_end_phys;						/* BSS 段结束地址 */
 
 const CLASSIX_HEADER *kernel_header = (CLASSIX_HEADER *) &kernel_start_phys;
 
 BITMAP_FONT font_terminus_12n;
 BITMAP_FONT font_terminus_16n;
 BITMAP_FONT font_terminus_16b;
-BITMAP_FONT font_unifont;
 
-#define KMSG_QUEUE_SIZE						(128)		/* 内核消息队列大小 */
+#define KMSG_QUEUE_SIZE						(128)	/* 内核消息队列大小 */
 
-static FIFO kmsg = { };									/* 内核消息队列 */
+static FIFO kmsg = { };								/* 内核消息队列 */
 
 static void init_fpu(void);
-static bool is_single_click(int32_t x, int32_t y, BTN_CLICK_STATE *state);
-static bool is_double_click(uint32_t now, int32_t x, int32_t y, BTN_CLICK_STATE *state);
+static bool is_single_click(int32_t x, int32_t y, const BTN_CLICK_STATE *state);
+static bool is_double_click(uint32_t now, int32_t x, int32_t y, const BTN_CLICK_STATE *state);
 static inline void update_click_state(uint32_t now, int32_t x, int32_t y, BTN_CLICK_STATE *state);
 
 void main(multiboot_info_t *mbi)
@@ -137,7 +136,7 @@ void main(multiboot_info_t *mbi)
 
 	/* 初始化内存管理 */
 	uintptr_t mem_start = (uintptr_t) &kernel_end_phys;
-	size_t mem_size = (size_t) (mbi->mem_upper * 1024 - (&kernel_end_phys - &kernel_start_phys));
+	size_t mem_size = (size_t) (mbi->mem_upper * 1024 - ((uintptr_t) &kernel_end_phys - (uintptr_t) &kernel_start_phys));
 	memory_init(&g_mp, (void*) mem_start, mem_size);
 
 	/* 初始化中断服务 */
@@ -823,7 +822,7 @@ static void init_fpu(void)
 	@param state 上一次点击的状态
 	@return 如果满足单击条件，返回 true；否则返回 false。
 */
-static bool is_single_click(int32_t x, int32_t y, BTN_CLICK_STATE *state)
+static bool is_single_click(int32_t x, int32_t y, const BTN_CLICK_STATE *state)
 {
 	int32_t dx = x - state->last_down_x;
 	int32_t dy = y - state->last_down_y;
@@ -845,7 +844,7 @@ static bool is_single_click(int32_t x, int32_t y, BTN_CLICK_STATE *state)
 	@param state 上一次点击的状态
 	@return 如果满足双击条件，返回 true；否则返回 false。
 */
-static bool is_double_click(uint32_t now, int32_t x, int32_t y, BTN_CLICK_STATE *state)
+static bool is_double_click(uint32_t now, int32_t x, int32_t y, const BTN_CLICK_STATE *state)
 {
 	if (now - state->last_down_time < DBLCLK_THRESHOLD_MS)
 		if (is_single_click(x, y, state))

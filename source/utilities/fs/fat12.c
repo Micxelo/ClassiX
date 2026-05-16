@@ -338,7 +338,8 @@ int32_t fat12_close(FATFS *fs)
 		return FATFS_INVALID_PARAM;
 
 	/* 写回 FAT 表 */
-	if (fat12_write_fat(fs) == FATFS_SUCCESS) {
+	ret = fat12_write_fat(fs);
+	if (ret == FATFS_SUCCESS) {
 		/* 释放 FAT 表内存 */
 		kfree(fs->fat);
 		fs->fat = NULL;
@@ -370,7 +371,7 @@ int32_t fat12_close(FATFS *fs)
 	@param next_cluster 返回的下一个簇号
 	@return 错误码
 */
-int32_t fat12_get_next_cluster(FATFS *fs, uint16_t cluster, uint16_t *next_cluster)
+int32_t fat12_get_next_cluster(const FATFS *fs, uint16_t cluster, uint16_t *next_cluster)
 {
 	uint32_t fat_offset;
 	uint16_t value;
@@ -691,16 +692,16 @@ static int32_t fat12_write_cluster(FATFS *fs, uint16_t cluster, const uint8_t *b
 */
 static int32_t fat12_read_directory_entry(FATFS *fs, uint16_t dir_cluster, int32_t entry_num, FAT_DIRENTRY *entry)
 {
-	uint8_t buffer[512];
-	int32_t entries_per_sector = fs->bpb.bytes_per_sector / sizeof(FAT_DIRENTRY);
-	int32_t sector_num, sector_offset;
-	int32_t ret;
-
 	/* 参数检查 */
 	if (fs == NULL || entry == NULL) {
 		debug("FAT12: Invalid parameters in read_directory_entry.\n");
 		return FATFS_INVALID_PARAM;
 	}
+
+	uint8_t buffer[512];
+	int32_t entries_per_sector = fs->bpb.bytes_per_sector / sizeof(FAT_DIRENTRY);
+	int32_t sector_num, sector_offset;
+	int32_t ret;
 
 	if (dir_cluster == 0) {
 		/* 根目录 */
@@ -763,16 +764,16 @@ static int32_t fat12_read_directory_entry(FATFS *fs, uint16_t dir_cluster, int32
 */
 static int32_t fat12_write_directory_entry(FATFS *fs, uint16_t dir_cluster, int32_t entry_num, const FAT_DIRENTRY *entry)
 {
-	uint8_t buffer[512];
-	int32_t entries_per_sector = fs->bpb.bytes_per_sector / sizeof(FAT_DIRENTRY);
-	int32_t sector_num, sector_offset;
-	int32_t ret;
-
 	/* 参数检查 */
 	if (fs == NULL || entry == NULL) {
 		debug("FAT12: Invalid parameters in write_directory_entry.\n");
 		return FATFS_INVALID_PARAM;
 	}
+
+	uint8_t buffer[512];
+	int32_t entries_per_sector = fs->bpb.bytes_per_sector / sizeof(FAT_DIRENTRY);
+	int32_t sector_num, sector_offset;
+	int32_t ret;
 
 	if (dir_cluster == 0) {
 		/* 根目录 */
@@ -1198,7 +1199,7 @@ static int32_t fat12_parse_path(FATFS *fs, const char *path, FAT_DIRENTRY *paren
 {
 	char temp_path[FAT_MAX_PATH];
 	char *token;
-	char *saveptr;
+	char *saveptr = NULL;
 	uint16_t current_cluster = 0; /* 从根目录开始 */
 	int32_t ret;
 
@@ -1329,7 +1330,7 @@ static void fat12_update_file_timestamp(FAT_DIRENTRY *entry, bool update_create,
 	@param entry 新的目录项数据
 	@return 错误码
 */
-static int32_t fat12_update_directory_entry(FATFS *fs, uint16_t parent_cluster, const char *filename, FAT_DIRENTRY *entry)
+static int32_t fat12_update_directory_entry(FATFS *fs, uint16_t parent_cluster, const char *filename, const FAT_DIRENTRY *entry)
 {
 	int32_t entry_index;
 	int32_t ret;
