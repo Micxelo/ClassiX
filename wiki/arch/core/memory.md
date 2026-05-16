@@ -85,7 +85,8 @@ void memory_init(
 ```c
 void *memory_alloc(
 	MEMORY_POOL *pool,
-	size_t size
+	size_t size,
+	TASK *task
 );
 ```
 
@@ -93,6 +94,7 @@ void *memory_alloc(
 |:-:|:-:|
 |`pool`|待操作的内存池|
 |`size`|需要分配的字节数|
+|`task`|使用此内存的任务|
 
 |返回值|描述|
 |:-:|:-:|
@@ -120,7 +122,7 @@ void memory_free(
 
 ### `kmalloc`
 
-分配内核内存。
+分配内核内存，指定任务为 `task_get_current()`。
 
 **函数原型**
 

@@ -147,16 +147,16 @@ static inline void set_year(uint32_t year)
 	@brief 获取当前时间戳（秒）。
 	@return 当前时间戳（秒）
 */
-static inline uint64_t timestamp(int32_t year, int32_t mon, int32_t day, int32_t hour, int32_t min, int32_t sec)
+static inline int64_t timestamp(int32_t year, int32_t mon, int32_t day, int32_t hour, int32_t min, int32_t sec)
 {
-	uint64_t mon0 = mon, year0 = year;
+	int64_t mon0 = mon, year0 = year;
 
-	if (0 >= (uint64_t) (mon0 -= 2)) {
+	if (0 >= (int64_t) (mon0 -= 2)) {
 		mon0 += 12;
 		year0 -= 1;
 	}
 
-	return ((((uint64_t) (year0 / 4 - year0 / 100 + year0 / 400 + 367 * mon0 / 12 + day) + year0 * 365 - 719499) * 24 + hour )
+	return ((((int64_t) (year0 / 4 - year0 / 100 + year0 / 400 + 367 * mon0 / 12 + day) + year0 * 365 - 719499) * 24 + hour )
 		* 60 + min ) * 60 + sec;
 }
 

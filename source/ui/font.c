@@ -69,9 +69,6 @@ static void parse_psf1_unicode_table(const BITMAP_FONT *font, const uint8_t *tab
 
 	/* PSF1 使用 16 位 UCS-2/UTF-16 码点 */
 	while (i < table_size && current_char < font->count) {
-		if (i + 1 >= table_size)
-			break;
-
 		uint16_t unicode = (table_data[i] << 8) | table_data[i + 1];
 		i += 2;
 
@@ -83,8 +80,7 @@ static void parse_psf1_unicode_table(const BITMAP_FONT *font, const uint8_t *tab
 			continue;
 		else
 			/* 有效 Unicode 码点 */
-			if (current_char < font->count)
-				font->unicode_map[current_char] = unicode;
+			font->unicode_map[current_char] = unicode;
 	}
 }
 
@@ -281,7 +277,9 @@ void psf_free(BITMAP_FONT *font)
 */
 uint32_t psf_find_char_index(const BITMAP_FONT *font, uint32_t unicode)
 {
-	if (!font || !font->unicode_map)
+	if (!font)
+		return 0;
+	if (!font->unicode_map)
 		/* 如果没有 Unicode 表，对于扩展 ASCII 可能有问题 */
 		return (unicode < font->count) ? unicode : 0;
 

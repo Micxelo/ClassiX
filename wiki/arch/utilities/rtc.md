@@ -240,7 +240,7 @@ void set_year(
 **函数原型**
 
 ```c
-uint64_t timestamp(
+int64_t timestamp(
 	int32_t year,
 	int32_t mon,
 	int32_t day,
@@ -261,4 +261,4 @@ uint64_t timestamp(
 
 |返回值|描述|
 |:-:|:-:|
-|`uint64_t`|自 1970-01-01 00:00:00 UTC 起的秒数（时间戳）|
+|`int64_t`|自 1970-01-01 00:00:00 UTC 起的秒数（时间戳）|

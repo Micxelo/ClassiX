@@ -35,6 +35,7 @@ MEMORY_POOL g_mp;		/* 内核内存池 */
 
 /*
 	@brief 初始化内存池。
+	@param pool 待初始化的内存池
 	@param base 内存池起始地址
 	@param size 内存池大小
 */
@@ -219,7 +220,7 @@ void *krealloc(void *ptr, size_t new_size)
 		return NULL;
 	}
 
-	block_header_t *header = (block_header_t *) ((uint8_t *) ptr - sizeof(block_header_t));
+	const block_header_t *header = (block_header_t *) ((uint8_t *) ptr - sizeof(block_header_t));
 	if (!(header->magic == BLOCK_MAGIC && header->state == BLOCK_USED))
 		return NULL;
 
@@ -270,7 +271,7 @@ size_t get_free_memory(const MEMORY_POOL *pool)
 	freeblock_t *current = pool->head;
 
 	while (current) {
-		block_header_t *header = (block_header_t *) ((uint8_t *) current - sizeof(block_header_t));
+		const block_header_t *header = (block_header_t *) ((uint8_t *) current - sizeof(block_header_t));
 
 		if (!(header->magic == BLOCK_MAGIC && header->state == BLOCK_FREE)) {
 			current = current->next;

@@ -57,7 +57,7 @@ PCI_DEVICE_LIST pci_devices;
 */
 static inline uint32_t pci_make_address(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset)
 {
-	return (1 << 31) | (bus << 16) | (device << 11) | (function << 8) | (offset & 0xFC);
+	return (1u << 31) | (bus << 16) | (device << 11) | (function << 8) | (offset & 0xFC);
 }
 
 /*

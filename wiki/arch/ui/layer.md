@@ -125,7 +125,7 @@ void layer_set_z(
 
 ```c
 void layer_refresh(
-	LAYER *layer,
+	const LAYER *layer,
 	int32_t x0,
 	int32_t y0, 
 	int32_t x1,

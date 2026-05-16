@@ -159,7 +159,7 @@ void task_register(TASK *task, TASK_PRIORITY priority)
 */
 void task_schedule(void)
 {
-	TASK *task;
+	const TASK *task;
 	task_manager->now++;
 	if (task_manager->now >= task_manager->running)
 		task_manager->now = 0;

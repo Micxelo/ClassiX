@@ -159,7 +159,7 @@ void window_activate(WINDOW *window);
 void window_inactivate(WINDOW *window);
 void window_set_position(WINDOW *window, int16_t x, int16_t y);
 void window_get_cascade_position(int16_t *x, int16_t *y, uint16_t width, uint16_t height);
-HIT_RESULT window_hit_test(WINDOW *window, int16_t x, int16_t y);
+HIT_RESULT window_hit_test(const WINDOW *window, int16_t x, int16_t y);
 
 #define window_draw_rectangle(_window, _x, _y, _width, _height, _thickness, _color) \
 	draw_rectangle((_window)->layer->buf, (_window)->width, (_x), (_y), (_width), (_height), (_thickness), (_color))

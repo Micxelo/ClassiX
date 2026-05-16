@@ -249,7 +249,7 @@ static inline void lba_to_chs(uint32_t lba, uint8_t *cylinder, uint8_t *head, ui
 	@param buffer 数据缓冲区
 	@return 错误码
 */
-static int32_t fdc_read_sector(FD_DEVICE *dev, uint32_t lba, uint8_t *buffer)
+static int32_t fdc_read_sector(const FD_DEVICE *dev, uint32_t lba, uint8_t *buffer)
 {
 	uint8_t cylinder, head, sector;
 	lba_to_chs(lba, &cylinder, &head, &sector);
@@ -291,7 +291,7 @@ static int32_t fdc_read_sector(FD_DEVICE *dev, uint32_t lba, uint8_t *buffer)
 	@param buffer 数据缓冲区
 	@return 错误码
 */
-static int32_t fdc_write_sector(FD_DEVICE *dev, uint32_t lba, uint8_t *buffer)
+static int32_t fdc_write_sector(const FD_DEVICE *dev, uint32_t lba, uint8_t *buffer)
 {
 	uint8_t cylinder, head, sector;
 	lba_to_chs(lba, &cylinder, &head, &sector);

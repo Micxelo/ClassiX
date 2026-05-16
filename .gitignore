@@ -11,3 +11,6 @@
 *.obj
 *.bin
 *.sys
+
+# Cppcheck log file
+cppcheck.log

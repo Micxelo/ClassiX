@@ -63,7 +63,7 @@ void isr_ud(ISR_PARAMS *params)
 /* 设备不可用异常 */
 void isr_nm(ISR_PARAMS *params)
 {
-	static TASK *fpu_owner = NULL;
+	static const TASK * fpu_owner = NULL;
 	TASK *current = task_get_current();
 
 	/* 清除 CR0.TS 位 */

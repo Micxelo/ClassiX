@@ -78,8 +78,6 @@ int32_t split_command_line(const char *input, char ***argv)
 
 			/* 处理转义 */
 			if (!in_single && c == '\\') {
-				if (input[i] == '\0')
-					break; /* 忽略末尾的反斜杠 */
 				total_chars++;
 				i++;
 				continue;

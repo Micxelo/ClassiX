@@ -18,7 +18,7 @@
 */
 static int32_t rd_read(void *dev, uint32_t lba, uint32_t count, void *buf)
 {
-	uint8_t *rd_buf = (uint8_t *) ((BLKDEV *) dev)->device;
+	const uint8_t *rd_buf = (uint8_t *) ((BLKDEV *) dev)->device;
 	uint32_t sector_size = ((BLKDEV *) dev)->sector_size;
 	uint32_t total_sectors = ((BLKDEV *) dev)->total_sectors;
 
