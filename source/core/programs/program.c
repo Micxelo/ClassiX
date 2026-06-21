@@ -34,17 +34,24 @@ typedef struct __attribute__((packed)) {
 	uint32_t entry_point;	/* 入口点偏移 */
 	uint32_t code_offset;	/* 代码段偏移 */
 	uint32_t code_size;		/* 代码段大小 */
+	uint32_t code_vma;		/* 代码段虚拟地址 */
 	uint32_t rodata_offset;	/* 只读数据段偏移 */
 	uint32_t rodata_size;	/* 只读数据段大小 */
+	uint32_t rodata_vma;	/* 只读数据段虚拟地址 */
 	uint32_t data_offset;	/* 数据段文件偏移 */
 	uint32_t data_size;		/* 数据段大小 */
-	uint32_t bss_size;		/* BSS段大小 */
+	uint32_t data_vma;		/* 数据段虚拟地址 */
+	uint32_t bss_size;		/* BSS 段大小 */
 	uint32_t stack_size;	/* 栈大小 */
 	uint32_t heap_size;		/* 堆大小 */
 	uint32_t alignment;		/* 内存对齐要求 */
 
-	uint32_t reserved;		/* 保留字段 */
+	uint32_t reserved[2];	/* 保留字段 */
 } PROGRAM_HEADER;
+
+#define HEADER_SIZE							(sizeof(PROGRAM_HEADER))
+
+#define MAX(a, b)							((a) > (b) ? (a) : (b))
 
 extern void program_start(uint32_t eip, uint32_t cs, uint32_t esp, uint32_t ds, uint32_t *tss_esp0);
 
@@ -125,37 +132,35 @@ int32_t program_exec(int32_t argc, char **argv)
 		goto clean;
 	}
 
-	/* 计算代码段和数据段大小 */
-	uint32_t align = header->alignment;
-	uint32_t code_align = ALIGN_UP(header->code_size, align);
-	uint32_t rodata_align = ALIGN_UP(header->rodata_size, align);
-	uint32_t data_align = ALIGN_UP(header->data_size, align);
+	/* 计算应用镜像大小 */
+	uint32_t image_size = 0;
+	image_size = MAX(image_size, header->code_vma   + header->code_size);
+	image_size = MAX(image_size, header->rodata_vma + header->rodata_size);
+	image_size = MAX(image_size, header->data_vma   + header->data_size);
+	image_size = ALIGN_UP(image_size, header->alignment);
 
-	uint32_t code_segment_size = code_align + rodata_align; /* 代码段大小 */
-	uint32_t data_segment_size = data_align + header->bss_size + header->heap_size + header->stack_size; /* 数据段大小 */
-
-	/* 确保数据段大小不为零，以便正确设置段界限 */
-	if (data_segment_size == 0) data_segment_size = 1;
-
-	if (code_segment_size == 0) {
-		debug("PROGRAM: Program file has no code segment.\n");
+	/* 计算运行时大小 */
+	uint32_t runtime_size = image_size + header->bss_size + header->stack_size + header->heap_size;
+	if (runtime_size == 0) {
+		debug("PROGRAM: Program file has no segments and no stack/heap.\n");
 		result = SRV_INVALID_FORMAT; /* 文件格式错误 */
 		goto clean;
 	}
 
 	/* 入口点必须位于代码段 */
-	if (header->entry_point >= header->code_size) {
+	if (header->entry_point < header->code_vma || header->entry_point >= header->code_vma + header->code_size) {
 		debug("PROGRAM: Entry point offset is out of code segment bounds.\n");
 		result = SRV_INVALID_FORMAT; /* 文件格式错误 */
 		goto clean;
 	}
 
-	mem = kmalloc(code_segment_size + data_segment_size);
+	mem = kmalloc(runtime_size);
 	if (NULL == mem) {
 		debug("PROGRAM: Failed to allocate memory for program execution.\n");
 		result = SRV_MEMORY_ALLOC; /* 分配内存失败 */
 		goto clean;
 	}
+	memset(mem, 0, runtime_size); /* 清零内存 */
 
 	debug("PROGRAM: Loaded program file\n");
 	debug("  File information\n");
@@ -176,20 +181,18 @@ int32_t program_exec(int32_t argc, char **argv)
 	debug("\n");
 
 
-	/* 复制代码段和只读数据段 */
-	memcpy(mem, buf + header->code_offset, header->code_size);
-	memcpy(mem + code_align, buf + header->rodata_offset, header->rodata_size);
-
-	/* 复制数据段 */
-	uint8_t *data_base = mem + code_segment_size; /* 数据段基址 */
-	memset(data_base, 0, data_segment_size); /* 清零数据段 */
-	memcpy(data_base, buf + header->data_offset, header->data_size);
+	/* 复制段数据到内存 */
+	memcpy(mem + header->code_vma, buf + header->code_offset, header->code_size);
+	if (header->rodata_size > 0)
+		memcpy(mem + header->rodata_vma, buf + header->rodata_offset, header->rodata_size);
+	if (header->data_size > 0)
+		memcpy(mem + header->data_vma, buf + header->data_offset, header->data_size);
 
 	/* 设置任务的段基址和界限 */
 	task->code_base = (uint32_t) mem;
-	task->code_limit = code_segment_size - 1;
-	task->data_base = (uint32_t) data_base;
-	task->data_limit = data_segment_size - 1;
+	task->code_limit = runtime_size - 1;
+	task->data_base = (uint32_t) mem;
+	task->data_limit = runtime_size - 1;
 
 	/* 应用程序信息 */
 	task->path = file.path;
@@ -208,7 +211,7 @@ int32_t program_exec(int32_t argc, char **argv)
 	uint32_t data_selector = (1 << 3) | (1 << 2) | 3; /* 索引 1, TI=1, RPL=3 */
 
 	/* 用户栈指针 */
-	uint32_t user_esp_offset = data_segment_size;
+	uint32_t user_esp_offset = runtime_size;
 
 	/* 释放文件缓冲区 */
 	kfree(buf);

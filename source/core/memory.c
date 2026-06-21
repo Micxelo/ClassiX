@@ -48,20 +48,23 @@ void memory_init(MEMORY_POOL *pool, void *base, size_t size)
 	pool->size = aligned_size;
 
 	/* 初始化第一个内存块 */
-	block_header_t *header = (block_header_t *) base;
+	block_header_t *header = (block_header_t *) aligned_base;
 	header->magic = BLOCK_MAGIC;
-	header->size = size;
+	header->size = aligned_size;
 	header->state = BLOCK_FREE;
 	header->task = NULL;
 
-	block_footer_t *footer = (block_footer_t *) ((uint8_t *) base + size - sizeof(block_footer_t));
-	footer->size = size;
+	block_footer_t *footer = (block_footer_t *) ((uint8_t *) aligned_base + aligned_size - sizeof(block_footer_t));
+	footer->size = aligned_size;
 
 	/* 初始化空闲列表 */
 	freeblock_t *freeblock = (freeblock_t *) ((uint8_t *) header + sizeof(block_header_t));
 	freeblock->prev = NULL;
 	freeblock->next = NULL;
 	pool->head = freeblock;
+
+	/* 初始化自旋锁 */
+	spinlock_init(&pool->lock);
 }
 
 /*
@@ -193,13 +196,43 @@ void memory_free(MEMORY_POOL *pool, void *ptr)
 }
 
 /*
+	@brief 以自动获取锁的方式分配内存。
+	@param pool 待操作的内存池
+	@param size 需要分配的字节数
+	@param task 使用此内存的任务
+	@return 分配的内存指针，失败返回 NULL
+*/
+void *memory_alloc_irqsave(MEMORY_POOL *pool, size_t size, TASK *task)
+{
+	uint32_t eflags = spinlock_acquire_irqsave(&pool->lock);
+	void *ptr = memory_alloc(pool, size, task);
+	spinlock_release_irqrestore(&pool->lock, eflags);
+	return ptr;
+}
+
+/*
+	@brief 以自动获取锁的方式释放内存。
+	@param pool 待操作的内存池
+	@param ptr 待释放的内存指针
+*/
+void memory_free_irqsave(MEMORY_POOL *pool, void *ptr)
+{
+	uint32_t eflags = spinlock_acquire_irqsave(&pool->lock);
+	memory_free(pool, ptr);
+	spinlock_release_irqrestore(&pool->lock, eflags);
+}
+
+/*
 	@brief 分配内存。
 	@param size 需要分配的字节数
 	@return 分配的内存指针，失败返回 NULL
 */
 void *kmalloc(size_t size)
 {
-	return memory_alloc(&g_mp, size, task_get_current());
+	uint32_t eflags = spinlock_acquire_irqsave(&g_mp.lock);
+	void *ptr = memory_alloc(&g_mp, size, task_get_current());
+	spinlock_release_irqrestore(&g_mp.lock, eflags);
+	return ptr;
 }
 
 /*
@@ -220,20 +253,28 @@ void *krealloc(void *ptr, size_t new_size)
 		return NULL;
 	}
 
+	uint32_t eflags = spinlock_acquire_irqsave(&g_mp.lock);
+
 	const block_header_t *header = (block_header_t *) ((uint8_t *) ptr - sizeof(block_header_t));
-	if (!(header->magic == BLOCK_MAGIC && header->state == BLOCK_USED))
+	if (!(header->magic == BLOCK_MAGIC && header->state == BLOCK_USED)) {
+		spinlock_release_irqrestore(&g_mp.lock, eflags);
 		return NULL;
+	}
 
 	size_t old_size = header->size - sizeof(block_header_t) - sizeof(block_footer_t);
-	if (new_size <= old_size)
+	if (new_size <= old_size) {
 		/* 新尺寸小于等于旧尺寸，直接返回原指针 */
+		spinlock_release_irqrestore(&g_mp.lock, eflags);
 		return ptr;
+	}
 
 	/* 分配新内存并拷贝旧数据 */
-	void *new_ptr = kmalloc(new_size);
-	if (new_ptr == NULL) return NULL;
-	memcpy(new_ptr, ptr, old_size);
-	kfree(ptr);
+	void *new_ptr = memory_alloc(&g_mp, new_size, task_get_current());
+    if (new_ptr) {
+        memcpy(new_ptr, ptr, old_size);
+        memory_free(&g_mp, ptr);
+    }
+    spinlock_release_irqrestore(&g_mp.lock, eflags);
 	return new_ptr;
 }
 
@@ -258,7 +299,9 @@ void *kcalloc(size_t nmemb, size_t size)
 */
 void kfree(void *ptr)
 {
+	uint32_t eflags = spinlock_acquire_irqsave(&g_mp.lock);
 	memory_free(&g_mp, ptr);
+	spinlock_release_irqrestore(&g_mp.lock, eflags);
 }
 
 /*

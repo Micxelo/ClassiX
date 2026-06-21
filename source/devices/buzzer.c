@@ -148,7 +148,7 @@ void async_buzzer_init(void)
 
 	async_buzzer_task = task_alloc();
 
-	async_buzzer_task->tss.esp = (uint32_t) memory_alloc(&g_mp, DEFAULT_USER_STACK, async_buzzer_task) + DEFAULT_USER_STACK;
+	async_buzzer_task->tss.esp = (uint32_t) memory_alloc_irqsave(&g_mp, DEFAULT_USER_STACK, async_buzzer_task) + DEFAULT_USER_STACK;
 	async_buzzer_task->tss.eip = (uint32_t) &async_buzzer_entry;
 	async_buzzer_task->tss.es = 0x10;
 	async_buzzer_task->tss.cs = 0x08;
@@ -158,7 +158,7 @@ void async_buzzer_init(void)
 	async_buzzer_task->tss.gs = 0x10;
 
 	task_register(async_buzzer_task, PRIORITY_NORMAL);
-	fifo_init(&async_buzzer_task->fifo, 128, memory_alloc(&g_mp, 128 * sizeof(uint32_t), async_buzzer_task), async_buzzer_task);
+	fifo_init(&async_buzzer_task->fifo, 128, memory_alloc_irqsave(&g_mp, 128 * sizeof(uint32_t), async_buzzer_task), async_buzzer_task);
 }
 
 /*

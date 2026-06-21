@@ -450,33 +450,36 @@ static void terminal_process_cmdline(TERMINAL *terminal)
 {
 	terminal_printf(terminal, "\n");
 
-	if (strcmp(terminal->cmdline, "help") == 0)
-		terminal_cmd_help(terminal);
-	else if (strcmp(terminal->cmdline, "clear") == 0)
-		terminal_cmd_clear(terminal);
-	else if (strcmp(terminal->cmdline, "time") == 0)
-		terminal_cmd_time(terminal);
-	else if (strncmp(terminal->cmdline, "echo ", 5) == 0)
-		terminal_cmd_echo(terminal);
-	else if (strncmp(terminal->cmdline, "cat ", 4) == 0)
-		terminal_cmd_cat(terminal);
-	else if (strcmp(terminal->cmdline, "ls") == 0 || strncmp(terminal->cmdline, "ls ", 3) == 0)
-		terminal_cmd_ls(terminal);
-	else if (strcmp(terminal->cmdline, "sysinfo") == 0)
-		terminal_cmd_sysinfo(terminal);
-	else if (terminal->cmdline[0] != '\0') {
-		char **argv;
-		int32_t argc = split_command_line(terminal->cmdline, &argv);
-		if (argc > 0) {
-			int32_t result = program_exec(argc, argv);
-			if (result == SRV_NOT_FOUND) {
-				terminal_cmd_unknown(terminal);
-			} else if (result != SRV_SUCCESS) {
-				terminal_printf(terminal, "Application execution failed: %d\n", result);
-			}
-			kfree(argv);
-		}
+	char **argv;
+	int32_t argc = split_command_line(terminal->cmdline, &argv);
+	if (argc == 0) {
+		kfree(argv);
+		return;
 	}
+
+	if (strcmp(argv[0], "help") == 0)
+		terminal_cmd_help(terminal);
+	else if (strcmp(argv[0], "clear") == 0)
+		terminal_cmd_clear(terminal);
+	else if (strcmp(argv[0], "time") == 0)
+		terminal_cmd_time(terminal);
+	else if (strcmp(argv[0], "echo") == 0)
+		terminal_cmd_echo(terminal);
+	else if (strcmp(argv[0], "cat") == 0)
+		terminal_cmd_cat(terminal);
+	else if (strcmp(argv[0], "ls") == 0)
+		terminal_cmd_ls(terminal);
+	else if (strcmp(argv[0], "sysinfo") == 0)
+		terminal_cmd_sysinfo(terminal);
+	else {
+		int32_t result = program_exec(argc, argv);
+		if (result == SRV_NOT_FOUND)
+			terminal_cmd_unknown(terminal);
+		else if (result != SRV_SUCCESS)
+			terminal_printf(terminal, "Application execution failed: %d\n", result);
+	}
+
+	kfree(argv);
 
 	terminal_printf(terminal, "\n");
 }
@@ -485,8 +488,6 @@ void __attribute__((noreturn)) task_terminal_entry(void)
 {
 	TASK *task = task_get_current();
 	TERMINAL terminal;
-	uint32_t rand;
-	generate_random(&rand);
 
 	window_create(
 		&terminal.window,
@@ -591,7 +592,7 @@ void __attribute__((noreturn)) task_terminal_entry(void)
 TASK *demo_terminal(void)
 {
 	TASK *task_terminal = task_alloc();
-	task_terminal->tss.esp = (uint32_t) memory_alloc(&g_mp, DEFAULT_USER_STACK, task_terminal) + DEFAULT_USER_STACK;
+	task_terminal->tss.esp = (uint32_t) memory_alloc_irqsave(&g_mp, DEFAULT_USER_STACK, task_terminal) + DEFAULT_USER_STACK;
 	task_terminal->tss.eip = (uint32_t) &task_terminal_entry;
 	task_terminal->tss.es = 0x10;
 	task_terminal->tss.cs = 0x08;
@@ -600,7 +601,7 @@ TASK *demo_terminal(void)
 	task_terminal->tss.fs = 0x10;
 	task_terminal->tss.gs = 0x10;
 	task_register(task_terminal, PRIORITY_NORMAL);
-	fifo_init(&task_terminal->fifo, 128, memory_alloc(&g_mp, 128 * sizeof(uint32_t), task_terminal), task_terminal);
+	fifo_init(&task_terminal->fifo, 128, memory_alloc_irqsave(&g_mp, 128 * sizeof(uint32_t), task_terminal), task_terminal);
 	return task_terminal;
 }
 

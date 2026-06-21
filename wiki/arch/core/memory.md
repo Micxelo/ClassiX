@@ -118,6 +118,48 @@ void memory_free(
 |`pool`|待操作的内存池|
 |`ptr`|待释放的内存指针|
 
+### `memory_alloc_irqsave`
+
+从指定内存池分配内存，禁用中断以保证原子性。
+
+**函数原型**
+
+```c
+void *memory_alloc_irqsave(
+	MEMORY_POOL *pool,
+	size_t size,
+	TASK *task
+);
+```
+
+|参数|描述|
+|:-:|:-:|
+|`pool`|待操作的内存池|
+|`size`|需要分配的字节数|
+|`task`|使用此内存的任务|
+
+|返回值|描述|
+|:-:|:-:|
+|`void *`|分配的内存指针，失败返回 `NULL`|
+
+### `memory_free_irqsave`
+
+释放内存到指定内存池，禁用中断以保证原子性。
+
+**函数原型**
+
+```c
+void memory_free_irqsave(
+	MEMORY_POOL *pool,
+	void *ptr
+);
+```
+
+|参数|描述|
+|:-:|:-:|
+|`pool`|待操作的内存池|
+|`ptr`|待释放的内存指针|
+
 ## 内核内存分配
 
 ### `kmalloc`

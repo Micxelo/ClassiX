@@ -9,6 +9,7 @@
 	extern "C" {
 #endif
 
+#include <ClassiX/spinlock.h>
 #include <ClassiX/task.h>
 #include <ClassiX/typedef.h>
 
@@ -18,7 +19,8 @@
 typedef struct {
 	void *start;
 	size_t size;
-	void *head;		/* 空闲块列表头 */
+	void *head;			/* 空闲块列表头 */
+	spinlock_t lock;	/* 内存池锁 */
 } MEMORY_POOL;
 
 extern MEMORY_POOL g_mp;
@@ -26,6 +28,9 @@ extern MEMORY_POOL g_mp;
 void memory_init(MEMORY_POOL *pool, void *base, size_t size);
 void *memory_alloc(MEMORY_POOL *pool, size_t size, TASK *task);
 void memory_free(MEMORY_POOL *pool, void *ptr);
+
+void *memory_alloc_irqsave(MEMORY_POOL *pool, size_t size, TASK *task);
+void memory_free_irqsave(MEMORY_POOL *pool, void *ptr);
 
 void *kmalloc(size_t size);
 void *krealloc(void *ptr, size_t new_size);

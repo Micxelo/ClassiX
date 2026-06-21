@@ -115,7 +115,7 @@ typedef enum {
 	EVENT_MOUSE_RDBCLK,			/* 鼠标右键双击 | 光标相对坐标 */
 	EVENT_MOUSE_MDBCLK,			/* 鼠标中键双击 | 光标相对坐标 */
 	EVENT_MOUSE_WHEEL			/* 鼠标滚轮 | 滚轮增量 */
-} EVENT_TYPE;
+} EVENT_ID;
 
 #define CLOSING_BY_CLOSE_BUTTON		1	/* 通过点击关闭按钮关闭 */
 #define CLOSING_BY_TASK_REQUEST		2	/* 通过关联的任务请求关闭 */
