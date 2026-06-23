@@ -6,6 +6,7 @@
 #include <ClassiX/crc.h>
 #include <ClassiX/debug.h>
 #include <ClassiX/fatfs.h>
+#include <ClassiX/handle.h>
 #include <ClassiX/interrupt.h>
 #include <ClassiX/memory.h>
 #include <ClassiX/programs.h>
@@ -198,6 +199,8 @@ int32_t program_exec(int32_t argc, char **argv)
 	task->path = file.path;
 	task->argc = argc;
 	task->argv = argv;
+	handle_table_init(&task->hfile_table, 8, 16);
+	handle_table_init(&task->hwnd_table, 8, 16);
 
 	/* 设置 LDT 描述符 */
 	set_ldt_descriptor(&task->ldt[0], task->code_base, task->code_limit, AR_3_CODE32_ER);

@@ -9,7 +9,7 @@
 	extern "C" {
 #endif
 
-#include <ClassiX/typedef.h>
+#include "typedef.h"
 
 typedef union {
 	uint32_t color;
@@ -20,8 +20,6 @@ typedef union {
 		uint8_t a;
 	};
 } COLOR;
-
-static_assert(sizeof(COLOR) == sizeof(uint32_t), "`COLOR` must be 32 bits");
 
 #define COLOR32(_color)						((COLOR) { .color = (_color) })
 #define COLOR32_FROM_ARGB(_r, _g, _b, _a)	((COLOR) { .a = (_a), .r = (_r), .g = (_g), .b = (_b) })

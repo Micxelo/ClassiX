@@ -8,14 +8,14 @@ LD			= ld
 OBJCOPY		= objcopy
 CCHK		= cppcheck
 
-CFLAGS		= -O2 -m32 -std=gnu99 \
+CFLAGS		= -O2 -m32 -std=gnu11 \
 			  -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Werror=parentheses \
 			  -ffreestanding -fleading-underscore -fno-pic -fno-stack-protector \
 			  -nostartfiles -nostdinc
 ASFLAGS		= -f elf32
 LDSCRIPT	= ./source/linker.ld
 LDFLAGS		= -T $(LDSCRIPT) -melf_i386 -nostdlib -z noexecstack --oformat binary
-CCHKFLAGS	= -q --enable=all --platform=unix32 --std=c99 --language=c -I $(INCPATH) \
+CCHKFLAGS	= -q --enable=all --platform=unix32 --std=c11 --language=c -I $(INCPATH) \
 			  --suppress=missingIncludeSystem --suppress=unusedFunction --suppress=variableScope
 
 INCPATH		= ./source/include

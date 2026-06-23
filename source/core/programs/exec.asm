@@ -7,17 +7,25 @@ _program_api:
 	sti
 	push ds
 	push es
-	pushad					; 保存寄存器值
+
 	pushad					; 向 system_call 传值
+
 	mov ax, ss
 	mov ds, ax
 	mov es, ax
+
+	push esp
+
 	extern _system_call
 	call _system_call
+
+	add esp, 4
+
 	cmp eax, 0
 	jne _program_end		; 结束应用程序
-	add esp, 32
+
 	popad
+
 	pop es
 	pop ds
 	iretd

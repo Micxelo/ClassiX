@@ -19,7 +19,13 @@
 
 #define ARRAY_SIZE(arr)						(sizeof(arr) / sizeof((arr)[0]))
 
-typedef void * HANDLE;
+#ifndef __cplusplus
+	#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+		#define static_assert _Static_assert
+	#else
+		#define static_assert(cond, msg)
+	#endif
+#endif
 
 #ifdef __cplusplus
 	}

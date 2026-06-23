@@ -10,6 +10,7 @@
 #endif
 
 #include <ClassiX/font.h>
+#include <ClassiX/graphic.h>
 #include <ClassiX/layer.h>
 #include <ClassiX/palette.h>
 #include <ClassiX/typedef.h>

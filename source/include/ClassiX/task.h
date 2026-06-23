@@ -10,6 +10,7 @@
 #endif
 
 #include <ClassiX/fifo.h>
+#include <ClassiX/handle.h>
 #include <ClassiX/interrupt.h>
 #include <ClassiX/typedef.h>
 
@@ -64,6 +65,8 @@ typedef struct TASK {
 	const char *path;			/* 应用程序路径 */
 	int32_t argc;				/* 参数数量 */
 	char **argv;				/* 参数数组 */
+	HANDLE_TABLE hfile_table;	/* 文件句柄表 */
+	HANDLE_TABLE hwnd_table;	/* 串口句柄表 */
 
 	/* FPU 数据 */
 	bool fpu_used; /* 是否使用过 FPU */
